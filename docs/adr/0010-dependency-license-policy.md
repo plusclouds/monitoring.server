@@ -24,7 +24,8 @@ The engine is MIT-licensed and will be embedded in the PlusClouds panel and run 
 | DNS | `miekg/dns` | BSD-3-Clause |
 | RTSP | `bluenviron/gortsplib` | MIT |
 | VMware | `vmware/govmomi` | Apache-2.0 |
-| MQTT | `eclipse/paho.golang` | EPL-2.0 / EDL-1.0 |
+| MQTT client (external-broker mode) | `eclipse/paho.golang` | EPL-2.0 / EDL-1.0 |
+| MQTT broker (embedded) | `mochi-mqtt/server` | MIT |
 | Probe RPC | `connectrpc.com/connect` | Apache-2.0 |
 | API codegen | `oapi-codegen/oapi-codegen` | Apache-2.0 |
 | JSON Schema | `invopop/jsonschema` | MIT |

@@ -26,6 +26,8 @@ The engine turns results into state, and state changes into incidents. It is the
 }
 ```
 
+- Operators: `>`, `>=`, `<`, `<=`, `==`, `!=`, `between` and `outside` (with `value` and `value_max`). Unknown operators are rejected when the rule is saved.
+- A metric may have several rules; each has an `id` and optional `name`, and the worst matching level wins. The matched rule is recorded on the incident.
 - `for`: the condition must hold continuously for this long before the status changes (for metrics that are noisy per sample).
 - `hysteresis`: to go back to a better status, the value must cross the threshold by this margin (alert above 90, clear below 85).
 - Rules can match per-object metrics from collectors (`object: "*"` for every interface or VM, or a label filter).

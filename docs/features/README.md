@@ -21,6 +21,7 @@ The order follows dependencies: nothing produces results until the plugin SDK an
 | [F09](F09-remote-probes.md) | Remote probes (enrollment and assignment in MVP, failover in phase 2) | F04 | Draft |
 | [F10](F10-mvp-check-catalog.md) | MVP check and collector catalog | F03 | Draft |
 | [F11](F11-self-monitoring.md) | Monitoring the monitor | F04, F06 | Draft |
+| [F12](F12-fixlean-collector-replacement.md) | Replacing the FixLean sensor collector: embedded MQTT broker, sensor model, migration | F05, F07, F08 | Draft |
 
 ```mermaid
 flowchart LR
@@ -34,6 +35,8 @@ flowchart LR
     F04 --> F09
     F04 --> F11
     F06 --> F11
+    F05 --> F12
+    F08 --> F12
 ```
 
 ## Suggested milestones
@@ -45,6 +48,7 @@ flowchart LR
 | M3 — metrics | F07, Grafana data source and first dashboards | Interface and latency graphs in Grafana; retention changed via API drops partitions |
 | M4 — targets | F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Our datacenter's switches, servers, cameras and XCP-ng pool are monitored |
 | M5 — push and probes | F08, F09 (basic), F11 | MQTT sensors report; one remote site runs a probe; the dead man's switch fires when the core stops |
+| M6 — FixLean shadow | F12 steps 0–2 | Engine in shadow mode against the current collector's broker produces the same threshold events |
 | Gate 1 | Load test at 10,000 simulated devices ([ADR-0003](../adr/0003-metrics-storage-layout.md)), security review | Live on our own datacenter |
 
 ## Phase 2 and later

@@ -59,7 +59,7 @@ The engine is open source (MIT) and developed in the PlusClouds GitHub. It runs 
 | Probe packaging | Static binary and container image |
 | Hypervisors | XenServer/XCP-ng first, then VMware, then Proxmox |
 | Hyper-V | Not in this phase; revisit later |
-| IoT | MQTT first (in use today); other protocols as requests arrive |
+| IoT | MQTT first (in use today); other protocols as requests arrive. The engine embeds its own MQTT broker and replaces `fixleanplus.metric.collector` (see [ADR-0013](adr/0013-embedded-mqtt-broker.md), [F12](features/F12-fixlean-collector-replacement.md)) |
 
 ---
 
@@ -346,7 +346,7 @@ Gates are proposals; dates are not set yet.
 
 ## 11. Open questions
 
-- [ ] **MQTT specifics:** broker, topic structure and payload format. To be taken from an existing project; needed before building the MQTT ingester.
+- [x] **MQTT specifics:** taken from `fixleanplus.metric.collector`, which the engine replaces. See [F12](features/F12-fixlean-collector-replacement.md) for the topic and payload profile and the remaining migration questions.
 - [ ] **Webhook event schema and signing:** must be compatible with PlusClouds. To be defined in the API documentation.
 
 ---

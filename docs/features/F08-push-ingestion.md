@@ -1,6 +1,6 @@
 # F08: Push ingestion — HTTP push, MQTT and last-seen
 
-**Status:** Draft · **Phase:** MVP (HTTP push, MQTT, last-seen); phase 2 (SNMP traps, syslog) · **Related:** design sections 3 and 8
+**Status:** Draft · **Phase:** MVP (HTTP push, MQTT, last-seen); phase 2 (SNMP traps, syslog) · **Related:** design sections 3 and 8, [ADR-0013](../adr/0013-embedded-mqtt-broker.md), [F12](F12-fixlean-collector-replacement.md)
 
 ## Summary
 
@@ -18,30 +18,44 @@ A push source is a check with plugin type `push.http` or `push.mqtt`. It has no 
 - `POST /ingest/v1/{check_id}` with `Authorization: Bearer <ingest token>`. Each push check has its own token, revocable alone.
 - Body: JSON. The mapping extracts metrics with JSONPath-like selectors: `{ "temperature": "$.sensors.temp", "humidity": "$.sensors.hum" }`, and optionally a status field.
 - Batch form: an array of objects with timestamps, for devices that buffer.
+- **Tenant batch endpoint** for gateways and other collectors that report for many devices (for example `fixleanplus.lake.collector`): `POST /ingest/v1/batch` with a tenant-scoped ingest token. Each item names its device by external ID (`{source, id}`, such as `{mac, AA:BB:…}`) and carries metrics, labels and a timestamp. Auto-registration rules are the same as for MQTT ([F12](F12-fixlean-collector-replacement.md)).
 - Limits: 64 KB body, rate limit per token (default 1 request/s sustained, burst 10).
 
 ### MQTT
 
-- The engine connects to one or more external brokers as a client (it does not run a broker). Broker connection, credentials and TLS are configured per tenant via `/v1/ingest/mqtt-brokers`.
-- Mappings (`/v1/ingest/mqtt-mappings`): topic filter with named wildcards (`sensors/{site}/{device_id}/telemetry`), a device resolver (from a topic segment or payload field, matched to a device's `external_id`), payload format (`json`, `plain` number, and later `sparkplug-b`), and metric selectors as above.
-- Unmapped messages are counted per topic prefix and visible in `GET /v1/ingest/mqtt-mappings/unmatched` to help onboarding.
-- Subscriptions use QoS 1; shared subscriptions (`$share/monitor/...`) when the broker supports MQTT 5, so several ingest nodes can split load.
+Two modes, chosen per tenant ([ADR-0013](../adr/0013-embedded-mqtt-broker.md)):
+
+- **Embedded broker (default).** Devices connect to the engine's `ingest` role directly: TLS on 8883, per-device credentials and topic ACLs, and a legacy plain listener on 1883 only for migrating tenants. The credential decides the tenant. Connect, disconnect and keepalive-timeout events feed an `mqtt.connection` check per device, so offline detection does not wait for last-seen timers.
+- **External broker.** The engine connects as a client to a broker the tenant already runs. Broker connection, credentials and TLS are configured via `/v1/ingest/mqtt-brokers`. Subscriptions use QoS 1, with shared subscriptions (`$share/monitor/...`) when the broker supports MQTT 5, so several ingest nodes can split load. There are no connection events in this mode; offline detection uses last-seen only.
+
+Both modes use the same **mappings** (`/v1/ingest/mqtt-mappings`):
+
+- topic filter with named wildcards (`{vendor}/{device_key}/#`, `sensors/{site}/{device_id}/telemetry`);
+- a device resolver (from a topic segment or payload field, matched to a device's external ID);
+- payload format (`json-flat`, `json` with selectors, `plain` number, and later `sparkplug-b`);
+- timestamp field and unit, metadata fields to ignore, and a status signature that routes a payload to inventory instead of metrics;
+- metric selectors as above, or "every numeric field" with field discovery.
+
+Built-in **profiles** bundle a full mapping; the first is `fixlean-esp` for the FixLean ESP32 sensors ([F12](F12-fixlean-collector-replacement.md)).
+
+Unmapped messages are counted per topic prefix and visible in `GET /v1/ingest/mqtt-mappings/unmatched` to help onboarding. Messages from unknown devices are handled by the tenant's auto-registration setting.
 
 ### Timestamps
 
-Pushed timestamps are accepted if within ±5 minutes of server time; otherwise the server time is used and the check output notes the skew.
+Pushed timestamps are accepted from up to 24 h in the past (devices that buffer while offline) to 5 minutes in the future. Past data older than 2× the expected interval updates metrics but not state (same rule as late probe results). Timestamps outside that window are replaced with the server time, and the check output notes the skew.
 
 ## API
 
-`/v1/ingest/mqtt-brokers` (CRUD, `test`), `/v1/ingest/mqtt-mappings` (CRUD, `unmatched`), push checks through `/v1/checks` with `push.*` types, `POST /v1/checks/{id}/rotate-token`.
+`/v1/ingest/mqtt-credentials` (CRUD, rotate), `/v1/ingest/mqtt-brokers` (CRUD, `test`), `/v1/ingest/mqtt-mappings` (CRUD, `unmatched`), `/v1/ingest/profiles`, `/v1/ingest/unregistered`, `/v1/ingest/tokens` (tenant batch tokens), push checks through `/v1/checks` with `push.*` types, `POST /v1/checks/{id}/rotate-token`.
 
 ## Acceptance criteria
 
-- A sensor publishing to Mosquitto every 60 s appears as metrics within 2 s of each message.
+- A sensor publishing to the embedded broker (and, in external mode, to Mosquitto) every 60 s appears as metrics within 2 s of each message.
+- A sensor losing power opens an offline incident from the keepalive timeout, without waiting for 3 missed intervals.
 - Stopping the sensor opens an incident after 3 missed intervals, and it resolves on the next message.
 - A leaked ingest token can be revoked without affecting any other device.
 - 5,000 MQTT messages/s on one ingest node without message loss at QoS 1.
 
 ## Open questions
 
-- **MQTT broker, topic structure and payload format** (open question in the design): take them from the existing project before building the mapping presets. The mapping model above is generic enough to start without them.
+- The MQTT broker, topic structure and payload format are now taken from `fixleanplus.metric.collector` ([F12](F12-fixlean-collector-replacement.md)). Open questions specific to that migration are listed there.

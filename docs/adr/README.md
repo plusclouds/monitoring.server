@@ -18,5 +18,6 @@ All records below are **Proposed**. They become **Accepted** once reviewed. To c
 | [0010](0010-dependency-license-policy.md) | Dependency license allowlist enforced in CI | Proposed |
 | [0011](0011-toolchain-and-repository-layout.md) | Toolchain, repository layout and engineering conventions | Proposed |
 | [0012](0012-plusclouds-identity-and-external-ids.md) | PlusClouds owns accounts and users; the engine keeps a minimal mirror; external IDs on every linkable resource | Proposed |
+| [0013](0013-embedded-mqtt-broker.md) | Embedded MQTT broker (mochi-mqtt) in the ingest role; external-broker client mode kept | Proposed |
 
 Use [0000-template.md](0000-template.md) for new records.
