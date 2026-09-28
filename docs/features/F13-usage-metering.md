@@ -23,7 +23,8 @@ Declared in the plugin manifest ([F03](F03-plugin-sdk.md)) as `BillingClass`:
 | Class | Plugins (MVP) | Why |
 | --- | --- | --- |
 | `basic` | `icmp`, `tcp`, `udp`, `dns`, `tls`, `whois` | One cheap request per run |
-| `standard` | `http`, `snmp.system`, `snmp.get`, `snmp.ups`, `snmp.pdu`, `snmp.sensor`, `push.http`, `push.mqtt` | More work per run or per message |
+| `standard` | `http`, `snmp.system`, `snmp.get`, `snmp.ups`, `snmp.pdu`, `snmp.sensor` | More work per run |
+| `push` | `push.http`, `push.mqtt`, `push.otlp` | Devices that send data themselves: IoT sensors, gateways, LLM applications. Often many per customer and cheap to run, so priced separately from polled checks |
 | `advanced` | `snmp.interfaces`, `redfish.health`, `ipmi.sensors`, `rtsp.stream`, `xapi.pool`, `xapi.rrd` | Collectors, table walks, stream reads, BMC and hypervisor sessions |
 | `free` | `mqtt.connection` | Added automatically as a companion of a push check; not billed separately |
 
@@ -38,7 +39,7 @@ Declared in the plugin manifest ([F03](F03-plugin-sdk.md)) as `BillingClass`:
 | `run-now`, device test, credential test | No |
 | Tenant suspended | No check-hours (checks stop); storage is out of scope for this unit |
 | Tenant soft-deleted | No, from the moment of deletion |
-| Auto-registered sensor (F12) | Yes, from registration; messages dropped over the device limit are not billed |
+| Auto-registered sensor (F12) or LLM application (F14) | Yes, as `push` check-hours of its push check, from registration; not as a discovered object. Messages dropped over the device limit are not billed |
 | Checks of the platform tenant (self-monitoring) | No |
 
 ### Second unit: the discovered-object-hour
@@ -127,11 +128,12 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 
 ## Open questions
 
-- **Discovered objects:** decided as a second unit per discovered child device (above). Open: should LLM applications auto-registered from traces ([F14](F14-llm-monitoring.md)) and auto-registered MQTT sensors count as discovered objects or keep their push check as the unit? Proposed: push check, since each has one.
 - **Billing class assignments:** confirm the table above with PlusClouds pricing.
 - **LLM units** ([F14](F14-llm-monitoring.md)): confirm spans per 1,000, content GB-days and judge evaluations as separate units.
 
 ## Decided
+
+- **Auto-registered devices** (MQTT sensors, LLM applications) are billed through their own push check in the `push` class, never as discovered objects. Discovered-object-hours are only for collector-created devices, which have no check of their own; counting auto-registered devices as both would bill them twice.
 
 - **Unit length:** hourly. A check active for any part of an hour is billed for that hour.
 - **Interval:** no surcharge for short intervals at first. `interval_seconds` is recorded on every line, so interval bands can be priced later without engine changes.

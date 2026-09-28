@@ -60,6 +60,7 @@ Applications send traces using the **OpenTelemetry GenAI semantic conventions** 
 
 - OTLP over HTTP (`POST /ingest/otlp/v1/traces`, protobuf and JSON) on the `ingest` listener, authenticated with an ingest token like HTTP push ([F08](F08-push-ingestion.md)). OTLP over gRPC is optional later.
 - Each application is a device of type `llm_app`, resolved from the trace's `service.name` resource attribute. Unknown services are auto-registered within the tenant's device limit, as for MQTT sensors.
+- Each `llm_app` gets a **`push.otlp` check**, as an MQTT sensor gets `push.mqtt`. It owns the trace metrics and has a last-seen rule (`expected_interval`, default 15 minutes, set per application), so an application that stops sending traces opens an incident like a silent sensor.
 - Spans the engine understands: LLM calls (`gen_ai.operation.name` chat, completion, embeddings), retrieval, tool calls and agent steps. Other spans in the same trace are kept only as parents for context, without their attributes.
 - A simple JSON event endpoint (`POST /ingest/v1/llm-events`) exists for applications that cannot use OpenTelemetry.
 
@@ -127,7 +128,8 @@ Proposed additions to [F13](F13-usage-metering.md):
 | --- | --- |
 | `llm.inference`, `prometheus.scrape` | `advanced` check-hours |
 | `llm.eval` | `advanced` check-hours plus judge tokens if the engine's judge is used |
-| Ingested LLM spans | new unit: per 1,000 spans |
+| `push.otlp` (one per LLM application) | `push` check-hours ([F13](F13-usage-metering.md)) |
+| Ingested LLM spans | new unit: per 1,000 spans, on top of the check-hours |
 | Stored content | new unit: GB-days |
 | LLM-as-judge evaluations | new unit: per evaluation (when the tenant uses a PlusClouds-provided judge model; free with the tenant's own model credential) |
 
