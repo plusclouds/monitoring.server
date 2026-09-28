@@ -57,6 +57,6 @@ Devices are the things being monitored, arranged in a tree. Credentials are stor
 - Applying the Dell iDRAC template to a Redfish mockup server produces working checks with no manual edits.
 - Test connection reports "authentication failed", "timeout" and "connection refused" as distinct errors.
 
-## Open questions
+## Decided
 
-- Should credentials be shareable across tenants for the platform tenant (PlusClouds staff monitoring customer gear)? Proposed: no; copy per tenant.
+- **No credential sharing between tenants.** When the platform tenant (PlusClouds staff) and a customer tenant both monitor the same hardware, each tenant holds its own copy of the credential. Sharing would break the tenant binding of the encryption ([ADR-0006](../adr/0006-credential-encryption.md): `tenant_id` is part of the associated data), give one row two owners under RLS ([ADR-0008](../adr/0008-tenant-isolation.md)), let one tenant's deletion break another tenant's checks, and mix two tenants' audit trails. The cost is rotation in two places; when PlusClouds manages the password, leo4 upserts each copy by external ID ([ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)).
