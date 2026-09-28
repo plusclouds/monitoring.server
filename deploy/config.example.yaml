@@ -314,6 +314,9 @@ platform:
     metric_classes: [standard]
   tenant_purge_grace: 720h      # soft-deleted tenant data is purged after this
   audit_retention: 8760h        # applied by partition drop; source IPs are personal data
+  # Usage metering (F13). Kept apart from metric retention.
+  usage_retention: 9504h        # 13 months
+  usage_day_close_delay: 1h     # a UTC day is closed this long after midnight
 
 # ---------------------------------------------------------------------------
 # Monitoring the monitor (F11)
