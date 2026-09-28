@@ -14,11 +14,12 @@ All records below are **Proposed**. They become **Accepted** once reviewed. To c
 | [0006](0006-credential-encryption.md) | Envelope encryption with AES-256-GCM and a pluggable key provider | Proposed |
 | [0007](0007-api-spec-first-openapi.md) | Spec-first OpenAPI 3.1 with generated server stubs; API keys; UUIDv7 public IDs | Proposed |
 | [0008](0008-tenant-isolation.md) | Tenant isolation in the application layer plus PostgreSQL row-level security | Proposed |
-| [0009](0009-webhook-delivery.md) | Transactional outbox and Standard Webhooks signing for notifications | Proposed |
+| [0009](0009-webhook-delivery.md) | Transactional outbox, Standard Webhooks signing and a CloudEvents envelope shared with PlusClouds | Proposed |
 | [0010](0010-dependency-license-policy.md) | Dependency license allowlist enforced in CI | Proposed |
 | [0011](0011-toolchain-and-repository-layout.md) | Toolchain, repository layout and engineering conventions | Proposed |
 | [0012](0012-plusclouds-identity-and-external-ids.md) | PlusClouds owns accounts and users; the engine keeps a minimal mirror; external IDs on every linkable resource | Proposed |
 | [0013](0013-embedded-mqtt-broker.md) | Embedded MQTT broker (mochi-mqtt) in the ingest role; external-broker client mode kept | Proposed |
 | [0014](0014-device-model-containment-dependencies-sites.md) | Devices form a containment tree; dependencies are a separate graph; sites are a table; collector parts are objects, not devices | Proposed |
+| [0015](0015-tenant-configuration-source.md) | The database stores all monitoring items; each tenant's source is the API or a declarative file applied through the same path | Proposed |
 
 Use [0000-template.md](0000-template.md) for new records.

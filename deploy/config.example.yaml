@@ -307,6 +307,15 @@ ingest:
   #   listen_tcp: ":6514"
 
 # ---------------------------------------------------------------------------
+# Tenant configuration files (ADR-0015)
+# Used only by tenants whose config_source is `file`. Read by the node holding
+# the maintenance lock; the result is stored in the database.
+# ---------------------------------------------------------------------------
+tenant_config:
+  directory: /etc/monitor/tenants   # one <tenant>.yaml per file tenant
+  watch: true                       # apply on change; POST /v1/config/reload also works
+
+# ---------------------------------------------------------------------------
 # Platform-wide policies (F01, ADR-0012)
 # ---------------------------------------------------------------------------
 platform:
