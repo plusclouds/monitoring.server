@@ -45,6 +45,6 @@ Metrics from checks, collectors and push ingestion are written in batches to the
 - Changing `standard/raw` retention from 7 to 3 days removes the older partitions within one maintenance run.
 - A Grafana panel over 30 days reads from rollups and renders in under 2 s for one device.
 
-## Open questions
+## Decided
 
-- Retention per tenant is not possible with shared partitions. If customers need different retention per plan, map plans to retention classes (`standard-30d`, `standard-1y`) rather than per-tenant policies.
+- **Retention per plan** is done with retention classes, not per-tenant policies, because partitions are shared across tenants. A plan that needs longer or shorter retention maps to its own class (for example `standard-30d`, `standard-1y`), and the tenant's `metric_classes` limit ([F01](F01-tenancy-auth-audit.md)) decides which classes its checks may use.

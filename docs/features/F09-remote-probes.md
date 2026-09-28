@@ -85,6 +85,6 @@ ICMP needs raw sockets or unprivileged ICMP (`net.ipv4.ping_group_range`). The s
 - With the uplink unplugged, `/status` on the probe shows `reconnecting`, the growing buffer and the age of the oldest pending result.
 - Every endpoint except `/healthz` returns `401` without the status token, and no response contains a credential secret.
 
-## Open questions
+## Decided
 
-- Should a probe be able to run push ingestion (local MQTT broker at a remote site)? Proposed for phase 2: yes, ingester plugins can run on probes and forward like any other result.
+- **Push ingestion on probes (phase 2):** ingester plugins can run on a probe, for example a local MQTT broker at a remote site, and forward what they receive to the core like any other result, with the same local buffering.

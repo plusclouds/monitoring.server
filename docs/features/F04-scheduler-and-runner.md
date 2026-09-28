@@ -48,6 +48,6 @@ The runner decides when each check runs and runs it. Scheduling and execution li
 - A device that never responds affects only its own checks: other checks' lag does not change.
 - After restart, no burst: executions per second in the first minute stay within 20 % of steady state.
 
-## Open questions
+## Decided
 
-- Should 5-second intervals be limited to specific plugins (ping, TCP, HTTP) to prevent 5-second SNMP walks? Proposed: yes, via `MinInterval` in the manifest plus the tenant's minimum interval.
+- **5-second intervals** are allowed only for cheap checks (`icmp`, `tcp`, `http`). Every other plugin sets a higher `MinInterval` in its manifest (SNMP table walks and Redfish at least 60 s), and the tenant's `min_check_interval_seconds` applies on top. The API rejects intervals below either limit.

@@ -59,6 +59,6 @@ The engine cannot report its own death, so it sends a heartbeat that something e
 - Pausing the notifier (simulated hang) stops heartbeats within 2 minutes while `/healthz` still returns 200.
 - A synthetic overload (runner limit set to 10) raises the check-lag alert.
 
-## Open questions
+## Decided
 
-- Where should the PlusClouds production heartbeat go? Proposed: an independent second monitor instance in a different datacenter watching the first, plus a hosted dead man's switch service.
+- **Production heartbeat:** PlusClouds' production engine sends its heartbeat to an independent second engine in a different datacenter, which watches the first, and to a hosted dead man's switch service. Either one alerting is enough to wake someone up.

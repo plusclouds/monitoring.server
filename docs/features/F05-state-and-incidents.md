@@ -85,6 +85,6 @@ In the MVP, state for a check is processed only by the node that owns its shard.
 - A check toggling every interval produces one flapping notification in 20 intervals.
 - Engine processing at 1,000 results/s adds under 50 ms p99 latency between result and state write.
 
-## Open questions
+## Decided
 
-- Should incidents group per device (one incident "server X has 4 problems") instead of per check? Proposed: incidents stay per check; grouping happens in notifications ([F06](F06-notifications.md)).
+- **Incidents stay per check** (per object for collectors). Several problems on one device are combined in notifications through route grouping ([F06](F06-notifications.md)), not merged into one incident, so each problem keeps its own state, acknowledgement and resolution.

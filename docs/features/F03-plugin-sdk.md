@@ -84,6 +84,6 @@ The `Check`, `Collector` and `Ingester` interfaces are as in the design document
 - A plugin that panics or ignores its context produces an UNKNOWN result with a clear message and does not stall the runner.
 - `GET /v1/plugins` returns valid JSON Schema for every plugin (validated in CI).
 
-## Open questions
+## Decided
 
-- Retention classes: proposed initial set is `high-frequency` (5–30 s checks), `standard`, `capacity` (disk, storage repository, license counts). Retention durations per class are set through the API with no hardcoded defaults; the installer should still propose values.
+- **Retention classes:** the initial set is `high-frequency` (checks every 5–30 s), `standard` and `capacity` (disk, storage repository, license counts). Each metric in a plugin manifest names its class. Durations per class are set through the API with no hardcoded defaults; the installer proposes values.
