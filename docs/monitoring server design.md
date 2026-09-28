@@ -295,6 +295,8 @@ A monitoring system holds credentials for nearly every device, so it is a high-v
 - **Tenant isolation.** Enforced in every query, including metric labels.
 - **Device firmware.** Polling can trigger device bugs (e.g. CVE-2025-20352 in the SNMP subsystem of some Cisco IOS/IOS XE devices); keep firmware current.
 
+Certifications, regulations and the ISO/IEC 27001 control mapping are covered in [Standards and compliance](compliance/README.md).
+
 ---
 
 ## 9. Operational requirements

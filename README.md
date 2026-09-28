@@ -55,6 +55,7 @@ flowchart LR
 | [Design document](docs/monitoring%20server%20design.md) | The full system design: targets, architecture, data model, alerting, API, security, roadmap |
 | [Feature specs](docs/features/README.md) | One spec per sub-feature, with MVP scope, behavior and acceptance criteria |
 | [Architecture decision records](docs/adr/README.md) | Infrastructure and technology decisions, each with options considered and consequences |
+| [Standards and compliance](docs/compliance/README.md) | Which certifications apply (and why most certify organizations, not the engine), standards the engine implements, and the ISO/IEC 27001 control mapping |
 
 ## Roadmap
 
