@@ -68,6 +68,8 @@ X-Actor-External-ID: <iam_users.uuid>       (the user who clicked the button)
 - The engine resolves the tenant and user, checks the membership role, and applies RLS as with any other key.
 - Requests without `X-Actor-External-ID` run as the platform itself (for background jobs in leo4), with the platform key's own role.
 - Audit events record both: `actor = user <engine id> (plusclouds:<user uuid>) via platform key <key id>`.
+- **The leo4 client** follows the pattern PlusClouds already uses for service-to-service calls to its AI service (`AIAssistanceService` with an `envelope` of `{ account, user }`): a `MonitoringService::request($path, $data, $method, $envelope)` class maps `$envelope['account']` to `X-Tenant-External-ID` and `$envelope['user']` to `X-Actor-External-ID`. The engine takes these as headers, not as a body field, because `GET` and `DELETE` have no body and request schemas stay free of auth data.
+- Differences from the AI service's `InternalAppAuthenticate`, on purpose: the engine accepts **UUIDs only**, never PlusClouds' internal integer IDs; an actor that is not a member of the tenant gets `403` instead of the request silently running as the account; the platform key is IP-restricted and every use is audited with both identities.
 - **Standalone installs** do not use any of this. They use tenant API keys as in [ADR-0007](0007-api-spec-first-openapi.md), and tenants, users and memberships are created locally with no `external_source`.
 
 ### External IDs on every resource
@@ -105,7 +107,16 @@ Checks, incidents and collector-created child devices do not need client-set ext
 
 ### External IDs in outgoing events
 
-Webhook and SSE events include the external identifiers of the tenant, the device (and its parent path), and the acting user (for acknowledgements), next to the engine's own IDs. PlusClouds can then act on an event without looking anything up. The rest of the payload is designed separately with PlusClouds.
+Webhook and SSE events include the external identifiers of the tenant, the device (and its parent path), and the acting user (for acknowledgements), next to the engine's own IDs. PlusClouds can then act on an event without looking anything up. The envelope is the CloudEvents 1.0 shape PlusClouds already uses for its own events, with `data.account_id` set to the PlusClouds account UUID ([ADR-0009](0009-webhook-delivery.md)).
+
+### PlusClouds receiver
+
+leo4 receives engine events on one endpoint, verifies the Standard Webhooks signature with the code its `event_webhook` pusher already uses, and **re-fires each event through its own event system** (`Events::fire`). From there, PlusClouds' existing listeners and pushers deliver it: email and SMS (`event_message`), the panel inbox (`event_inapp`), chat (`event_chat`), CRM (`event_crm_opportunity`) and the NATS live stream to the panel (`client.{account_uuid}.evt`).
+
+- The engine keeps one outgoing channel. Who is notified, through what and when is configured with PlusClouds listeners (`conditions`, `time_window`, recipient accounts), not in the engine.
+- The panel gets live monitoring updates over its existing NATS stream, without connecting to the engine's SSE stream.
+- `Events::fire` expects an Eloquent model today, so leo4 needs either a small mirror model for monitoring incidents or a variant that fires from an envelope. This is PlusClouds-side work.
+- leo4 registers its receiver as a webhook endpoint of each tenant through `PUT /v1/webhooks/by-external-id/…` when the account enables monitoring.
 
 ## Consequences
 

@@ -48,7 +48,7 @@ Acknowledgement belongs to the incident, not the state: an acknowledged incident
 
 ### Flap detection
 
-- Keep the last 21 status transitions per check. If more than 30 % of the last 20 intervals had a transition, mark the check **flapping**: send one `incident.opened` (or update) with `flapping: true`, then suppress further open/resolve events until the rate drops below 20 %.
+- Keep the last 21 status transitions per check. If more than 30 % of the last 20 intervals had a transition, mark the check **flapping**: send one `monitoring.incident.opened` (or update) with `flapping: true`, then suppress further open/resolve events until the rate drops below 20 %.
 
 ### Incidents
 
@@ -80,7 +80,7 @@ In the MVP, state for a check is processed only by the node that owns its shard.
 
 ## Acceptance criteria
 
-- A single failed ping produces no notification; three in a row produce exactly one `incident.opened`.
+- A single failed ping produces no notification; three in a row produce exactly one `monitoring.incident.opened`.
 - A value oscillating between 88 and 92 with threshold 90 and hysteresis 5 produces one incident, not many.
 - A check toggling every interval produces one flapping notification in 20 intervals.
 - Engine processing at 1,000 results/s adds under 50 ms p99 latency between result and state write.

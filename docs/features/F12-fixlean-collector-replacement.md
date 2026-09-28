@@ -74,7 +74,7 @@ labels: { vendor: "{vendor}" }
 ### Auto-registration
 
 - The first message from an unknown MAC on a tenant credential creates a device: `type: sensor`, `name` = MAC, external ID `{source: mac, id: <MAC>}`, tag `vendor`, and a `push.mqtt` check using the `fixlean-esp` profile.
-- The **tenant's `max_devices` limit** replaces the per-message license call. PlusClouds (or the FixLean license service through PlusClouds) sets the limit and status when provisioning the tenant ([ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)). Over the limit, messages are dropped and counted, the device appears in `GET /v1/ingest/unregistered`, and one `tenant.device_limit_reached` event is sent.
+- The **tenant's `max_devices` limit** replaces the per-message license call. PlusClouds (or the FixLean license service through PlusClouds) sets the limit and status when provisioning the tenant ([ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)). Over the limit, messages are dropped and counted, the device appears in `GET /v1/ingest/unregistered`, and one `monitoring.tenant.device_limit_reached` event is sent.
 - Auto-registration can be turned off per tenant (only pre-registered devices accepted).
 
 ### Field discovery and metric metadata
@@ -111,11 +111,11 @@ Current rules map onto the engine's threshold rules ([F05](F05-state-and-inciden
 
 | Today (STOMP `/topic/utesk`) | Engine |
 | --- | --- |
-| `sensor-threshold-triggered` (10) | `incident.opened` / `incident.updated` for a threshold incident |
-| `sensor-threshold-resolved` (11) | `incident.resolved` |
-| sensor silent | `incident.opened` on the `mqtt.connection` check |
-| sensor recovered | `incident.resolved` on the `mqtt.connection` check |
-| live telemetry tick (throttled) | SSE `GET /v1/events` event `telemetry.tick`, throttled per device (default one per 5 s), only for subscribers that ask for it |
+| `sensor-threshold-triggered` (10) | `monitoring.incident.opened` / `monitoring.incident.updated` for a threshold incident |
+| `sensor-threshold-resolved` (11) | `monitoring.incident.resolved` |
+| sensor silent | `monitoring.incident.opened` on the `mqtt.connection` check |
+| sensor recovered | `monitoring.incident.resolved` on the `mqtt.connection` check |
+| live telemetry tick (throttled) | SSE `GET /v1/events` event `monitoring.telemetry.tick`, throttled per device (default one per 5 s), only for subscribers that ask for it |
 
 Every event carries the device's external IDs (MAC and the BMS `__dataId` if linked), so FixLean consumers can keep keying by them.
 

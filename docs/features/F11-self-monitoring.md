@@ -41,7 +41,7 @@ Built-in checks on the "monitor" device, alerting through normal routes:
 
 The engine cannot report its own death, so it sends a heartbeat that something external expects:
 
-- A configured list of heartbeat URLs (for example healthchecks.io, a second monitor instance, or an n8n webhook with its own timeout logic) receives a signed `monitor.heartbeat` event every 60 s.
+- A configured list of heartbeat URLs (for example healthchecks.io, a second monitor instance, or an n8n webhook with its own timeout logic) receives a signed `monitoring.heartbeat` event every 60 s.
 - The heartbeat is sent only if the core loop is healthy: the engine processed results in the last minute, the notifier delivered or had nothing to deliver, and the database is reachable. A process that is up but stuck therefore stops heartbeating.
 - For HA installs, the heartbeat is sent by whichever node holds the `maintenance` lock, and includes the node count.
 

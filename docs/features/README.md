@@ -54,7 +54,7 @@ flowchart LR
 | Milestone | Contents | Demo |
 | --- | --- | --- |
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, HTTP and ping plugins | Create a tenant and key; `GET /v1/plugins` lists two plugins |
-| M2 — first loop | F02, F04, F05, F06 (single node) | Add a device with a ping and HTTP check; stop the target; a signed `incident.opened` webhook arrives in n8n |
+| M2 — first loop | F02, F04, F05, F06 (single node) | Add a device with a ping and HTTP check; stop the target; a signed `monitoring.incident.opened` webhook arrives in n8n |
 | M3 — metrics | F07, Grafana data source and first dashboards | Interface and latency graphs in Grafana; retention changed via API drops partitions |
 | M4 — targets | F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Our datacenter's switches, servers, cameras and XCP-ng pool are monitored |
 | M5 — push and probes | F08, F09 (basic), F11 | MQTT sensors report; one remote site runs a probe; the dead man's switch fires when the core stops |

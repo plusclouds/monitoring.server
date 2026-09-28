@@ -61,7 +61,7 @@ Stored on the tenant, set by PlusClouds from the account's plan when provisionin
 
 ### Bootstrap
 
-`monitor admin bootstrap` creates the **platform tenant** (which holds the built-in "monitor" device and self-monitoring checks, [F11](F11-self-monitoring.md)) and the platform key for leo4, and prints the key once. `monitor admin bootstrap --standalone --tenant "Name"` creates the platform tenant, a local tenant and an admin API key, for installs without PlusClouds. Both refuse to run twice, and both write audit events like API writes do.
+`monitor admin bootstrap` generates the **installation ID** (a UUID that identifies this engine in event `source` fields and usage reports, [ADR-0009](../adr/0009-webhook-delivery.md), [F13](F13-usage-metering.md)), creates the **platform tenant** (which holds the built-in "monitor" device and self-monitoring checks, [F11](F11-self-monitoring.md)) and the platform key for leo4, and prints the key once. `monitor admin bootstrap --standalone --tenant "Name"` creates the platform tenant, a local tenant and an admin API key, for installs without PlusClouds. Both refuse to run twice, and both write audit events like API writes do.
 
 ## API
 

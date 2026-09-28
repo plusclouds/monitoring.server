@@ -245,7 +245,7 @@ Notifications go out through **one channel: a signed webhook.** The engine emits
 
 Escalation state stays in the engine: routes match incidents by severity, tags and tenant, and each route has steps (notify now, escalate after N minutes unacknowledged). Each step is another webhook event with a different recipient or severity.
 
-> The webhook event schema must be compatible with PlusClouds and will be defined in the API documentation.
+Events use the same CloudEvents 1.0 envelope and Standard Webhooks signing as PlusClouds' own event pushers ([ADR-0009](adr/0009-webhook-delivery.md)). PlusClouds receives them on one endpoint and re-fires them into its existing listeners, so email, SMS, panel inbox, chat and live panel updates come from PlusClouds' notification system ([ADR-0012](adr/0012-plusclouds-identity-and-external-ids.md#plusclouds-receiver)).
 
 ---
 
@@ -353,7 +353,7 @@ Gates are proposals; dates are not set yet.
 ## 11. Open questions
 
 - [x] **MQTT specifics:** taken from `fixleanplus.metric.collector`, which the engine replaces. See [F12](features/F12-fixlean-collector-replacement.md) for the topic and payload profile and the remaining migration questions.
-- [ ] **Webhook event schema and signing:** must be compatible with PlusClouds. To be defined in the API documentation.
+- [x] **Webhook event schema and signing:** CloudEvents 1.0 envelope and Standard Webhooks signing, shared with PlusClouds ([ADR-0009](adr/0009-webhook-delivery.md)).
 
 ---
 
