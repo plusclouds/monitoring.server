@@ -25,7 +25,7 @@ Role boundaries:
 
 - **api** — REST API, auth, audit, SSE event stream. Stateless.
 - **runner** — owns a set of scheduler shards; schedules and executes checks and collectors for them. The scheduler and workers are one component, so there is no work queue between them (see [F04](../features/F04-scheduler-and-runner.md)).
-- **engine** — consumes results, runs the state machine, writes state, incidents and metrics.
+- **engine** — consumes results, runs the state machine, writes state, incidents and metrics. Also serves the probe protocol ([ADR-0005](0005-probe-protocol.md)) on its own listener, because probe results go straight into the engine.
 - **notifier** — delivers outbox events as signed webhooks.
 - **ingest** — MQTT subscriber, HTTP push endpoint and (phase 2) SNMP trap and syslog listeners. Runs on its own listener, separate from the management API, as the security section requires.
 - **maintenance** — creates and drops metric partitions, computes rollups. Runs under a PostgreSQL advisory lock so only one instance is active.

@@ -53,9 +53,10 @@ database:
     dsn_file: /run/secrets/monitor_db_app_dsn       # required with role api
     max_conns: 20
   system:
-    # BYPASSRLS. Used by runner, engine, notifier, ingest and maintenance, and
-    # by the api role only for key lookup and platform provisioning.
-    dsn_file: /run/secrets/monitor_db_system_dsn    # required
+    # BYPASSRLS. Used by runner, engine, notifier, ingest and maintenance.
+    # The api role never uses it: key lookup and just-in-time provisioning go
+    # through SECURITY DEFINER functions (ADR-0008).
+    dsn_file: /run/secrets/monitor_db_system_dsn    # required except for api-only nodes
     max_conns: 40
   # One session connection per node for LISTEN/NOTIFY. It must not go through
   # a transaction-mode PgBouncer. Default: the system DSN.
@@ -69,9 +70,8 @@ database:
 # ---------------------------------------------------------------------------
 metrics:
   backend: auto            # auto | postgres | timescale (auto = timescale when the extension exists)
-  # Separate database for metrics. Default: the config database, with the
-  # same owner/app/system roles.
-  dsn_file: ""
+  # Metrics share the config database in the MVP (ADR-0008). A separate
+  # metrics database is a later option.
   write:
     batch_rows: 5000
     flush_interval: 1s
@@ -156,7 +156,7 @@ api:
 
 # ---------------------------------------------------------------------------
 # Probe service: core side of the probe protocol (ADR-0005, F09)
-# Runs on nodes with the engine role, because probe results go straight to
+# Part of the engine role (ADR-0001), because probe results go straight to
 # the engine.
 # ---------------------------------------------------------------------------
 probe_service:
