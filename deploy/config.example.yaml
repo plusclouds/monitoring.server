@@ -1,0 +1,337 @@
+# monitoring.server: process configuration (reference, every key shown)
+#
+# Read by `monitor serve`, `monitor migrate` and `monitor admin`.
+# Remote probes use a smaller file: see probe.example.yaml.
+#
+# Scope (ADR-0011): only process-level settings live here: node identity, roles,
+# listeners, database, key provider, resource limits and platform-wide policies.
+# Tenant-facing data (tenants, devices, checks, credentials, webhooks, routes,
+# retention policies, tenant limits) lives in the database and is managed
+# through the API, never in this file.
+#
+# Conventions
+# - Values shown are the defaults. "required" marks keys without a default.
+# - Environment override: MONITOR_ + key path in upper case, "__" between levels.
+#     database.app.dsn        -> MONITOR_DATABASE__APP__DSN
+#     api.listen              -> MONITOR_API__LISTEN
+#   Lists are comma-separated in environment variables.
+# - Secrets: any key ending in `_file` reads the value from that file
+#   (container and systemd secrets). The inline key without `_file` also works,
+#   for development only. Setting both is a startup error.
+# - Durations use Go syntax (500ms, 30s, 5m, 24h). Sizes use IEC units (KiB, MiB).
+# - Unknown keys are a startup error, so typos fail loudly.
+# - Changes need a restart, except logging.level (reloaded on SIGHUP).
+
+node:
+  # Unique name of this process among running nodes. Recorded as owner of
+  # scheduler shard leases, MQTT sessions and the maintenance lock.
+  # Default: the hostname.
+  id: ""
+  # Roles this process runs (ADR-0001). `--roles` on the command line wins.
+  # In the MVP, runner requires engine in the same process.
+  roles: [api, runner, engine, notifier, ingest, maintenance]
+  # Time to finish in-flight checks, deliveries and flushes on SIGTERM.
+  shutdown_grace: 30s
+
+logging:
+  level: info            # debug | info | warn | error
+  format: json           # json | text (text for local development)
+
+# ---------------------------------------------------------------------------
+# Database (ADR-0002, ADR-0008)
+# ---------------------------------------------------------------------------
+database:
+  # Three PostgreSQL roles, because RLS only works when the application is not
+  # the table owner and not BYPASSRLS.
+  owner:
+    # Owns the schema. Used only to run migrations (at startup and by
+    # `monitor migrate`), then closed.
+    dsn_file: /run/secrets/monitor_db_owner_dsn     # required
+  app:
+    # Subject to RLS. Used by the api role for tenant requests.
+    # INSERT and SELECT only on audit_events.
+    dsn_file: /run/secrets/monitor_db_app_dsn       # required with role api
+    max_conns: 20
+  system:
+    # BYPASSRLS. Used by runner, engine, notifier, ingest and maintenance, and
+    # by the api role only for key lookup and platform provisioning.
+    dsn_file: /run/secrets/monitor_db_system_dsn    # required
+    max_conns: 40
+  # One session connection per node for LISTEN/NOTIFY. It must not go through
+  # a transaction-mode PgBouncer. Default: the system DSN.
+  listen_dsn_file: ""
+  migrate_on_start: true   # under an advisory lock; false = run `monitor migrate up` yourself
+  connect_timeout: 5s
+  statement_timeout: 30s
+
+# ---------------------------------------------------------------------------
+# Metrics store (ADR-0003, F07)
+# ---------------------------------------------------------------------------
+metrics:
+  backend: auto            # auto | postgres | timescale (auto = timescale when the extension exists)
+  # Separate database for metrics. Default: the config database, with the
+  # same owner/app/system roles.
+  dsn_file: ""
+  write:
+    batch_rows: 5000
+    flush_interval: 1s
+    # Data held in memory while flushes fail. Beyond this the oldest rows are
+    # dropped and counted in metrics_dropped_total.
+    max_buffered: 60s
+  partitions_ahead: 72h
+  rollups:
+    five_minute_every: 1m
+    hourly_every: 10m
+  retention_every: 1h
+  query:
+    max_points_per_series: 10000
+
+# ---------------------------------------------------------------------------
+# Encryption (ADR-0006)
+# ---------------------------------------------------------------------------
+crypto:
+  key_provider: file       # file (MVP); vault and cloud KMS later
+  file:
+    # Key-encryption keys: 32 random bytes, base64. Every listed key can
+    # decrypt; `active` encrypts new secrets.
+    # Rotation: add a key, make it active, restart, run
+    # `monitor admin rewrap-credentials`, then remove the old key.
+    # Losing every KEK makes all stored credentials unrecoverable: back them up.
+    active: kek-2026-09                              # required
+    keys:
+      - id: kek-2026-09
+        path: /run/secrets/monitor_kek_2026_09
+      # - id: kek-2026-03
+      #   env: MONITOR_KEK_2026_03
+  # vault:
+  #   address: https://vault.example.com
+  #   transit_mount: transit
+  #   key_name: monitor
+  #   token_file: /run/secrets/vault_token
+
+# ---------------------------------------------------------------------------
+# TLS policy, shared by every listener and outgoing connection
+# ---------------------------------------------------------------------------
+tls:
+  min_version: "1.2"       # 1.3 is always preferred when both sides support it
+  # TLS 1.2 cipher suites. Empty = built-in list (ECDHE with AES-GCM or
+  # ChaCha20-Poly1305 only). TLS 1.3 suites are fixed by Go.
+  cipher_suites: []
+
+# Outgoing connections made on behalf of tenants (HTTP checks, webhooks).
+outbound:
+  # Always refused for every tenant, including the platform tenant, checked
+  # after DNS resolution. Tenant allowed_target_networks apply on top.
+  deny_networks:
+    - 169.254.169.254/32   # cloud metadata
+    - fd00:ec2::254/128
+  # Proxy for webhook deliveries and heartbeats only. Checks always connect
+  # directly, since they measure the path to the target.
+  http_proxy: ""
+  user_agent: "monitor/{version}"
+
+# ---------------------------------------------------------------------------
+# api role (ADR-0007, F01)
+# ---------------------------------------------------------------------------
+api:
+  listen: ":8443"
+  # URL clients use to reach the API. Shown in probe install instructions.
+  public_url: ""                                     # required with role api
+  # Omit tls only when a trusted proxy terminates TLS. A plain-text listener
+  # on a non-loopback address without trusted_proxies is a startup error.
+  tls:
+    cert_file: /etc/monitor/tls/api.crt
+    key_file: /etc/monitor/tls/api.key
+  # Proxies allowed to set X-Forwarded-For. The resulting client IP is used
+  # for audit source_ip, key IP allowlists and rate limits.
+  trusted_proxies: []
+  max_body: 4MiB           # config/apply bodies are the largest
+  request_timeout: 90s     # above the 60 s device test
+  idempotency_ttl: 24h
+  # Rate limit for platform keys. Tenant keys use the tenant's api_rate_per_minute.
+  platform_rate_per_minute: 6000
+  events:
+    replay_window: 10m     # SSE Last-Event-ID replay
+    telemetry_tick_interval: 5s
+
+# ---------------------------------------------------------------------------
+# Probe service: core side of the probe protocol (ADR-0005, F09)
+# Runs on nodes with the engine role, because probe results go straight to
+# the engine.
+# ---------------------------------------------------------------------------
+probe_service:
+  enabled: true
+  listen: ":8444"
+  public_url: ""           # URL probes connect to; required when enabled
+  tls:                     # server certificate; client certificates come from the probe CA
+    cert_file: /etc/monitor/tls/probe.crt
+    key_file: /etc/monitor/tls/probe.key
+  enrollment_token_ttl: 24h
+  certificate_lifetime: 720h    # renewed by the probe at 2/3 of lifetime
+  silence_after: 60s            # missed heartbeats before a probe is silent
+  clock_offset_warning: 2s
+  max_results_per_push: 1000
+
+# ---------------------------------------------------------------------------
+# runner role (F04). Probes accept the same keys in probe.example.yaml.
+# ---------------------------------------------------------------------------
+runner:
+  shard_lease: 15s
+  shard_renew: 5s
+  resync_interval: 5m
+  # Concurrent executions per node, split into two pools so slow table walks
+  # and collectors never delay fast checks.
+  pools:
+    fast: 1500             # icmp, tcp, udp, http, tls, dns
+    slow: 500              # SNMP walks, Redfish, IPMI, XAPI, RTSP, collectors
+  per_target_concurrency: 4
+  timeouts:
+    fraction_of_interval: 0.8
+    check_max: 60s
+    collector_max: 5m
+  result_buffer: 10000     # bounded channel to the engine; full = backpressure
+  icmp:
+    mode: auto             # auto | privileged (CAP_NET_RAW) | unprivileged (ping_group_range)
+  # Source addresses for outgoing checks on multi-homed hosts. Empty = OS choice.
+  # A check may set its own source address.
+  source_addresses:
+    ipv4: ""
+    ipv6: ""
+  dns_resolvers: []        # resolvers for check targets; empty = system resolver
+
+# ---------------------------------------------------------------------------
+# engine role (F05)
+# The state rules themselves (late = 2x interval, stale = 3x interval,
+# flapping at 30 %/20 %) are fixed by F05 and not configurable here.
+# Per-check options (failure_count, dependency_grace, ...) are set via the API.
+# ---------------------------------------------------------------------------
+engine:
+  state_writers: 16        # parallel state/incident transactions
+
+# ---------------------------------------------------------------------------
+# notifier role (ADR-0009, F06)
+# ---------------------------------------------------------------------------
+notifier:
+  workers: 32
+  claim_batch: 100
+  poll_interval: 1s
+  delivery_timeout: 10s        # default when an endpoint sets no timeout
+  max_delivery_timeout: 30s    # cap for endpoint timeouts
+  retry_schedule: [5s, 30s, 2m, 10m, 30m, 1h]   # last value repeats
+  give_up_after: 24h
+  secret_rotation_overlap: 24h
+  response_capture: 1KiB
+
+# ---------------------------------------------------------------------------
+# ingest role (F08, ADR-0013, F12)
+# ---------------------------------------------------------------------------
+ingest:
+  http:
+    enabled: true
+    listen: ":9443"
+    public_url: ""
+    tls:
+      cert_file: /etc/monitor/tls/ingest.crt
+      key_file: /etc/monitor/tls/ingest.key
+    trusted_proxies: []
+    max_body: 64KiB
+    rate_limit:                # per ingest token
+      per_second: 1
+      burst: 10
+
+  mqtt:
+    # Embedded broker. External-broker mode is configured per tenant through
+    # /v1/ingest/mqtt-brokers, not here.
+    enabled: true
+    listen: ":8883"
+    tls:
+      cert_file: /etc/monitor/tls/mqtt.crt
+      key_file: /etc/monitor/tls/mqtt.key
+      client_ca_file: ""       # CA for device client certificates; empty = password auth only
+    # Plain-text listener for FixLean devices during migration (F12). Only
+    # tenants with a legacy credential can use it. Keep off unless migrating.
+    legacy:
+      enabled: false
+      listen: ":1883"
+    # Read the client IP from a PROXY protocol header, for layer 4 load
+    # balancers. Needed for per-IP connect limits behind a load balancer.
+    proxy_protocol: false
+    trusted_proxies: []
+    max_connections: 20000
+    max_packet_size: 64KiB
+    publish_rate:              # per client
+      per_second: 10
+      burst: 50
+    connect_rate_per_ip:
+      per_second: 5
+      burst: 20
+    pipeline_buffer: 50000     # QoS 1 is acknowledged only after a message enters this buffer
+    credential_cache_ttl: 60s
+    # Argon2id for device passwords. A node restart reconnects every device at
+    # once, so hashing is capped by max_concurrent_auth.
+    password_hash:
+      memory: 19MiB
+      iterations: 2
+      parallelism: 1
+    max_concurrent_auth: 16
+    # Default cap on telemetry fields discovered per device (F12).
+    max_discovered_fields: 200
+
+  # Phase 2
+  # snmp_traps:
+  #   enabled: false
+  #   listen: ":162"
+  # syslog:
+  #   enabled: false
+  #   listen_udp: ":514"
+  #   listen_tcp: ":6514"
+
+# ---------------------------------------------------------------------------
+# Platform-wide policies (F01, ADR-0012)
+# ---------------------------------------------------------------------------
+platform:
+  # external_source recorded on tenants and users created through the
+  # platform key. Standalone installs never use it.
+  identity_source: plusclouds
+  # Just-in-time provisioning for unknown accounts and users seen with the
+  # platform key. New tenants get these limits until leo4 sends real ones.
+  jit:
+    enabled: true
+    tenant_limits:
+      max_devices: 0
+      max_checks: 0
+      min_check_interval_seconds: 60
+      api_rate_per_minute: 600
+  # Starting values for tenants created without explicit limits
+  # (standalone bootstrap, provisioning calls that omit a field).
+  tenant_defaults:
+    max_devices: 1000
+    max_checks: 10000
+    min_check_interval_seconds: 30
+    api_rate_per_minute: 1200
+    # Empty = everything except RFC 1918, loopback and link-local.
+    allowed_target_networks: []
+    metric_classes: [standard]
+  tenant_purge_grace: 720h      # soft-deleted tenant data is purged after this
+  audit_retention: 8760h        # applied by partition drop; source IPs are personal data
+
+# ---------------------------------------------------------------------------
+# Monitoring the monitor (F11)
+# ---------------------------------------------------------------------------
+self_monitoring:
+  # /metrics, /healthz, /readyz. No TLS and no tenant data: keep it off
+  # public networks. Public listeners also answer /healthz and /readyz.
+  listen: "127.0.0.1:9090"
+  # Store self-metrics on the built-in "monitor" device in the platform
+  # tenant, so Grafana and the API show them without Prometheus.
+  store_as_metrics: true
+  clock_offset_warning: 2s      # this node against the database clock
+  # Dead man's switch. Sent by the node holding the maintenance lock, only
+  # while the core loop is healthy.
+  heartbeat:
+    interval: 60s
+    targets: []
+    # - url: https://hc-ping.com/<uuid>
+    # - url: https://monitor-b.example.com/ingest/v1/<check_id>
+    #   token_file: /run/secrets/heartbeat_token
+    #   secret_file: /run/secrets/heartbeat_signing_secret   # Standard Webhooks signature

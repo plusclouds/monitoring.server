@@ -1,0 +1,93 @@
+# monitoring.server: remote probe configuration (reference, every key shown)
+#
+# Read by `monitor probe`. Same conventions as config.example.yaml
+# (MONITOR_* overrides with "__" between levels, `_file` for secrets,
+# unknown keys are an error).
+#
+# A probe has no database access and no key provider. Its checks, their
+# configs and the credentials they need come from the core (ADR-0005) and
+# are held in memory only.
+#
+# Enrollment, two ways:
+# - One-time token from POST /v1/probes: pass it once with
+#     monitor probe --config /etc/monitor/probe.yaml --enroll-token <token>
+# - Preshared token from the core's probe_service.preshared_enrollment_tokens:
+#     set probe.name and probe.enroll_token_file below and start the probe.
+# The token is used only while state_dir holds no certificate; after
+# enrollment it is ignored and can be removed.
+
+probe:
+  core_url: https://monitor.example.com:8444        # required
+  # Required with a preshared token: the probe is created under this name,
+  # unique per tenant. Ignored for one-time tokens (the name comes from the API).
+  name: ist-1-rack-12
+  site: ist-1              # optional, overrides the token's default site
+  enroll_token_file: /run/secrets/monitor_probe_enroll_token
+  # Extra CA bundle to trust the core's server certificate. Empty = system roots.
+  core_ca_file: ""
+  # Private key, client certificate and result buffer. The key is created here
+  # at enrollment and never leaves the host.
+  state_dir: /var/lib/monitor-probe
+  buffer:
+    max_size: 512MiB       # on-disk ring buffer for results while the core is unreachable
+  heartbeat_interval: 10s
+  # For sites where outbound HTTPS must go through a proxy. HTTPS_PROXY is
+  # honored too. Only the connection to the core uses it; checks connect directly.
+  http_proxy: ""
+
+logging:
+  level: info
+  format: json
+
+# Local HTTPS server for people on the probe's own network (F09). The core
+# never connects to it: the probe stays outbound-only toward the core, and
+# this server is the only way to see the probe when the core is unreachable.
+#
+#   GET /healthz          liveness, no authentication (systemd, containers)
+#   GET /readyz           enrolled, certificate valid, assignment received
+#   GET /status           full status as JSON; a browser gets an HTML page
+#   GET /status/checks    per-check last run, status, duration and error
+#   GET /metrics          Prometheus exposition
+#
+# Everything except /healthz requires `Authorization: Bearer <status token>`.
+http:
+  enabled: true
+  # Loopback by default. Set to ":9443" (or a LAN address) to reach it from
+  # other machines on the site network.
+  listen: "127.0.0.1:9443"
+  tls:
+    # Empty = a self-signed certificate is created in state_dir on first
+    # start (hostname and listen addresses as SANs) and its SHA-256
+    # fingerprint is logged. Provide files to use a certificate from your own CA.
+    cert_file: ""
+    key_file: ""
+    # Plain HTTP is allowed only on a loopback listen address.
+    disabled: false
+  # Status token. Empty = one is generated at first start and written to
+  # state_dir/status-token (mode 0600). `monitor probe status` reads it from there.
+  status_token_file: ""
+  # Source networks allowed to connect. Empty = any.
+  allowed_networks: []
+
+# Same meaning as in config.example.yaml. Defaults are sized for a small
+# probe (1 vCPU, 256 MB RAM, about 1,000 checks per minute).
+runner:
+  pools:
+    fast: 200
+    slow: 50
+  per_target_concurrency: 4
+  timeouts:
+    fraction_of_interval: 0.8
+    check_max: 60s
+    collector_max: 5m
+  result_buffer: 2000
+  icmp:
+    mode: auto
+  source_addresses:
+    ipv4: ""
+    ipv6: ""
+  dns_resolvers: []
+
+tls:
+  min_version: "1.2"
+  cipher_suites: []
