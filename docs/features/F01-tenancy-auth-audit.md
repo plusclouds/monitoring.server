@@ -16,7 +16,7 @@ Every object in the engine belongs to a tenant. When connected to PlusClouds, a 
 | Platform key acting for a user via headers | |
 | Tenant API keys with roles `read-only`, `operator`, `admin` | |
 | RLS on every tenant table | Per-tenant Grafana logins (phase 3) |
-| Audit log for every write, queryable via API | Audit export to external SIEM |
+| Audit log for every write, queryable via API; hash chain and verification | Audit export to external SIEM (phase 2) |
 | Bootstrap command for the platform key and first tenant | |
 
 ## Data
@@ -58,6 +58,16 @@ Stored on the tenant, set by PlusClouds from the account's plan when provisionin
 - Written in the same transaction as the change it describes.
 - Fields: `id`, `tenant_id`, `actor_user_id` and its `external_id` (when a user acted), `api_key_id`, `action` (`device.update`), `object_type`, `object_id`, `before`, `after` (JSON, secrets replaced by `"[changed]"`), `request_id`, `source_ip`, `at`.
 - The application database role has `INSERT` and `SELECT` only on the audit table; no `UPDATE` or `DELETE`. Retention is set by a platform-level policy and applied by partition drop.
+- **Tamper evidence:** each event stores the SHA-256 of the previous event of the same tenant (`prev_hash`) and its own hash. `monitor admin verify-audit [--tenant]` walks the chain and reports the first broken link, so changes made with database superuser rights are detectable. Partition drops record the last hash of the dropped range, so the chain stays verifiable after retention.
+- **Sensitive reads and failures are audited too:** `config.export`, `credential.test`, audit log queries, reads of captured LLM content ([F14](F14-llm-monitoring.md)), and failed API authentication (key prefix, source IP, reason; never the presented secret).
+- **Privileged commands** (`monitor admin bootstrap`, `rewrap-credentials`, `verify-audit`, `gen-token`) write audit events like API writes, with actor `admin-cli` and the host name.
+- **SIEM export (phase 2):** audit events are streamed as they are written to a syslog (RFC 5424 over TLS) or HTTPS target set in the process config, so logs can be kept off the engine's host.
+
+### Access review
+
+- `GET /v1/api-keys?stale=90d` lists keys unused for the given period and keys without an expiry, for periodic access reviews.
+- Tenants have `max_api_key_lifetime` (default none; PlusClouds can set it per plan). Keys created above it are rejected, and existing keys past it stop working.
+- Platform key use from a source outside its IP allowlist is refused and raises a security alert ([F11](F11-self-monitoring.md)).
 
 ### Bootstrap
 

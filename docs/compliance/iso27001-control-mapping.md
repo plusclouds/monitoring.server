@@ -94,6 +94,8 @@ The engine's own risks to enter in the risk register:
 
 ## Gap summary by owner
 
+**Update 2026-09-28:** every engine-side gap below is now written into its owner document (F01, F11, ADR-0011, design section 8, F03, F08, F12). The control status changes to **Covered** once the feature is implemented and tested. Operator items stay with the operator.
+
 | Owner | Items |
 | --- | --- |
 | F01 | Audit hash chain and verify command; audit sensitive reads and failed authentication; SIEM export in phase 2; stale-key review and maximum key lifetime; audit events from `monitor admin` commands |

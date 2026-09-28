@@ -36,6 +36,18 @@ Built-in checks on the "monitor" device, alerting through normal routes:
 - Rollup lag above 30 minutes.
 - Probe silent (from [F09](F09-remote-probes.md)).
 - Webhook endpoint failing for more than 1 hour.
+- Core node clock offset against the database clock above 2 s (probes already report theirs).
+
+### Security alerts
+
+Built-in checks on the "monitor" device for security signals, alerting through the same routes:
+
+- Failed API authentication above a rate per source IP or per key prefix.
+- Rate-limited requests above a rate per key.
+- MQTT authentication failures and ACL denials above a rate per source IP or credential ([ADR-0013](../adr/0013-embedded-mqtt-broker.md)).
+- Platform key used, or attempted, from a source outside its IP allowlist ([ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)).
+- A revoked probe certificate presented again ([ADR-0005](../adr/0005-probe-protocol.md)).
+- Audit chain verification failure ([F01](F01-tenancy-auth-audit.md)), from a daily `verify-audit` run by the `maintenance` role.
 
 ### Dead man's switch
 

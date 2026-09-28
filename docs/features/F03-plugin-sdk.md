@@ -83,6 +83,7 @@ The `Check`, `Collector` and `Ingester` interfaces are as in the design document
 - A new check plugin can be added in one package without editing any other file except `plugins/all`.
 - A plugin that panics or ignores its context produces an UNKNOWN result with a clear message and does not stall the runner.
 - `GET /v1/plugins` returns valid JSON Schema for every plugin (validated in CI).
+- Every plugin that parses data from a device (SNMP responses, Redfish JSON, XAPI and RRD data, RTSP/SDP) has a Go fuzz test for its parser, run in CI.
 
 ## Decided
 

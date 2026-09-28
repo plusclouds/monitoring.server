@@ -149,6 +149,7 @@ Rollback during step 3 is moving the broker hostname back to the collector.
 - Pulling a sensor's power opens one offline incident within keepalive × 1.5; threshold incidents on that sensor are suppressed.
 - A device credential cannot publish under another MAC or subscribe to `#`.
 - A tenant at its device limit does not gain devices, and existing devices keep reporting.
+- The `fixlean-esp` profile parser has a fuzz test seeded with the collector's recorded payloads.
 
 ## Open questions
 

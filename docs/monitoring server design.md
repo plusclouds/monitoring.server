@@ -299,7 +299,8 @@ A monitoring system holds credentials for nearly every device, so it is a high-v
 - **SNMPv3 authPriv by default.** Allow v2c only per device, with source-IP ACLs on the device side.
 - **Probe trust.** Probes enroll with a one-time token, then use mutual TLS; they only make outbound connections to the core.
 - **Ingestion isolation.** Push endpoints (HTTP, MQTT) run separately from the management API, with per-device credentials that can be revoked individually.
-- **API security.** Scoped keys, rate limits, audit log for every write, TLS everywhere.
+- **API security.** Scoped keys, rate limits, audit log for every write (tamper-evident with a hash chain), TLS everywhere.
+- **TLS policy.** One policy for every listener (API, ingest, MQTT on 8883, probe service, status servers) and every outgoing connection (webhooks, probes to the core): TLS 1.2 minimum, TLS 1.3 preferred, TLS 1.2 limited to ECDHE key exchange with AES-GCM or ChaCha20-Poly1305. Plain text only on loopback listeners and on the legacy MQTT listener for migrating FixLean tenants ([F12](features/F12-fixlean-collector-replacement.md)), which is off by default and time-limited per tenant.
 - **Signed webhooks.** Every outgoing event is signed so receivers can verify it.
 - **SSRF guard.** HTTP checks can target internal addresses; restrict targets per tenant.
 - **Tenant isolation.** Enforced in every query, including metric labels.

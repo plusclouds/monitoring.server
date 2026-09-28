@@ -55,6 +55,7 @@ Pushed timestamps are accepted from up to 24 h in the past (devices that buffer 
 - Stopping the sensor opens an incident after 3 missed intervals, and it resolves on the next message.
 - A leaked ingest token can be revoked without affecting any other device.
 - 5,000 MQTT messages/s on one ingest node without message loss at QoS 1.
+- The HTTP push body parser, the MQTT payload profiles and mapping selectors, and (phase 2) the SNMP trap and syslog parsers have Go fuzz tests run in CI; no input crashes the ingest role or exceeds its memory limits.
 
 ## Open questions
 
