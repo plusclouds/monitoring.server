@@ -1,6 +1,6 @@
 # Monitoring Engine — Design Documentation
 
-**Status:** Planning · **Last updated:** 2026-09-27 · **Owner:** Harun Barış Bulut (PlusClouds)
+**Status:** Planning · **Last updated:** 2026-09-28 · **Owner:** Harun Barış Bulut (PlusClouds)
 **License:** MIT · **Repository:** PlusClouds GitHub
 
 ---
@@ -60,6 +60,13 @@ The engine is open source (MIT) and developed in the PlusClouds GitHub. It runs 
 | Hypervisors | XenServer/XCP-ng first, then VMware, then Proxmox |
 | Hyper-V | Not in this phase; revisit later |
 | IoT | MQTT first (in use today); other protocols as requests arrive. The engine embeds its own MQTT broker and replaces `fixleanplus.metric.collector` (see [ADR-0013](adr/0013-embedded-mqtt-broker.md), [F12](features/F12-fixlean-collector-replacement.md)) |
+| LLMs | In scope: inference endpoints and GPUs (phase 2), tracing, cost and quality evaluation of LLM calls (phase 2 and 3); general APM stays out ([F14](features/F14-llm-monitoring.md)) |
+| Device model | A containment tree (`parent_id`), a separate dependency graph for suppression, sites as a table; parts of devices are objects, not devices; the entity is called device, not asset ([ADR-0014](adr/0014-device-model-containment-dependencies-sites.md)) |
+| Source of truth | Each engine is the source of truth for what it monitors; PlusClouds links by external ID. All items are stored in PostgreSQL; per tenant, the source is the API or a declarative file ([ADR-0015](adr/0015-tenant-configuration-source.md)) |
+| Process configuration | One YAML file per process (`deploy/config.example.yaml`, `deploy/probe.example.yaml`) with `MONITOR_A__B` overrides; tenant data never in it ([ADR-0011](adr/0011-toolchain-and-repository-layout.md)) |
+| Event envelope | CloudEvents 1.0 with Standard Webhooks signing, the same as PlusClouds' own events; PlusClouds re-fires them into its listeners and pushers ([ADR-0009](adr/0009-webhook-delivery.md)) |
+| Billing | Per check on each device in check-hours, priced by billing class, plus discovered devices (VMs) as a second unit; the engine meters, PlusClouds prices ([F13](features/F13-usage-metering.md)) |
+| Probes | Outbound-only to the core; one-time or preshared enrollment tokens; a local HTTPS status server with a status token ([F09](features/F09-remote-probes.md)) |
 
 ---
 
@@ -354,6 +361,11 @@ Gates are proposals; dates are not set yet.
 
 - [x] **MQTT specifics:** taken from `fixleanplus.metric.collector`, which the engine replaces. See [F12](features/F12-fixlean-collector-replacement.md) for the topic and payload profile and the remaining migration questions.
 - [x] **Webhook event schema and signing:** CloudEvents 1.0 envelope and Standard Webhooks signing, shared with PlusClouds ([ADR-0009](adr/0009-webhook-delivery.md)).
+- [ ] **Resellers:** sub-tenants for a cloud provider's own customers ([F01](features/F01-tenancy-auth-audit.md)). Does PlusClouds already model resellers in `iam_accounts`? Decide before phase 3.
+- [ ] **IPMI monitoring in leo4:** `plusclouds.api.v4` already collects IPMI metrics and raises compute member alarms (`SaveIpmiMetricsJob`, `ComputeMemberAlarm`). Inventory what it covers and plan its replacement by the engine, as for FixLean ([F12](features/F12-fixlean-collector-replacement.md)).
+- [ ] **Billing classes and LLM units:** confirm with PlusClouds pricing ([F13](features/F13-usage-metering.md)).
+- [ ] **Datacenter vendors:** which switch, BMC, UPS and PDU vendors we run decides the first vendor profiles ([F10](features/F10-mvp-check-catalog.md)).
+- [ ] **LLM infrastructure at PlusClouds:** which endpoints and GPUs run today, hosted judge model or not, expected trace volume ([F14](features/F14-llm-monitoring.md)).
 
 ---
 

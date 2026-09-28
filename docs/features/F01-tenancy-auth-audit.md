@@ -87,6 +87,9 @@ Stored on the tenant, set by PlusClouds from the account's plan when provisionin
 
 ## Open questions
 
-- Should PlusClouds roles map to engine roles one-to-one, or should leo4 compute the engine role from PlusClouds permissions? Proposed: leo4 computes and sends one of the three engine roles, so the engine does not need to know PlusClouds' role model.
-- Grace period before a deleted tenant is purged.
 - **Resellers.** A cloud provider (CSP) that monitors its hypervisors also monitors VMs that belong to its own customers, who may want to see only their VMs and incidents. Tags cannot enforce that. Options: (1) no hierarchy, the CSP shares dashboards itself; (2) sub-tenants under a reseller tenant, with devices (such as discovered VMs) assigned to a sub-tenant while the collector stays in the reseller tenant, RLS that lets the reseller see its sub-tenants, and usage rolled up to the reseller ([F13](F13-usage-metering.md)). Option 2 touches RLS ([ADR-0008](../adr/0008-tenant-isolation.md)), provisioning ([ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)) and billing, so it must be decided before phase 3. Does PlusClouds already model resellers in `iam_accounts`?
+
+## Decided
+
+- **Role mapping:** leo4 computes one of the three engine roles from PlusClouds permissions and sends it in the membership call. The engine does not know PlusClouds' role model.
+- **Retention:** soft-deleted tenants are purged after 30 days; audit events are kept 1 year; usage records 13 months ([F13](F13-usage-metering.md)). Set in the process config (`platform.*`) and to be confirmed against KVKK obligations.

@@ -128,7 +128,12 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 ## Open questions
 
 - **Discovered objects:** decided as a second unit per discovered child device (above). Open: should LLM applications auto-registered from traces ([F14](F14-llm-monitoring.md)) and auto-registered MQTT sensors count as discovered objects or keep their push check as the unit? Proposed: push check, since each has one.
-- **Interval bands:** should a 5-second ping cost more than a 5-minute ping? If yes, PlusClouds prices by `interval_seconds` bands; the engine already records it.
-- **Minimum unit:** hourly as proposed, or daily (a check active for any part of a day is billed for the day)?
-- **Storage:** bill metric storage (series, bytes per retention class) separately, or include it in the check price?
 - **Billing class assignments:** confirm the table above with PlusClouds pricing.
+- **LLM units** ([F14](F14-llm-monitoring.md)): confirm spans per 1,000, content GB-days and judge evaluations as separate units.
+
+## Decided
+
+- **Unit length:** hourly. A check active for any part of an hour is billed for that hour.
+- **Interval:** no surcharge for short intervals at first. `interval_seconds` is recorded on every line, so interval bands can be priced later without engine changes.
+- **Storage:** included in the check price. Revisit when usage data shows storage per tenant varying widely.
+- **Collectors:** one check each, plus discovered devices as discovered-object-hours (above).
