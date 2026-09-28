@@ -19,5 +19,6 @@ All records below are **Proposed**. They become **Accepted** once reviewed. To c
 | [0011](0011-toolchain-and-repository-layout.md) | Toolchain, repository layout and engineering conventions | Proposed |
 | [0012](0012-plusclouds-identity-and-external-ids.md) | PlusClouds owns accounts and users; the engine keeps a minimal mirror; external IDs on every linkable resource | Proposed |
 | [0013](0013-embedded-mqtt-broker.md) | Embedded MQTT broker (mochi-mqtt) in the ingest role; external-broker client mode kept | Proposed |
+| [0014](0014-device-model-containment-dependencies-sites.md) | Devices form a containment tree; dependencies are a separate graph; sites are a table; collector parts are objects, not devices | Proposed |
 
 Use [0000-template.md](0000-template.md) for new records.

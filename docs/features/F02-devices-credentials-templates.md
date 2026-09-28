@@ -11,7 +11,8 @@ Devices are the things being monitored, arranged in a tree. Credentials are stor
 | MVP | Later |
 | --- | --- |
 | Device CRUD, bulk create/update, upsert by external ID | Discovery (subnet, ONVIF, LLDP/CDP) |
-| Device tree via `parent_id`; collector-created child devices | Automatic topology from LLDP/CDP |
+| Device tree via `parent_id`; collector-created child devices | Automatic topology from LLDP/CDP into the dependency graph |
+| Sites; device dependencies set through the API | |
 | Credentials: create, update, delete, test; write-only secrets | Credential rotation reminders |
 | Templates with checks and collectors, applied to devices | Template versioning and re-apply diff |
 | `POST /devices/{id}/test` | |
@@ -21,7 +22,7 @@ Devices are the things being monitored, arranged in a tree. Credentials are stor
 
 ### Devices
 
-- Fields: `name`, `address` (IP or hostname), `type` (`network`, `server`, `bmc`, `camera`, `web`, `hypervisor_host`, `vm`, `iot`, `ups`, `pdu`, `sensor`, `other`), `tags` (key/value), `parent_id`, `probe_id` (null = core runners), `external_source` / `external_type` / `external_id` (link to the PlusClouds object, such as an IAAS virtual machine or compute member), `inventory` (vendor, model, serial, firmware; written by plugins), `managed_by` (`api` or a collector ID).
+- Fields: `name`, `address` (IP or hostname), `type` (`network`, `server`, `bmc`, `camera`, `web`, `hypervisor_host`, `vm`, `iot`, `ups`, `pdu`, `sensor`, `other`), `tags` (key/value), `parent_id` (containment only, see [ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)), `site_id`, `probe_id` (null = core runners), `external_source` / `external_type` / `external_id` (link to the PlusClouds object, such as an IAAS virtual machine or compute member), `inventory` (vendor, model, serial, firmware; written by plugins), `managed_by` (`api` or a collector ID).
 - Child devices created by collectors (VMs, interfaces as sub-objects) have `managed_by` set; the API rejects edits to their managed fields but allows tags, notes and external IDs, so PlusClouds can link a discovered VM to its own `VirtualMachines` record.
 - VMs are keyed by UUID within their collector, so live migration updates `parent_id` instead of creating a new device.
 - A device and a BMC device can be linked (`physical_peer_id`) so a hypervisor host and its iDRAC appear as one physical server.

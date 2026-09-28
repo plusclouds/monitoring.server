@@ -32,7 +32,7 @@ General application performance monitoring (tracing of arbitrary services) stays
 | `llm_endpoint` | An OpenAI-compatible inference endpoint: self-hosted (vLLM, TGI, Ollama, LiteLLM gateway) or hosted (OpenAI, Anthropic, Azure OpenAI, others) | `llm.inference`, `tls`, `prometheus.scrape` for self-hosted servers |
 | `gpu_server` | A server whose GPUs run inference | `prometheus.scrape` (DCGM exporter), `redfish.health`, `icmp` |
 
-A self-hosted endpoint depends on the servers that run it, so a GPU server failure should suppress the endpoint's incidents under it. This needs device dependencies that are separate from the `parent_id` tree, which the data model does not have yet.
+A self-hosted endpoint depends on the servers that run it ([ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)), so a GPU server failure suppresses the endpoint's incidents under it.
 
 ### `llm.inference` (check)
 

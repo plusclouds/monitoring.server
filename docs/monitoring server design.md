@@ -183,18 +183,20 @@ Grafana reads PostgreSQL and TimescaleDB directly through its PostgreSQL data so
 
 ## 5. Data model
 
-Devices form a tree through `parent_id`, which drives both navigation and alert suppression.
+Devices form a containment tree through `parent_id` (pool → host → VM). Which device needs which other device to work is a separate dependency graph, and it drives alert suppression. Parts of a device reported by collectors (interfaces, fans, disks, GPUs) are objects, not devices. See [ADR-0014](adr/0014-device-model-containment-dependencies-sites.md).
 
 | Entity | Key fields | Relations |
 | --- | --- | --- |
 | Tenant | name, limits, status, external ID (PlusClouds `iam_accounts` UUID) | owns everything below; mirrors a PlusClouds account |
 | User | external ID (PlusClouds `iam_users` UUID), optional display name, status; no personal data | member of tenants with a role; acts through the PlusClouds platform key |
-| Device | name, address, type, tags, `parent_id`, `probe_id`, inventory (vendor, model, serial, firmware), external ID | parent device (switch, host, UPS); discovered children (VMs, interfaces) |
+| Site | name, country (ISO 3166-1), timezone, external ID | holds probes and devices |
+| Device | name, address, type, tags, `parent_id`, `site_id`, `probe_id`, inventory (vendor, model, serial, firmware), external ID | containing device (pool, host); discovered children (VMs); objects inside its collectors (interfaces, fans, disks) |
+| Device dependency | device, depends-on device, source (user, collector, LLDP) | directed graph without cycles; used for suppression |
 | Credential | type (SNMPv2c, SNMPv3, Redfish, IPMI, XAPI, MQTT, …), encrypted secret | referenced by devices and checks; never returned by the API |
 | Template | name, target model, check/collector definitions, runbook link | applied to devices to create checks |
 | Check | plugin type, config (JSON), interval, timeout, thresholds, failure count, enabled | belongs to a device; produces results and state |
 | Collector | plugin type, config, interval | belongs to a device (e.g. hypervisor pool); creates child devices and metrics |
-| Probe | name, site, version, last seen | runs assigned checks; failover group |
+| Probe | name, `site_id`, version, last seen | runs assigned checks; failover group |
 | State | status (OK/WARNING/CRITICAL/UNKNOWN), since, last result, output | one per check |
 | Incident | severity, opened/acked/resolved times, root device, suppressed children | opened by state changes; links to notifications |
 | Alert rule and route | conditions, severity, labels, escalation steps, schedule | selects which incidents go to which webhook events |

@@ -10,7 +10,7 @@ A probe is the `monitor` binary in probe mode, installed inside a remote or priv
 
 ### Lifecycle
 
-1. Admin creates a probe: `POST /v1/probes` with name and site. The response contains a one-time enrollment token (valid 24 h).
+1. Admin creates a probe: `POST /v1/probes` with name and `site_id` ([ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)). The response contains a one-time enrollment token (valid 24 h).
 2. Operator installs the probe (static binary with a systemd unit, or container) and runs `monitor probe --core <url> --enroll-token <token>`.
 3. The probe generates a key pair, sends a CSR with the token, and receives a client certificate. The key never leaves the probe host. The token is now spent.
 4. The probe connects with mTLS, receives its assignment set and starts running checks.

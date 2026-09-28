@@ -57,7 +57,7 @@ Acknowledgement belongs to the incident, not the state: an acknowledged incident
 
 ### Dependency suppression (phase 2, data model in MVP)
 
-- When a device's **host check** (flagged `is_host_check`, typically ping) is in PROBLEM, incidents on its descendants are opened as `suppressed` and linked to the root incident, and no notifications are sent for them.
+- When a device's **host check** (flagged `is_host_check`, typically ping) is in PROBLEM, incidents on every device that depends on it are opened as `suppressed` and linked to the root incident, and no notifications are sent for them. "Depends on" follows the dependency graph, including the dependency every device has on its container, transitively ([ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)). With several failed roots, the incident links to the nearest one.
 - Order matters: when a switch dies, its children's checks may fail before the switch's own check. Child incidents wait `dependency_grace` (default 30 s) before notifying, and are suppressed if an ancestor opens an incident within that window.
 - When the root recovers, suppressed children that are still failing are re-evaluated and notify normally.
 
