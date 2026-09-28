@@ -18,6 +18,7 @@ Developed by [PlusClouds](https://plusclouds.com) under the MIT license. It runs
 | Web and services | HTTP(S), TCP, UDP, DNS, TLS, WHOIS | Status code, keyword match, timing breakdown, certificate and domain expiry |
 | Hypervisors and VMs | XenServer/XCP-ng first, then VMware, then Proxmox | Host CPU/memory/NIC/storage, per-VM CPU ready/steal, memory, disk latency, snapshots |
 | IoT and facility | MQTT, SNMP (UPS/PDU), HTTP push | UPS battery/runtime, PDU current, temperature/humidity/leak/door sensors, last-seen |
+| LLMs | Synthetic inference requests, Prometheus scraping, OpenTelemetry GenAI traces | Availability, time to first token, tokens/s, GPU health; per application errors, tokens, cost and quality scores |
 
 Design target: **10,000+ devices**, check intervals from **5 seconds to several hours**.
 
@@ -62,8 +63,8 @@ flowchart LR
 | Phase | Focus | Exit gate |
 | --- | --- | --- |
 | **MVP** | Core loop end to end: checks for every target type at a basic level, state machine, incidents, signed webhooks, tenants and audit, PostgreSQL metrics | Live on our own datacenter |
-| **Phase 2** | Scale and noise control: remote probes with failover, dependencies, maintenance, traps/syslog, templates and discovery, VMware and Proxmox, escalation | Stable on remote sites |
-| **Phase 3** | Customer-facing: PlusClouds panel integration, SLA reports, status pages, NetFlow, Terraform provider, ClickHouse backend | Offered to customers |
+| **Phase 2** | Scale and noise control: remote probes with failover, dependencies, maintenance, traps/syslog, templates and discovery, VMware and Proxmox, escalation, LLM endpoints and trace metrics | Stable on remote sites |
+| **Phase 3** | Customer-facing: PlusClouds panel integration, SLA reports, status pages, NetFlow, Terraform provider, ClickHouse backend, LLM quality evaluation | Offered to customers |
 
 ## Planned usage
 

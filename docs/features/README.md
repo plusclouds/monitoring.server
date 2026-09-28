@@ -22,6 +22,13 @@ The order follows dependencies: nothing produces results until the plugin SDK an
 | [F10](F10-mvp-check-catalog.md) | MVP check and collector catalog | F03 | Draft |
 | [F11](F11-self-monitoring.md) | Monitoring the monitor | F04, F06 | Draft |
 | [F12](F12-fixlean-collector-replacement.md) | Replacing the FixLean sensor collector: embedded MQTT broker, sensor model, migration | F05, F07, F08 | Draft |
+| [F13](F13-usage-metering.md) | Usage metering: check-hours per device and check, for billing | F01, F03, F04 | Draft |
+
+## Specs written ahead of their phase
+
+| # | Feature | Phase | Depends on | Status |
+| --- | --- | --- | --- | --- |
+| [F14](F14-llm-monitoring.md) | LLM monitoring: inference endpoints, GPU scraping, OpenTelemetry traces, cost and quality evaluation | 2 and 3 | F03, F05, F07, F08, F13 | Draft |
 
 ```mermaid
 flowchart LR
@@ -37,6 +44,9 @@ flowchart LR
     F06 --> F11
     F05 --> F12
     F08 --> F12
+    F01 --> F13
+    F03 --> F13
+    F04 --> F13
 ```
 
 ## Suggested milestones

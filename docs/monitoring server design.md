@@ -40,8 +40,8 @@ The engine is open source (MIT) and developed in the PlusClouds GitHub. It runs 
 
 ### Scope
 
-- **In scope:** availability checks, performance metrics, hardware health, alerting, notification events.
-- **Out of scope for now:** built-in UI, log management, APM/tracing, full CMDB features, Hyper-V.
+- **In scope:** availability checks, performance metrics, hardware health, alerting, notification events, and LLM monitoring: inference endpoints and GPUs, plus tracing, cost and quality evaluation of LLM calls ([F14](features/F14-llm-monitoring.md)).
+- **Out of scope for now:** built-in UI, log management, general APM/tracing (only LLM calls and the steps around them are traced), full CMDB features, Hyper-V.
 
 ---
 
@@ -73,6 +73,7 @@ The engine is open source (MIT) and developed in the PlusClouds GitHub. It runs 
 | Web pages, ports, services | HTTP/HTTPS, TCP, UDP, DNS, TLS, WHOIS | Status code, keyword match, timing breakdown (DNS, connect, TLS, first byte); port reachability; DNS answers; certificate and domain expiry |
 | Hypervisors and VMs | XenServer/XCP-ng (XAPI + `rrd_updates`), VMware (vCenter API), Proxmox (REST API) | Host CPU, memory, NICs, storage repositories, pool/HA state; per-VM state, CPU usage and ready/steal time, memory/balloon/swap, per-disk IOPS and latency, per-NIC traffic and errors, snapshots, guest tools |
 | IoT and facility devices | MQTT, SNMP (UPS-MIB, PDUs), HTTP push; later Modbus TCP/RTU (SunSpec), BACnet, LoRaWAN | UPS battery/runtime/load, PDU outlet current, temperature/humidity/leak/door sensors, cooling alarms, energy meters; device battery, signal strength, last-seen |
+| LLM endpoints and applications | Synthetic inference requests (OpenAI-compatible APIs), Prometheus scraping (vLLM, TGI, NVIDIA DCGM), OpenTelemetry traces with GenAI conventions | Availability, time to first token, tokens/s, queue and KV-cache load, GPU health; per application requests, errors, tokens, cost; quality scores from evaluators and golden datasets |
 
 ### Key points from research
 
@@ -339,7 +340,8 @@ The MVP covers every requested target type at a basic level, so the full loop (c
 | State machine, incidents | Escalation and on-call | Terraform provider |
 | Signed webhook notifications | BMC event logs, inventory | Grafana dashboard pack |
 | Tenants, scoped keys, audit | TimescaleDB acceleration | Hyper-V collector |
-| PostgreSQL metrics, retention via API | | ClickHouse backend |
+| PostgreSQL metrics, retention via API | LLM endpoints, Prometheus scraping, LLM trace metrics | ClickHouse backend |
+| | | LLM content capture and quality evaluation |
 | **Gate 1:** live on our own datacenter | **Gate 2:** stable on remote sites | **Then:** offer to customers |
 
 Gates are proposals; dates are not set yet.
