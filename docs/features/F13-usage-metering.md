@@ -41,7 +41,31 @@ Declared in the plugin manifest ([F03](F03-plugin-sdk.md)) as `BillingClass`:
 | Auto-registered sensor (F12) | Yes, from registration; messages dropped over the device limit are not billed |
 | Checks of the platform tenant (self-monitoring) | No |
 
-Collectors are one check each, whatever they discover. A collector that finds 200 VMs is one `advanced` check-hour per hour, and the VMs it creates are not billed separately (see open questions).
+### Second unit: the discovered-object-hour
+
+A collector is one check, but it can watch hundreds of devices. Billing it as one check would make 5 VMs and 500 VMs cost the same, and VMs are what a cloud provider cares about most. So child **devices** created by a collector (VMs, pool hosts) are billed as a second unit, the **discovered-object-hour**, priced low per unit.
+
+- Counts: child devices with `managed_by` set to a collector ([ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)), from the hour they appear until the hour they are removed. Recorded with the same period mechanism as checks, keyed by device.
+- Does not count: **objects** inside a device (interfaces, fans, PSUs, disks, GPUs, storage repositories). They are parts of a device that is already billed.
+- A check a user adds on a discovered device (a ping or HTTP check on a VM) is billed as a normal check in its class, on top.
+- A discovered device that the user promotes to a managed device (clears `managed_by`) stops being a discovered object and is billed by its checks only.
+
+### Example: a cloud provider with 5 hypervisors, iDRAC and 50 VMs
+
+Built-in templates "Dell iDRAC" and "XCP-ng pool" create:
+
+| Device | Count | Checks | Billed as |
+| --- | --- | --- | --- |
+| iDRAC | 5 | `icmp`, `redfish.health` | 5 `basic` + 5 `advanced` check-hours per hour |
+| Hypervisor host | 5 | `icmp`, `xapi.rrd` | 5 `basic` + 5 `advanced` check-hours per hour |
+| Pool | 1 | `xapi.pool` | 1 `advanced` check-hour per hour |
+| VM | 50 | none required; metrics come from `xapi.rrd` | 50 discovered-object-hours per hour |
+
+Monthly usage (730 hours): 7,300 `basic` and 8,030 `advanced` check-hours, and 36,500 discovered-object-hours. Adding an HTTP check to 10 of the VMs adds 7,300 `standard` check-hours.
+
+### Packages
+
+The engine meters only these raw units. PlusClouds may sell packages on top ("physical server": BMC plus host checks; "per VM") by mapping a package to units, so customers see a simple offer and the invoice stays traceable to the meter.
 
 ## Behavior
 
@@ -94,6 +118,7 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 
 - A check created at 10:15 and deleted at 10:40 produces 1 check-hour for that day.
 - A device with `icmp` and `http` checks, enabled all day, produces 48 check-hours: 24 `basic` and 24 `standard`.
+- An XCP-ng pool whose collector discovers 50 VMs produces 50 discovered-object-hours per hour; a VM migrated between hosts is not counted twice; its interfaces and disks produce none.
 - Disabling a check stops its check-hours from the next hour; re-enabling starts a new period.
 - Suspending a tenant ends every open period in the same transaction.
 - Rerunning the day close for a closed day changes nothing.
@@ -102,7 +127,7 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 
 ## Open questions
 
-- **Collectors:** bill a hypervisor or switch collector as one check, or per discovered child (per VM, per interface)? Per child tracks value better but makes a price depend on what the customer's infrastructure contains.
+- **Discovered objects:** decided as a second unit per discovered child device (above). Open: should LLM applications auto-registered from traces ([F14](F14-llm-monitoring.md)) and auto-registered MQTT sensors count as discovered objects or keep their push check as the unit? Proposed: push check, since each has one.
 - **Interval bands:** should a 5-second ping cost more than a 5-minute ping? If yes, PlusClouds prices by `interval_seconds` bands; the engine already records it.
 - **Minimum unit:** hourly as proposed, or daily (a check active for any part of a day is billed for the day)?
 - **Storage:** bill metric storage (series, bytes per retention class) separately, or include it in the check price?
