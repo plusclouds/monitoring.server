@@ -16,6 +16,8 @@ A probe is the `monitor` binary in probe mode, installed inside a remote or priv
 4. The probe connects with mTLS, receives its assignment set and starts running checks.
 5. Certificates renew automatically. `DELETE /v1/probes/{id}` revokes the probe.
 
+**Preshared enrollment** replaces steps 1 and 2 for automated rollouts. The core's config lists reusable enrollment tokens, each bound to a tenant, with an optional default site, maximum number of probes, expiry and allowed source networks. A probe configured with such a token and a name enrolls on first start and is created in that tenant. A preshared token can only create new probes: it never re-enrolls a probe that has already enrolled, so a leaked token cannot take over an existing probe and the credentials assigned to it. Probes enrolled this way are not added to failover groups automatically. Every use is audited with the token's name.
+
 ### Assignment
 
 - Devices have `probe_id`; all checks and collectors of the device run on that probe.
@@ -79,6 +81,7 @@ ICMP needs raw sockets or unprivileged ICMP (`net.ipv4.ping_group_range`). The s
 - Unplugging the probe's uplink for 30 minutes loses no results: they arrive after reconnection with original timestamps, update metrics, and do not open incidents retroactively.
 - Stopping the probe opens one probe-down incident within 70 s, not one incident per device.
 - An enrollment token cannot be used twice.
+- A preshared token enrolls new probes up to its `max_probes`, and is rejected for a name that belongs to an already enrolled probe.
 - With the uplink unplugged, `/status` on the probe shows `reconnecting`, the growing buffer and the age of the oldest pending result.
 - Every endpoint except `/healthz` returns `401` without the status token, and no response contains a credential secret.
 

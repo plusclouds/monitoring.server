@@ -18,7 +18,7 @@ Option 3, with protobuf definitions in `proto/probe/v1`.
 
 | RPC | Type | Purpose |
 | --- | --- | --- |
-| `Enroll` | unary, token-authenticated | Exchange a one-time token and a CSR for a client certificate signed by the core's probe CA |
+| `Enroll` | unary, token-authenticated | Exchange a one-time token (or a preshared token plus a probe name, see [F09](../features/F09-remote-probes.md)) and a CSR for a client certificate signed by the core's probe CA |
 | `WatchAssignments` | server stream (long-poll fallback over HTTP/1.1) | Full assignment set on connect, then versioned diffs; includes check configs and the credentials those checks need |
 | `PushResults` | unary, batched | Up to 1,000 results or 1 s per call; each result carries its own timestamp and a sequence number |
 | `Heartbeat` | unary, every 10 s | Probe version, load, buffer depth, clock offset |

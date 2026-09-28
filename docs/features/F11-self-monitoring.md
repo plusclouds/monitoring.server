@@ -49,6 +49,9 @@ The engine cannot report its own death, so it sends a heartbeat that something e
 
 - `GET /healthz` — process is alive (for container restarts).
 - `GET /readyz` — database reachable, migrations applied, role-specific readiness (runner owns its shards, notifier connected). Used by load balancers.
+- `GET /status` — this node's view for an operator: roles, shards owned, pool usage, buffer and outbox depth, database pool, recent errors. JSON, or an HTML page in a browser. Same shape as the probe's status server ([F09](F09-remote-probes.md)).
+
+`/healthz` and `/readyz` are open. `/status` and `/metrics` require a status token from the process config; on a loopback address the token may be left out.
 
 ## Acceptance criteria
 

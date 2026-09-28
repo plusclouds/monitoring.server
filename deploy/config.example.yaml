@@ -166,7 +166,27 @@ probe_service:
   tls:                     # server certificate; client certificates come from the probe CA
     cert_file: /etc/monitor/tls/probe.crt
     key_file: /etc/monitor/tls/probe.key
-  enrollment_token_ttl: 24h
+  enrollment_token_ttl: 24h     # one-time tokens from POST /v1/probes
+  # Preshared enrollment tokens, for automated deployments where calling the
+  # API per probe is not practical. A probe that presents one of these with a
+  # name (probe.name in probe.yaml) is created in the token's tenant and
+  # enrolled in one step.
+  # - Reusable until expires_at or max_probes is reached.
+  # - Never re-enrolls a probe that has already enrolled: a lost probe needs
+  #   DELETE or rotate-token through the API, so a leaked token cannot take
+  #   over an existing probe and its credentials.
+  # - Probes enrolled this way are never added to a failover group
+  #   automatically; they run checks only after devices are assigned to them.
+  # - Every use is audited with the token name.
+  # Minimum 32 characters. Generate with `monitor admin gen-token`.
+  preshared_enrollment_tokens: []
+  # - name: ist-1-rollout
+  #   token_file: /run/secrets/probe_enroll_ist1
+  #   tenant: plusclouds:9b1c…     # engine tenant ID, or <external_source>:<external_id>
+  #   site: ist-1                  # default site; the probe may send its own
+  #   max_probes: 20
+  #   expires_at: 2026-12-31T00:00:00Z
+  #   allowed_networks: [203.0.113.0/24]   # source addresses allowed to enroll
   certificate_lifetime: 720h    # renewed by the probe at 2/3 of lifetime
   silence_after: 60s            # missed heartbeats before a probe is silent
   clock_offset_warning: 2s
@@ -322,9 +342,23 @@ platform:
 # Monitoring the monitor (F11)
 # ---------------------------------------------------------------------------
 self_monitoring:
-  # /metrics, /healthz, /readyz. No TLS and no tenant data: keep it off
-  # public networks. Public listeners also answer /healthz and /readyz.
+  # Node status server, the core counterpart of the probe's status server.
+  #   GET /healthz   liveness, no authentication
+  #   GET /readyz    no authentication (load balancers)
+  #   GET /status    this node: roles, shards owned, pools, buffers, database
+  #                  pool, outbox depth, recent errors (JSON, HTML in a browser)
+  #   GET /metrics   Prometheus exposition
+  # /status and /metrics need `Authorization: Bearer <status token>`.
+  # No tenant data. Public listeners also answer /healthz and /readyz.
   listen: "127.0.0.1:9090"
+  tls:
+    cert_file: ""
+    key_file: ""
+    disabled: true         # plain HTTP is allowed only on a loopback listen address
+  # Minimum 32 characters. Empty on a loopback address = no authentication;
+  # required on any other address.
+  status_token_file: /run/secrets/monitor_status_token
+  allowed_networks: []
   # Store self-metrics on the built-in "monitor" device in the platform
   # tenant, so Grafana and the API show them without Prometheus.
   store_as_metrics: true

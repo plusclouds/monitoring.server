@@ -63,9 +63,11 @@ http:
     key_file: ""
     # Plain HTTP is allowed only on a loopback listen address.
     disabled: false
-  # Status token. Empty = one is generated at first start and written to
-  # state_dir/status-token (mode 0600). `monitor probe status` reads it from there.
-  status_token_file: ""
+  # Status token, minimum 32 characters. Set it so monitoring tools can be
+  # configured before the probe starts. Empty = one is generated at first
+  # start into state_dir/status-token (mode 0600).
+  # `monitor probe status` uses this file, or the generated one.
+  status_token_file: /run/secrets/monitor_probe_status_token
   # Source networks allowed to connect. Empty = any.
   allowed_networks: []
 
