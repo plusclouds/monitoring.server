@@ -60,7 +60,7 @@ Stored on the tenant, set by PlusClouds from the account's plan when provisionin
 - The application database role has `INSERT` and `SELECT` only on the audit table; no `UPDATE` or `DELETE`. Retention is set by a platform-level policy and applied by partition drop.
 - **Tamper evidence:** each event stores the SHA-256 of the previous event of the same tenant (`prev_hash`) and its own hash. `monitor admin verify-audit [--tenant]` walks the chain and reports the first broken link, so changes made with database superuser rights are detectable. Partition drops record the last hash of the dropped range, so the chain stays verifiable after retention.
 - **Sensitive reads and failures are audited too:** `config.export`, `credential.test`, audit log queries, reads of captured LLM content ([F14](F14-llm-monitoring.md)), and failed API authentication (key prefix, source IP, reason; never the presented secret).
-- **Privileged commands** (`monitor admin bootstrap`, `rewrap-credentials`, `verify-audit`, `gen-token`) write audit events like API writes, with actor `admin-cli` and the host name.
+- **Privileged commands** (`monitor admin bootstrap`, `rewrap-credentials`, `verify-audit`) write audit events like API writes, with actor `admin-cli` and the host name. `gen-token` only prints a random value and touches no data, so it writes none.
 - **SIEM export (phase 2):** audit events are streamed as they are written to a syslog (RFC 5424 over TLS) or HTTPS target set in the process config, so logs can be kept off the engine's host.
 
 ### Access review

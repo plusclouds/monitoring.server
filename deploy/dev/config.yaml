@@ -1,0 +1,25 @@
+# Local development only: inline DSNs with the placeholder passwords from
+# deploy/postgres/init-roles.sql, plain HTTP on loopback, no TLS files.
+# Never use inline secrets or these passwords anywhere else.
+logging:
+  format: text
+  level: debug
+database:
+  owner:  { dsn: "postgres://monitor_owner:change-me-owner@127.0.0.1:55432/monitor?sslmode=disable" }
+  app:    { dsn: "postgres://monitor_app:change-me-app@127.0.0.1:55432/monitor?sslmode=disable" }
+  system: { dsn: "postgres://monitor_system:change-me-system@127.0.0.1:55432/monitor?sslmode=disable" }
+crypto:
+  file:
+    active: dev
+    keys: [{ id: dev, env: MONITOR_DEV_KEK }]
+api:
+  listen: "127.0.0.1:8443"
+  public_url: "http://127.0.0.1:8443"
+  tls: { cert_file: "", key_file: "" }
+probe_service:
+  enabled: false
+ingest:
+  http: { enabled: false }
+  mqtt: { enabled: false }
+self_monitoring:
+  status_token_file: ""

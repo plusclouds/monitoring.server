@@ -4,12 +4,14 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"slices"
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/logging"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
+	"github.com/plusclouds/monitoring.server/internal/store"
 )
 
 // ServeOptions is what `monitor serve` resolved from flags and the config.
@@ -82,6 +85,13 @@ func Serve(ctx context.Context, o ServeOptions) error {
 		return err
 	}
 
+	pools, err := openDatabase(ctx, o)
+	if err != nil {
+		return err
+	}
+	defer pools.close()
+	status.AddReadiness("database", pools.ping)
+
 	for _, r := range o.Roles {
 		if !slices.Contains(implementedRoles, r) {
 			log.Warn("role is not implemented yet and will not start", "role", r)
@@ -118,6 +128,76 @@ func reloadOnHUP(ctx context.Context, o ServeOptions) {
 				continue
 			}
 			o.Logger.Info("config reloaded; log level applied, other changes need a restart", "level", c.Logging.Level)
+		}
+	}
+}
+
+// pools holds the connection pools this process needs: app for the api
+// role (subject to RLS), system for every other role (ADR-0008).
+type pools struct {
+	app, system *pgxpool.Pool
+}
+
+func openDatabase(ctx context.Context, o ServeOptions) (*pools, error) {
+	db := o.Config.Database
+	if db.MigrateOnStart {
+		owner, err := config.ReadSecret("database.owner.dsn", db.Owner.DSN, db.Owner.DSNFile)
+		if err != nil {
+			return nil, err
+		}
+		res, err := store.Migrate(ctx, owner, "up")
+		if err != nil {
+			return nil, fmt.Errorf("migrate: %w", err)
+		}
+		for _, r := range res {
+			o.Logger.Info("migration applied", "version", r.Source.Version, "file", r.Source.Path)
+		}
+	}
+
+	p := &pools{}
+	open := func(name string, d config.DSN) (*pgxpool.Pool, error) {
+		dsn, err := config.ReadSecret(name+".dsn", d.DSN, d.DSNFile)
+		if err != nil {
+			return nil, err
+		}
+		return store.Open(ctx, store.PoolOptions{
+			DSN: dsn, MaxConns: d.MaxConns,
+			ConnectTimeout: db.ConnectTimeout.D(), StatementTimeout: db.StatementTimeout.D(),
+			AppName: "monitor/" + o.Config.Node.ID,
+		})
+	}
+	var err error
+	if slices.Contains(o.Roles, config.RoleAPI) {
+		if p.app, err = open("database.app", db.App); err != nil {
+			return nil, fmt.Errorf("connect as app role: %w", err)
+		}
+	}
+	apiOnly := len(o.Roles) == 1 && o.Roles[0] == config.RoleAPI
+	if !apiOnly {
+		if p.system, err = open("database.system", db.System); err != nil {
+			p.close()
+			return nil, fmt.Errorf("connect as system role: %w", err)
+		}
+	}
+	return p, nil
+}
+
+func (p *pools) ping(ctx context.Context) error {
+	for _, pool := range []*pgxpool.Pool{p.app, p.system} {
+		if pool == nil {
+			continue
+		}
+		if err := pool.Ping(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *pools) close() {
+	for _, pool := range []*pgxpool.Pool{p.app, p.system} {
+		if pool != nil {
+			pool.Close()
 		}
 	}
 }
