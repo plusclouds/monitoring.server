@@ -404,20 +404,53 @@ func (s *Service) EnsureActor(ctx context.Context, actor audit.Actor, tenantID u
 		if !s.JIT.Enabled {
 			return User{}, "", ErrNotFound
 		}
-		var created bool
-		if u, created, err = s.EnsureUser(ctx, actor, source, externalID, nil, "jit"); err != nil {
+		if u, err = s.createActor(ctx, actor, tenantID, source, externalID); err != nil {
 			return User{}, "", err
-		}
-		if created {
-			if _, _, err := s.setRole(ctx, actor, tenantID, u, RoleReadOnly); err != nil {
-				return User{}, "", err
-			}
 		}
 	} else if err != nil {
 		return User{}, "", err
 	}
 	role, err := MemberRole(ctx, s.DB, tenantID, u.ID)
 	return u, role, err
+}
+
+// createActor creates a user and its read-only membership in one
+// transaction. Concurrent requests for the same new user wait on the unique
+// index inside ensure_user until this transaction commits, so none of them
+// can see the user without its membership.
+func (s *Service) createActor(ctx context.Context, actor audit.Actor, tenantID uuid.UUID, source, externalID string) (User, error) {
+	newID, err := uuid.NewV7()
+	if err != nil {
+		return User{}, err
+	}
+	var id uuid.UUID
+	var created bool
+	err = store.InTenant(ctx, s.DB, tenantID, func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, `SELECT id, created FROM ensure_user($1, $2, $3, NULL, 'jit')`,
+			newID, source, externalID).Scan(&id, &created); err != nil {
+			return err
+		}
+		if !created {
+			return nil
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO tenant_members (tenant_id, user_id, role) VALUES ($1, $2, $3)`,
+			tenantID, id, RoleReadOnly); err != nil {
+			return err
+		}
+		return audit.Write(ctx, tx, actor.Event(tenantID, "member.create", "member", id.String(), nil,
+			map[string]any{"user_id": id, "external_id": externalID, "role": RoleReadOnly}))
+	})
+	if err != nil {
+		return User{}, err
+	}
+	if created {
+		// Users are global, so their creation is recorded in the platform tenant.
+		if err := s.platformEvent(ctx, actor, "user.create", "user", id.String(), nil,
+			map[string]any{"external_source": source, "external_id": externalID, "provisioned": "jit"}); err != nil {
+			return User{}, err
+		}
+	}
+	return scanUser(s.DB.QueryRow(ctx, `SELECT `+userCols+` FROM user_by_id($1)`, id))
 }
 
 func (s *Service) activeTenant(ctx context.Context, id uuid.UUID) (Tenant, error) {
