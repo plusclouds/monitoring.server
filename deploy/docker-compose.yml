@@ -1,0 +1,23 @@
+# Local development database. Creates the three roles from
+# postgres/init-roles.sql on first start.
+#   docker compose -f deploy/docker-compose.yml up -d
+#   monitor migrate up --config deploy/dev/config.yaml
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - ./postgres/init-roles.sql:/docker-entrypoint-initdb.d/init-roles.sql:ro
+      - pgdata:/var/lib/postgresql
+    # Ready only once the init script has created the monitor database.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "monitor", "-h", "127.0.0.1"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:

@@ -1,0 +1,599 @@
+openapi: 3.1.0
+info:
+  title: Monitoring engine API
+  version: 0.1.0
+  summary: API-first monitoring engine by PlusClouds.
+  description: |
+    Every action is an API call. This spec is the source of truth (ADR-0007):
+    Go server interfaces are generated from it.
+
+    **Authentication.** `Authorization: Bearer <key>`.
+    - A tenant API key acts in its own tenant with its role.
+    - The platform key (used by the PlusClouds API) provisions tenants and
+      users, and acts in a tenant named by `X-Tenant-External-ID` (or
+      `X-Tenant-ID`) as the user named by `X-Actor-External-ID` (ADR-0012).
+      Without an actor it acts as the platform with full rights in that
+      tenant. Unknown tenants and users are created just in time.
+
+    **Errors** are RFC 9457 problem details (`application/problem+json`).
+    **Timestamps** are RFC 3339 in UTC. **Lists** use cursor pagination.
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: /v1
+
+security:
+  - bearer: []
+
+tags:
+  - name: identity
+    description: The caller, its tenant and its API keys
+  - name: provisioning
+    description: Platform-only tenant, user and membership management (F01, ADR-0012)
+  - name: audit
+    description: The tenant's audit log
+  - name: plugins
+    description: Check, collector and ingester types this engine supports (F03)
+
+paths:
+  /me:
+    get:
+      operationId: getMe
+      tags: [identity]
+      summary: The resolved caller
+      responses:
+        "200":
+          description: Tenant, user, role and key of this request
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tenant:
+    get:
+      operationId: getTenant
+      tags: [identity]
+      summary: The caller's tenant, with its limits
+      responses:
+        "200":
+          description: The tenant
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api-keys:
+    get:
+      operationId: listAPIKeys
+      tags: [identity]
+      summary: List the tenant's API keys
+      description: Requires the admin role. `stale` lists keys unused for that long, plus keys without an expiry, for access reviews.
+      parameters:
+        - name: stale
+          in: query
+          description: Only keys unused for this many days, or never used, or without an expiry.
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Keys (never the secret)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/APIKey" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createAPIKey
+      tags: [identity]
+      summary: Create an API key
+      description: Requires the admin role. The key is returned once and cannot be shown again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/APIKeyCreate" }
+      responses:
+        "201":
+          description: The new key, including its secret
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/APIKeyCreated" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /api-keys/{key_id}:
+    delete:
+      operationId: revokeAPIKey
+      tags: [identity]
+      summary: Revoke an API key
+      parameters:
+        - $ref: "#/components/parameters/KeyID"
+      responses:
+        "204": { description: Revoked }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /audit:
+    get:
+      operationId: listAuditEvents
+      tags: [audit]
+      summary: Query the tenant's audit log
+      description: Requires the admin role. The query itself is audited (F01).
+      parameters:
+        - { name: object_type, in: query, schema: { type: string } }
+        - { name: object_id, in: query, schema: { type: string } }
+        - { name: action, in: query, schema: { type: string } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Events, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AuditEvent" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /plugins:
+    get:
+      operationId: listPlugins
+      tags: [plugins]
+      summary: List the plugins this engine was built with
+      description: Any authenticated key. Clients render config forms from `config_schema`.
+      responses:
+        "200":
+          description: Plugin manifests, sorted by type
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Plugin" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /plugins/{type}:
+    get:
+      operationId: getPlugin
+      tags: [plugins]
+      summary: One plugin's manifest
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string, examples: [icmp, http, snmp.interfaces] }
+      responses:
+        "200":
+          description: The manifest
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Plugin" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tenants:
+    get:
+      operationId: listTenants
+      tags: [provisioning]
+      summary: List tenants (platform only)
+      description: Used by the PlusClouds reconciliation job.
+      parameters:
+        - { name: external_source, in: query, schema: { type: string } }
+        - { name: external_id, in: query, schema: { type: string } }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Tenants
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Tenant" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tenants/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+    put:
+      operationId: upsertTenant
+      tags: [provisioning]
+      summary: Create or update a tenant by its external ID (platform only)
+      description: Idempotent. A call that changes nothing writes no audit event.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TenantUpsert" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+        default: { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: patchTenant
+      tags: [provisioning]
+      summary: Change a tenant's name, status or limits (platform only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TenantPatch" }
+      responses:
+        "200":
+          description: The tenant
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteTenant
+      tags: [provisioning]
+      summary: Soft-delete a tenant (platform only)
+      description: Checks stop and the API returns 404 for it; data is purged after the platform grace period.
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tenants/{tenant_id}/members:
+    get:
+      operationId: listMembers
+      tags: [provisioning]
+      summary: List a tenant's members (platform only)
+      parameters:
+        - $ref: "#/components/parameters/TenantID"
+      responses:
+        "200":
+          description: Members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Member" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tenants/{tenant_id}/members/by-external-id/{user_external_id}:
+    parameters:
+      - $ref: "#/components/parameters/TenantID"
+      - name: user_external_id
+        in: path
+        required: true
+        schema: { type: string, minLength: 1, maxLength: 200 }
+      - $ref: "#/components/parameters/ExternalSource"
+    put:
+      operationId: upsertMember
+      tags: [provisioning]
+      summary: Add a user to a tenant or change its role (platform only)
+      description: Creates the user mirror row when needed. Idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberUpsert" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: removeMember
+      tags: [provisioning]
+      summary: Remove a user from a tenant (platform only)
+      responses:
+        "204": { description: Removed, or was not a member }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /users/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+    patch:
+      operationId: patchUser
+      tags: [provisioning]
+      summary: Disable or rename a user everywhere (platform only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UserPatch" }
+      responses:
+        "200":
+          description: The user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/User" }
+        default: { $ref: "#/components/responses/Problem" }
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      description: An API key `mon_<prefix>_<secret>`.
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      description: Opaque cursor from `next_cursor` of the previous page.
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+    KeyID:
+      name: key_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TenantID:
+      name: tenant_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ExternalID:
+      name: external_id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 200 }
+    ExternalSource:
+      name: source
+      in: query
+      description: System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+      schema: { type: string, minLength: 1, maxLength: 50 }
+
+  responses:
+    Problem:
+      description: An error
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      required: [type, title, status]
+      properties:
+        type: { type: string, description: "Stable URI per error, e.g. https://monitor.plusclouds.com/problems/tenant-suspended" }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }
+        request_id: { type: string }
+
+    ExternalRef:
+      type: object
+      required: [source, id]
+      properties:
+        source: { type: string }
+        type: { type: [string, "null"] }
+        id: { type: string }
+
+    TenantLimits:
+      type: object
+      properties:
+        max_devices: { type: integer, minimum: 0 }
+        max_checks: { type: integer, minimum: 0 }
+        min_check_interval_seconds: { type: integer, minimum: 1 }
+        api_rate_per_minute: { type: integer, minimum: 0, description: "0 = unlimited" }
+        allowed_target_networks:
+          type: array
+          description: Networks HTTP checks and webhooks may reach. Empty = everything except RFC 1918, loopback and link-local.
+          items: { type: string }
+        metric_classes:
+          type: array
+          items: { type: string }
+        max_api_key_lifetime_days: { type: [integer, "null"], minimum: 1 }
+
+    Tenant:
+      type: object
+      required: [id, name, status, is_platform, config_source, limits, external, provisioned, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        status: { type: string, enum: [active, suspended, deleted] }
+        is_platform: { type: boolean }
+        config_source: { type: string, enum: [api, file] }
+        limits: { $ref: "#/components/schemas/TenantLimits" }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+        provisioned: { type: string, enum: [api, jit, bootstrap] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    TenantUpsert:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        external_type: { type: string, maxLength: 200 }
+        limits:
+          description: On create, missing fields come from the platform defaults. On update, missing fields stay unchanged.
+          $ref: "#/components/schemas/TenantLimits"
+
+    TenantPatch:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        status: { type: string, enum: [active, suspended] }
+        limits: { $ref: "#/components/schemas/TenantLimits" }
+
+    User:
+      type: object
+      required: [id, status, external]
+      properties:
+        id: { type: string, format: uuid }
+        display_name: { type: [string, "null"] }
+        status: { type: string, enum: [active, disabled] }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+
+    UserPatch:
+      type: object
+      properties:
+        status: { type: string, enum: [active, disabled] }
+        display_name: { type: [string, "null"], maxLength: 200 }
+
+    Role:
+      type: string
+      enum: [read-only, operator, admin]
+
+    Member:
+      type: object
+      required: [user, role, created_at]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        role: { $ref: "#/components/schemas/Role" }
+        created_at: { type: string, format: date-time }
+
+    MemberUpsert:
+      type: object
+      required: [role]
+      properties:
+        role: { $ref: "#/components/schemas/Role" }
+        display_name: { type: [string, "null"], maxLength: 200 }
+
+    Me:
+      type: object
+      required: [tenant, role, actor_kind]
+      properties:
+        tenant: { $ref: "#/components/schemas/Tenant" }
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/User"
+            - type: "null"
+        role: { type: string, enum: [read-only, operator, admin, platform] }
+        actor_kind: { type: string, enum: [api_key, user, platform] }
+        api_key_id: { type: string, format: uuid }
+
+    APIKey:
+      type: object
+      required: [id, name, role, prefix, ip_allowlist, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        role: { $ref: "#/components/schemas/Role" }
+        prefix: { type: string, description: "First part of the key, for recognizing it" }
+        expires_at: { type: [string, "null"], format: date-time }
+        ip_allowlist:
+          type: array
+          items: { type: string }
+        last_used_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    APIKeyCreate:
+      type: object
+      required: [name, role]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        role: { $ref: "#/components/schemas/Role" }
+        expires_at: { type: [string, "null"], format: date-time }
+        ip_allowlist:
+          type: array
+          items: { type: string }
+
+    APIKeyCreated:
+      allOf:
+        - $ref: "#/components/schemas/APIKey"
+        - type: object
+          required: [key]
+          properties:
+            key: { type: string, description: "The full key. Shown once." }
+
+    Plugin:
+      type: object
+      required: [type, kind, description, config_schema, credential_types, metrics,
+                 default_interval_seconds, min_interval_seconds, needs_raw_socket, billing_class]
+      properties:
+        type: { type: string }
+        kind: { type: string, enum: [check, collector, ingester] }
+        description: { type: string }
+        config_schema:
+          type: object
+          description: JSON Schema (draft 2020-12) of the plugin's config.
+        credential_types:
+          type: array
+          items: { type: string }
+        metrics:
+          type: array
+          items: { $ref: "#/components/schemas/MetricDef" }
+        default_interval_seconds: { type: integer }
+        min_interval_seconds: { type: integer }
+        needs_raw_socket: { type: boolean }
+        billing_class: { type: string, enum: [basic, standard, push, advanced, free] }
+
+    MetricDef:
+      type: object
+      required: [name, unit, description, kind, retention_class]
+      properties:
+        name: { type: string }
+        unit: { type: string }
+        description: { type: string }
+        kind: { type: string, enum: [gauge, rate] }
+        retention_class: { type: string }
+
+    AuditEvent:
+      type: object
+      required: [id, seq, at, actor, action, object_type]
+      properties:
+        id: { type: string, format: uuid }
+        seq: { type: integer, format: int64 }
+        at: { type: string, format: date-time }
+        actor:
+          type: object
+          required: [kind]
+          properties:
+            kind: { type: string, enum: [user, api_key, platform, admin-cli, file, system] }
+            user_id: { type: [string, "null"], format: uuid }
+            external_id: { type: [string, "null"] }
+            api_key_id: { type: [string, "null"], format: uuid }
+            detail: { type: [string, "null"] }
+        action: { type: string }
+        object_type: { type: string }
+        object_id: { type: [string, "null"] }
+        before: {}
+        after: {}
+        request_id: { type: [string, "null"] }
+        source_ip: { type: [string, "null"] }

@@ -2,7 +2,7 @@
 
 An API-first, extensible monitoring engine written in Go. One engine watches network devices, server hardware (BMCs), IP cameras, web endpoints and ports, hypervisors and their VMs, and IoT/facility devices, and turns what it sees into incidents and signed webhook events.
 
-> **Status: planning.** No code has been written yet. This repository currently holds the design, the feature specs and the architecture decisions. Everything below describes the intended system.
+> **Status: milestone M1 (skeleton).** The binary, process config, database schema, tenancy and API keys, audit log, plugin SDK and the `icmp` and `http` plugins exist. Scheduling, state, incidents and notifications (M2) do not yet. The rest of this page describes the intended system; see [Development](#development) for what runs today.
 
 Developed by [PlusClouds](https://plusclouds.com) under the MIT license. It runs standalone or embedded in the PlusClouds panel, and it is multi-tenant from day one because customers run it too.
 
@@ -66,21 +66,43 @@ flowchart LR
 | **Phase 2** | Scale and noise control: remote probes with failover, dependencies, maintenance, traps/syslog, templates and discovery, VMware and Proxmox, escalation, LLM endpoints and trace metrics | Stable on remote sites |
 | **Phase 3** | Customer-facing: PlusClouds panel integration, SLA reports, status pages, NetFlow, Terraform provider, ClickHouse backend, LLM quality evaluation | Offered to customers |
 
-## Planned usage
+## Development
 
-These commands describe the intended interface and do not work yet.
+Requirements: Go 1.27, Docker (for PostgreSQL and the integration tests).
 
 ```sh
-# All roles in one process (small installs)
-monitor serve --config /etc/monitor/config.yaml
+# PostgreSQL 18 with the three database roles (deploy/postgres/init-roles.sql)
+docker compose -f deploy/docker-compose.yml up -d --wait
 
-# Split roles for larger installs
-monitor serve --roles api,notifier
-monitor serve --roles runner,engine
+make build
+./bin/monitor migrate up --config deploy/dev/config.yaml
+./bin/monitor admin bootstrap --config deploy/dev/config.yaml --standalone --tenant "Dev"   # prints an admin key once
+./bin/monitor serve --config deploy/dev/config.yaml
 
-# Remote probe: enrolls once with a token, then connects out over mTLS
-monitor probe --core https://monitor.example.com --enroll-token <token>
+curl -H "Authorization: Bearer <key>" http://127.0.0.1:8443/v1/me
+curl -H "Authorization: Bearer <key>" http://127.0.0.1:8443/v1/plugins
+curl http://127.0.0.1:9090/readyz
 ```
+
+Without `--standalone`, bootstrap prints the platform key that the PlusClouds API uses to provision tenants (`PUT /v1/tenants/by-external-id/{id}`) and act for users.
+
+| Command | Purpose |
+| --- | --- |
+| `monitor serve [--roles api,…]` | Run the engine roles (only `api` is implemented so far) plus the status server |
+| `monitor migrate up\|down\|status` | Database migrations, as the schema owner |
+| `monitor admin bootstrap [--standalone --tenant NAME]` | Create the installation ID, the platform tenant and the first key (once) |
+| `monitor admin verify-audit [--tenant ID]` | Check the audit log hash chain |
+| `monitor admin gen-token` | Random token for status and preshared enrollment tokens |
+| `monitor config validate\|print [--probe]` | Check a config file, or print the effective config with secrets redacted |
+
+| Make target | What it runs |
+| --- | --- |
+| `make test` | Unit and integration tests with `-race` (integration tests start PostgreSQL with testcontainers) |
+| `make lint` | golangci-lint, including gosec |
+| `make generate` | Regenerates the API server from `api/openapi.yaml` |
+| `make check` | Everything CI runs: tidy, generated code, lint, tests, govulncheck, license allowlist |
+
+Configuration reference: [deploy/config.example.yaml](deploy/config.example.yaml) and [deploy/probe.example.yaml](deploy/probe.example.yaml). API reference: [api/openapi.yaml](api/openapi.yaml).
 
 ## Contributing
 
