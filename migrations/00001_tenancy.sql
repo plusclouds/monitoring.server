@@ -26,7 +26,7 @@ CREATE TABLE tenants (
     api_rate_per_minute        integer     NOT NULL CHECK (api_rate_per_minute >= 0),
     allowed_target_networks    cidr[]      NOT NULL DEFAULT '{}',
     metric_classes             text[]      NOT NULL DEFAULT '{standard}',
-    max_api_key_lifetime       interval,
+    max_api_key_lifetime_days  integer     CHECK (max_api_key_lifetime_days >= 1),
     external_source            text,
     external_type              text,
     external_id                text,

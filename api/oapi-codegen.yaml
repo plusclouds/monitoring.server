@@ -1,0 +1,11 @@
+# go generate ./... regenerates internal/api/gen from openapi.yaml.
+# The output is committed so builds do not need the generator (ADR-0007).
+package: gen
+output: ../internal/api/gen/api.gen.go
+generate:
+  std-http-server: true
+  strict-server: true
+  models: true
+  embedded-spec: true
+output-options:
+  skip-prune: false

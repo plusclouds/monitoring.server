@@ -42,6 +42,27 @@ type Event struct {
 	SourceIP        netip.Addr
 }
 
+// Actor is who made a change and from where; handlers build it once per
+// request and derive every event from it.
+type Actor struct {
+	Kind       string
+	UserID     *uuid.UUID
+	ExternalID string
+	APIKeyID   *uuid.UUID
+	Detail     string
+	RequestID  string
+	SourceIP   netip.Addr
+}
+
+// Event returns an event by this actor.
+func (a Actor) Event(tenant uuid.UUID, action, objectType, objectID string, before, after any) Event {
+	return Event{
+		TenantID: tenant, ActorKind: a.Kind, ActorUserID: a.UserID, ActorExternalID: a.ExternalID,
+		APIKeyID: a.APIKeyID, ActorDetail: a.Detail, Action: action, ObjectType: objectType,
+		ObjectID: objectID, Before: before, After: after, RequestID: a.RequestID, SourceIP: a.SourceIP,
+	}
+}
+
 // Write inserts an event inside tx.
 func Write(ctx context.Context, tx pgx.Tx, e Event) error {
 	before, err := jsonOrNil(e.Before)

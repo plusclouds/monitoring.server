@@ -113,7 +113,7 @@ func (db *DB) Reset(t *testing.T) {
 	}
 	defer owner.Close()
 	_, err = owner.Exec(context.Background(),
-		`TRUNCATE audit_events, api_keys, tenant_members, users, tenants, installation`)
+		`TRUNCATE audit_events, api_keys, tenant_members, users, tenants, installation CASCADE`)
 	if err != nil {
 		t.Fatal(err)
 	}

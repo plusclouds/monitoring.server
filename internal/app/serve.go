@@ -14,7 +14,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	"golang.org/x/sync/errgroup"
 
+	"github.com/plusclouds/monitoring.server/internal/api"
 	"github.com/plusclouds/monitoring.server/internal/buildinfo"
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/logging"
@@ -34,7 +36,7 @@ type ServeOptions struct {
 
 // implementedRoles grows as milestones land; the others are accepted in the
 // config but not started yet.
-var implementedRoles = []string{}
+var implementedRoles = []string{config.RoleAPI}
 
 // Serve runs until ctx is cancelled.
 func Serve(ctx context.Context, o ServeOptions) error {
@@ -101,7 +103,16 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	go reloadOnHUP(ctx, o)
 
 	log.Info("monitor starting", "node_id", o.Config.Node.ID, "roles", o.Roles, "version", buildinfo.Version)
-	err = status.Run(ctx)
+	g, gctx := errgroup.WithContext(ctx)
+	g.Go(func() error { return status.Run(gctx) })
+	if slices.Contains(o.Roles, config.RoleAPI) {
+		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Logger: log.Logger, Registry: reg})
+		if err != nil {
+			return err
+		}
+		g.Go(func() error { return srv.Run(gctx) })
+	}
+	err = g.Wait()
 	log.Info("monitor stopped")
 	return err
 }
