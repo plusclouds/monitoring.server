@@ -12,6 +12,12 @@ services:
     volumes:
       - ./postgres/init-roles.sql:/docker-entrypoint-initdb.d/init-roles.sql:ro
       - pgdata:/var/lib/postgresql
+    # Ready only once the init script has created the monitor database.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "monitor", "-h", "127.0.0.1"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
 
 volumes:
   pgdata:

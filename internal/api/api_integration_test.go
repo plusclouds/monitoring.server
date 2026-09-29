@@ -19,6 +19,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/api"
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/dbtest"
+	_ "github.com/plusclouds/monitoring.server/plugins/all"
 )
 
 var db *dbtest.DB
@@ -341,4 +342,27 @@ func TestAuditQuery(t *testing.T) {
 	if _, err := uuid.Parse(items[0].(map[string]any)["id"].(string)); err != nil {
 		t.Error("event id is not a UUID")
 	}
+}
+
+// M1 demo: GET /v1/plugins lists the built-in plugins.
+func TestPlugins(t *testing.T) {
+	e := setup(t, true)
+	list := e.must(e.do("GET", "/v1/plugins", e.adminKey, nil), 200)
+	var types []string
+	for _, it := range list.body["items"].([]any) {
+		p := it.(map[string]any)
+		types = append(types, p["type"].(string))
+		if p["config_schema"].(map[string]any)["type"] != "object" {
+			t.Errorf("%s: config_schema is not an object schema", p["type"])
+		}
+	}
+	if strings.Join(types, ",") != "http,icmp" {
+		t.Errorf("plugins = %v, want http and icmp", types)
+	}
+	icmp := e.must(e.do("GET", "/v1/plugins/icmp", e.adminKey, nil), 200)
+	if icmp.body["billing_class"] != "basic" || icmp.body["min_interval_seconds"] != float64(5) {
+		t.Errorf("unexpected icmp manifest: %s", icmp.raw)
+	}
+	e.must(e.do("GET", "/v1/plugins/nope", e.adminKey, nil), 404)
+	e.must(e.do("GET", "/v1/plugins", "", nil), 401)
 }

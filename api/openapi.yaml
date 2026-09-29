@@ -34,6 +34,8 @@ tags:
     description: Platform-only tenant, user and membership management (F01, ADR-0012)
   - name: audit
     description: The tenant's audit log
+  - name: plugins
+    description: Check, collector and ingester types this engine supports (F03)
 
 paths:
   /me:
@@ -142,6 +144,44 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/AuditEvent" }
                   next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /plugins:
+    get:
+      operationId: listPlugins
+      tags: [plugins]
+      summary: List the plugins this engine was built with
+      description: Any authenticated key. Clients render config forms from `config_schema`.
+      responses:
+        "200":
+          description: Plugin manifests, sorted by type
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Plugin" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /plugins/{type}:
+    get:
+      operationId: getPlugin
+      tags: [plugins]
+      summary: One plugin's manifest
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: { type: string, examples: [icmp, http, snmp.interfaces] }
+      responses:
+        "200":
+          description: The manifest
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Plugin" }
         default: { $ref: "#/components/responses/Problem" }
 
   /tenants:
@@ -501,6 +541,38 @@ components:
           required: [key]
           properties:
             key: { type: string, description: "The full key. Shown once." }
+
+    Plugin:
+      type: object
+      required: [type, kind, description, config_schema, credential_types, metrics,
+                 default_interval_seconds, min_interval_seconds, needs_raw_socket, billing_class]
+      properties:
+        type: { type: string }
+        kind: { type: string, enum: [check, collector, ingester] }
+        description: { type: string }
+        config_schema:
+          type: object
+          description: JSON Schema (draft 2020-12) of the plugin's config.
+        credential_types:
+          type: array
+          items: { type: string }
+        metrics:
+          type: array
+          items: { $ref: "#/components/schemas/MetricDef" }
+        default_interval_seconds: { type: integer }
+        min_interval_seconds: { type: integer }
+        needs_raw_socket: { type: boolean }
+        billing_class: { type: string, enum: [basic, standard, push, advanced, free] }
+
+    MetricDef:
+      type: object
+      required: [name, unit, description, kind, retention_class]
+      properties:
+        name: { type: string }
+        unit: { type: string }
+        description: { type: string }
+        kind: { type: string, enum: [gauge, rate] }
+        retention_class: { type: string }
 
     AuditEvent:
       type: object

@@ -17,6 +17,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/buildinfo"
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/logging"
+	_ "github.com/plusclouds/monitoring.server/plugins/all" // built-in plugins register themselves
 )
 
 const defaultConfigPath = "/etc/monitor/config.yaml"
