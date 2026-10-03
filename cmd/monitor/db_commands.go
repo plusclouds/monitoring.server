@@ -103,12 +103,15 @@ func newBootstrap() *cobra.Command {
 		Short: "Create the installation ID, the platform tenant and the first key (runs once)",
 		Long: `Without flags, creates the platform key that the PlusClouds API (leo4) uses.
 With --standalone --tenant NAME, creates a local tenant and an admin API key instead,
-for installs without PlusClouds. Keys are printed once and cannot be shown again.`,
+for installs without PlusClouds. Keys are printed once and cannot be shown again.
+With --if-needed, a second run succeeds without changes, so deployments can run it on every start.`,
 		Args: cobra.NoArgs,
 	}
 	path := configFlag(cmd, defaultConfigPath)
 	standalone := cmd.Flags().Bool("standalone", false, "create a local tenant and admin key instead of a platform key")
 	tenant := cmd.Flags().String("tenant", "", "name of the local tenant (with --standalone)")
+	ifNeeded := cmd.Flags().Bool("if-needed", false,
+		"succeed without changes when already bootstrapped (for automated deployments)")
 	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
 		c, err := config.Load(*path, nil)
 		if err != nil {
@@ -122,6 +125,10 @@ for installs without PlusClouds. Keys are printed once and cannot be shown again
 		res, err := admin.Bootstrap(cmd.Context(), db, admin.BootstrapOptions{
 			Standalone: *standalone, TenantName: *tenant, TenantDefaults: c.Platform.TenantDefaults,
 		})
+		if errors.Is(err, admin.ErrAlreadyBootstrapped) && *ifNeeded {
+			_, err = fmt.Fprintln(cmd.OutOrStdout(), "already bootstrapped; nothing to do")
+			return err
+		}
 		if err != nil {
 			return err
 		}
