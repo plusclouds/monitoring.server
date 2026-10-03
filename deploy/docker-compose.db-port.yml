@@ -1,0 +1,17 @@
+# Optional override for development: publishes the dev database on
+# 127.0.0.1:55432 so `./bin/monitor` running on the host (deploy/dev/config.yaml)
+# can reach it. Without this file the database is only on the stack's private
+# network.
+#
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.db-port.yml up -d --wait postgres
+#
+# The backend network is internal, which blocks published ports, so the
+# database also joins a non-internal network while this file is used.
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:55432:5432"
+    networks: [backend, host-access]
+
+networks:
+  host-access: {}
