@@ -102,7 +102,13 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tags=$tags" >> "$GITHUB_OUTPUT"
 
+      # Building needs no credentials (public base images), so it uses its own
+      # Docker config: ~/.docker/buildx on the shared runner is root-owned
+      # (other repositories build with sudo). Push below keeps the default
+      # config, which holds the registry login.
       - name: Build
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-build
         run: |
           docker build --pull \
             --build-arg VERSION=${{ github.ref_name }} \
