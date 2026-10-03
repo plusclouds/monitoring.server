@@ -1,0 +1,91 @@
+# Monitoring engine with its PostgreSQL database.
+#
+#   cp .env.example .env        # then fill in the passwords and the key (see the file)
+#   docker compose up -d
+#   docker compose logs bootstrap   # first start only: the platform key, shown once
+#
+# Use `up -d` without --wait: --wait reports the one-shot bootstrap service's
+# normal exit as a failure.
+#
+# On every start PostgreSQL comes up first, the engine applies migrations and
+# starts, and the one-shot bootstrap service creates the installation and its
+# platform key if they do not exist yet.
+#
+# Networks: the project gets its own two networks (monitoring_backend,
+# monitoring_frontend), isolated from other compose projects on the host. The
+# database sits only on the internal backend network: no route out, and only
+# the engine can reach it. The project name must be unique on the host.
+name: monitoring
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
+      # Read by initdb/10-monitor-roles.sh on the first start only.
+      MONITOR_OWNER_PASSWORD: ${MONITOR_OWNER_PASSWORD:?set MONITOR_OWNER_PASSWORD in .env}
+      MONITOR_APP_PASSWORD: ${MONITOR_APP_PASSWORD:?set MONITOR_APP_PASSWORD in .env}
+      MONITOR_SYSTEM_PASSWORD: ${MONITOR_SYSTEM_PASSWORD:?set MONITOR_SYSTEM_PASSWORD in .env}
+    volumes:
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+      - pgdata:/var/lib/postgresql
+    networks: [backend]
+    # Not published: only the engine reaches the database.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "monitor", "-h", "127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  monitor:
+    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment: &monitor-env
+      MONITOR_CONFIG: /etc/monitor/config.yaml
+      # Passwords must be URL-safe (letters and digits), as .env.example suggests.
+      MONITOR_DATABASE__OWNER__DSN: postgres://monitor_owner:${MONITOR_OWNER_PASSWORD}@postgres:5432/monitor?sslmode=disable
+      MONITOR_DATABASE__APP__DSN: postgres://monitor_app:${MONITOR_APP_PASSWORD}@postgres:5432/monitor?sslmode=disable
+      MONITOR_DATABASE__SYSTEM__DSN: postgres://monitor_system:${MONITOR_SYSTEM_PASSWORD}@postgres:5432/monitor?sslmode=disable
+      MONITOR_KEK: ${MONITOR_KEK:?set MONITOR_KEK in .env}
+      MONITOR_API__PUBLIC_URL: ${MONITOR_PUBLIC_URL:-http://localhost:8443}
+      MONITOR_PLATFORM__IDENTITY_SOURCE: ${MONITOR_IDENTITY_SOURCE:-plusclouds}
+    volumes:
+      - ./config.yaml:/etc/monitor/config.yaml:ro
+    # backend for the database; frontend for the published API port and for
+    # outgoing connections to monitored targets.
+    networks: [backend, frontend]
+    ports:
+      - "${MONITOR_API_BIND:-127.0.0.1}:${MONITOR_API_PORT:-8443}:8443"
+    stop_grace_period: 40s   # node.shutdown_grace is 30s
+
+  # Runs once per `up`: creates the installation ID, the platform tenant and
+  # the platform key on the first start, and does nothing afterwards.
+  bootstrap:
+    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
+    command: ["admin", "bootstrap", "--if-needed"]
+    restart: "no"
+    depends_on:
+      monitor:
+        condition: service_healthy   # migrations applied, database reachable
+    environment: *monitor-env
+    volumes:
+      - ./config.yaml:/etc/monitor/config.yaml:ro
+    networks: [backend]
+
+networks:
+  backend:
+    internal: true   # no route to the host or the internet
+  frontend: {}
+  # To serve the API through a reverse proxy that runs in another compose
+  # project (Traefik, nginx), join its network: uncomment this, add `proxy`
+  # to the monitor service's networks, and drop the published port.
+  # proxy:
+  #   external: true
+  #   name: proxy   # the proxy project's network name
+
+volumes:
+  pgdata:

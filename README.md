@@ -66,6 +66,19 @@ flowchart LR
 | **Phase 2** | Scale and noise control: remote probes with failover, dependencies, maintenance, traps/syslog, templates and discovery, VMware and Proxmox, escalation, LLM endpoints and trace metrics | Stable on remote sites |
 | **Phase 3** | Customer-facing: PlusClouds panel integration, SLA reports, status pages, NetFlow, Terraform provider, ClickHouse backend, LLM quality evaluation | Offered to customers |
 
+## Deployment with Docker Compose
+
+[deploy/compose](deploy/compose) runs the published image with its own PostgreSQL. The database is not exposed, passwords and the key-encryption key come from `.env`, and the first start bootstraps the installation by itself.
+
+```sh
+cd deploy/compose
+cp .env.example .env          # fill in the passwords (openssl rand -hex 24) and MONITOR_KEK (openssl rand -base64 32)
+docker compose up -d
+docker compose logs bootstrap # the platform key, printed on the first start only
+```
+
+Every later `up` applies new migrations and leaves the installation as it is. The API listens on `127.0.0.1:8443` by default; put a TLS-terminating proxy in front before exposing it. Back up the PostgreSQL volume and `MONITOR_KEK`: without the key, stored device credentials cannot be decrypted.
+
 ## Development
 
 Requirements: Docker. Go 1.27 only to build and test from source.
@@ -83,10 +96,10 @@ open http://127.0.0.1:8443/docs
 
 The container uses [deploy/docker/config.yaml](deploy/docker/config.yaml) (development only: inline passwords, plain HTTP). Its health check runs `monitor health` against the status server on loopback. `docker compose … down -v` removes the database.
 
-**Run from source** against the same database:
+**Run from source** against the same database. The database is on a private network by default; the override file publishes it on `127.0.0.1:55432` for the host:
 
 ```sh
-docker compose -f deploy/docker-compose.yml up -d --wait postgres
+docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.db-port.yml up -d --wait postgres
 make build
 ./bin/monitor migrate up --config deploy/dev/config.yaml
 ./bin/monitor admin bootstrap --config deploy/dev/config.yaml --standalone --tenant "Dev"   # prints an admin key once
