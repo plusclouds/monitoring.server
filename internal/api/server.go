@@ -142,6 +142,11 @@ func (s *Server) Handler() (http.Handler, error) {
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", h)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("ok\n")) })
+	if s.cfg.Docs {
+		if err := s.docsRoutes(mux); err != nil {
+			return nil, err
+		}
+	}
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { writeProblem(w, r, s.log, errNotFound) })
 
 	var out http.Handler = mux
