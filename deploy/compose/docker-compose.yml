@@ -1,13 +1,15 @@
-# Monitoring engine with its PostgreSQL database.
+# Monitoring engine with its PostgreSQL database. Self-contained: this file
+# and a .env next to it are all a server needs.
 #
 #   cp .env.example .env        # then fill in the passwords and the key (see the file)
 #   docker compose up -d
 #   docker compose logs bootstrap   # first start only: the platform key, shown once
 #
 # Use `up -d` without --wait: --wait reports the one-shot bootstrap service's
-# normal exit as a failure.
+# normal exit as a failure. Needs Docker Compose 2.23 or newer (inline configs).
 #
-# On every start PostgreSQL comes up first, the engine applies migrations and
+# On every start PostgreSQL comes up first (creating the engine's roles and
+# database on its very first start), the engine applies migrations and
 # starts, and the one-shot bootstrap service creates the installation and its
 # platform key if they do not exist yet.
 #
@@ -23,12 +25,15 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
-      # Read by initdb/10-monitor-roles.sh on the first start only.
+      # Read by the monitor-roles init script on the first start only.
       MONITOR_OWNER_PASSWORD: ${MONITOR_OWNER_PASSWORD:?set MONITOR_OWNER_PASSWORD in .env}
       MONITOR_APP_PASSWORD: ${MONITOR_APP_PASSWORD:?set MONITOR_APP_PASSWORD in .env}
       MONITOR_SYSTEM_PASSWORD: ${MONITOR_SYSTEM_PASSWORD:?set MONITOR_SYSTEM_PASSWORD in .env}
+    configs:
+      - source: monitor-roles
+        target: /docker-entrypoint-initdb.d/10-monitor-roles.sh
+        mode: 0555
     volumes:
-      - ./initdb:/docker-entrypoint-initdb.d:ro
       - pgdata:/var/lib/postgresql
     networks: [backend]
     # Not published: only the engine reaches the database.
@@ -52,9 +57,11 @@ services:
       MONITOR_DATABASE__SYSTEM__DSN: postgres://monitor_system:${MONITOR_SYSTEM_PASSWORD}@postgres:5432/monitor?sslmode=disable
       MONITOR_KEK: ${MONITOR_KEK:?set MONITOR_KEK in .env}
       MONITOR_API__PUBLIC_URL: ${MONITOR_PUBLIC_URL:-http://localhost:8443}
+      MONITOR_API__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
       MONITOR_PLATFORM__IDENTITY_SOURCE: ${MONITOR_IDENTITY_SOURCE:-plusclouds}
-    volumes:
-      - ./config.yaml:/etc/monitor/config.yaml:ro
+    configs:
+      - source: monitor-config
+        target: /etc/monitor/config.yaml
     # backend for the database; frontend for the published API port and for
     # outgoing connections to monitored targets.
     networks: [backend, frontend]
@@ -72,9 +79,68 @@ services:
       monitor:
         condition: service_healthy   # migrations applied, database reachable
     environment: *monitor-env
-    volumes:
-      - ./config.yaml:/etc/monitor/config.yaml:ro
+    configs:
+      - source: monitor-config
+        target: /etc/monitor/config.yaml
     networks: [backend]
+
+configs:
+  # Engine settings. Secrets are not here: the environment above supplies the
+  # database DSNs, the key-encryption key and the public URL from .env.
+  # Reference for every key: deploy/config.example.yaml in the repository.
+  monitor-config:
+    content: |
+      logging:
+        format: json
+        level: info
+      database:
+        migrate_on_start: true
+      crypto:
+        file:
+          active: main
+          keys:
+            - id: main
+              env: MONITOR_KEK
+      api:
+        listen: ":8443"
+        # Plain HTTP inside the stack; TLS is terminated by the reverse proxy
+        # in front (see deploy/nginx). Client addresses are taken from
+        # X-Forwarded-For only for requests from MONITOR_TRUSTED_PROXIES.
+        tls: { cert_file: "", key_file: "" }
+      probe_service:
+        enabled: false   # not implemented in this release
+      ingest:
+        http: { enabled: false }
+        mqtt: { enabled: false }
+      self_monitoring:
+        # Loopback inside the container; Docker's health check probes it
+        # with `monitor health`.
+        listen: "127.0.0.1:9090"
+        status_token_file: ""
+
+  # Creates the engine's three database roles and its database (ADR-0008) on
+  # PostgreSQL's first start. Passwords are passed as psql variables, so psql
+  # quotes them and they are never pasted into the SQL. ($$ is how Compose
+  # writes a literal $.)
+  #   monitor_owner   owns the schema; used only to run migrations
+  #   monitor_app     subject to row-level security; used by the api role
+  #   monitor_system  BYPASSRLS; used by background roles and admin commands
+  monitor-roles:
+    content: |
+      #!/bin/sh
+      set -eu
+      psql -v ON_ERROR_STOP=1 --username "$$POSTGRES_USER" --dbname postgres \
+        -v owner_pw="$$MONITOR_OWNER_PASSWORD" \
+        -v app_pw="$$MONITOR_APP_PASSWORD" \
+        -v system_pw="$$MONITOR_SYSTEM_PASSWORD" <<'SQL'
+      CREATE ROLE monitor_owner  LOGIN PASSWORD :'owner_pw';
+      CREATE ROLE monitor_app    LOGIN PASSWORD :'app_pw';
+      CREATE ROLE monitor_system LOGIN BYPASSRLS PASSWORD :'system_pw';
+      CREATE DATABASE monitor OWNER monitor_owner;
+      \connect monitor
+      REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system;
+      SQL
 
 networks:
   backend:
