@@ -48,6 +48,7 @@ type Route struct {
 	EndpointID uuid.UUID
 	Continue   bool
 	Labels     map[string]string // step labels; receivers decide what they mean
+	Steps      []Step            // escalation; empty is one step with Labels
 	Grouping
 	ManagedBy string
 	External  *extref.Ref
@@ -64,6 +65,7 @@ type RouteInput struct {
 	EndpointID uuid.UUID
 	Continue   bool
 	Labels     map[string]string
+	Steps      []Step
 	Grouping
 	External *extref.Ref
 }
@@ -119,6 +121,9 @@ func (in *RouteInput) validate(ctx context.Context, tx pgx.Tx) error {
 	if err := in.Grouping.validate(); err != nil {
 		return err
 	}
+	if err := validateSteps(in.Steps); err != nil {
+		return err
+	}
 	if len(in.Labels) > 20 {
 		return errs.Invalidf("labels", "at most 20 labels")
 	}
@@ -130,7 +135,7 @@ func (in *RouteInput) validate(ctx context.Context, tx pgx.Tx) error {
 	return in.External.Validate()
 }
 
-const routeCols = `id, tenant_id, name, position, enabled, match, endpoint_id, continue, labels, group_by,
+const routeCols = `id, tenant_id, name, position, enabled, match, endpoint_id, continue, labels, steps, group_by,
 	group_wait_seconds, coalesce(repeat_interval_seconds, 0), managed_by, external_source, external_type, external_id,
 	created_at, updated_at`
 
@@ -144,7 +149,7 @@ func scanRoute(row pgx.Row) (Route, error) {
 	var src, typ, ext *string
 	var wait, repeat int
 	err := row.Scan(&r.ID, &r.TenantID, &r.Name, &r.Position, &r.Enabled, &r.Match, &r.EndpointID, &r.Continue,
-		&r.Labels, &r.GroupBy, &wait, &repeat, &r.ManagedBy, &src, &typ, &ext, &r.CreatedAt, &r.UpdatedAt)
+		&r.Labels, &r.Steps, &r.GroupBy, &wait, &repeat, &r.ManagedBy, &src, &typ, &ext, &r.CreatedAt, &r.UpdatedAt)
 	r.GroupWait, r.RepeatInterval = time.Duration(wait)*time.Second, time.Duration(repeat)*time.Second
 	if errors.Is(err, pgx.ErrNoRows) {
 		return r, errs.ErrNotFound
@@ -156,7 +161,7 @@ func scanRoute(row pgx.Row) (Route, error) {
 func (r Route) snapshot() map[string]any {
 	return map[string]any{"name": r.Name, "position": r.Position, "enabled": r.Enabled, "match": r.Match,
 		"endpoint_id": r.EndpointID, "continue": r.Continue, "labels": r.Labels, "external": r.External,
-		"group_by": r.GroupBy, "group_wait_seconds": int(r.GroupWait.Seconds()),
+		"steps": r.Steps, "group_by": r.GroupBy, "group_wait_seconds": int(r.GroupWait.Seconds()),
 		"repeat_interval_seconds": int(r.RepeatInterval.Seconds())}
 }
 
@@ -196,8 +201,11 @@ func ListRoutes(ctx context.Context, q interface {
 }
 
 // CreateRoute adds a route; position 0 places it last.
-func CreateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid.UUID, in RouteInput) (Route, error) {
+func CreateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid.UUID, max int, in RouteInput) (Route, error) {
 	if err := in.validate(ctx, tx); err != nil {
+		return Route{}, err
+	}
+	if err := withinLimit(ctx, tx, "alert_routes", tenant, max, "alert routes"); err != nil {
 		return Route{}, err
 	}
 	if in.Position == 0 {
@@ -214,10 +222,11 @@ func CreateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid.
 	r, err := scanRoute(tx.QueryRow(ctx, `
 		INSERT INTO alert_routes (id, tenant_id, name, position, enabled, match, endpoint_id, continue, labels,
 		                          group_by, group_wait_seconds, repeat_interval_seconds,
-		                          external_source, external_type, external_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, nullif($12, 0), $13, $14, $15) RETURNING `+routeCols,
+		                          external_source, external_type, external_id, steps)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, nullif($12, 0), $13, $14, $15, $16) RETURNING `+routeCols,
 		id, tenant, in.Name, in.Position, in.Enabled, in.Match, in.EndpointID, in.Continue, nonNilMap(in.Labels),
-		nonNilStrings(in.GroupBy), int(in.GroupWait.Seconds()), int(in.RepeatInterval.Seconds()), src, typ, ext))
+		nonNilStrings(in.GroupBy), int(in.GroupWait.Seconds()), int(in.RepeatInterval.Seconds()), src, typ, ext,
+		nonNilSteps(in.Steps)))
 	if err != nil {
 		return Route{}, errs.FromDB(err, routeConstraints)
 	}
@@ -241,6 +250,7 @@ func UpdateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	next.EndpointID, next.Continue, next.Labels, next.External = in.EndpointID, in.Continue, nonNilMap(maps.Clone(in.Labels)), in.External
 	next.Grouping = in.Grouping
 	next.GroupBy = nonNilStrings(in.GroupBy)
+	next.Steps = nonNilSteps(in.Steps)
 	before, after := normalize(cur.snapshot()), normalize(next.snapshot())
 	if reflect.DeepEqual(before, after) {
 		return cur, nil
@@ -249,10 +259,10 @@ func UpdateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	out, err := scanRoute(tx.QueryRow(ctx, `
 		UPDATE alert_routes SET name = $2, position = $3, enabled = $4, match = $5, endpoint_id = $6, continue = $7,
 		       labels = $8, external_source = $9, external_type = $10, external_id = $11, group_by = $12,
-		       group_wait_seconds = $13, repeat_interval_seconds = nullif($14, 0), updated_at = now()
+		       group_wait_seconds = $13, repeat_interval_seconds = nullif($14, 0), steps = $15, updated_at = now()
 		 WHERE id = $1 RETURNING `+routeCols,
 		id, next.Name, next.Position, next.Enabled, next.Match, next.EndpointID, next.Continue, next.Labels, src, typ, ext,
-		next.GroupBy, int(next.GroupWait.Seconds()), int(next.RepeatInterval.Seconds())))
+		next.GroupBy, int(next.GroupWait.Seconds()), int(next.RepeatInterval.Seconds()), next.Steps))
 	if err != nil {
 		return Route{}, errs.FromDB(err, routeConstraints)
 	}
@@ -310,4 +320,76 @@ func nonNilStrings(s []string) []string {
 		return []string{}
 	}
 	return s
+}
+
+// withinLimit refuses a create beyond the tenant's limit for table. It
+// takes a per-tenant lock so concurrent creates cannot both pass.
+func withinLimit(ctx context.Context, tx pgx.Tx, table string, tenant uuid.UUID, max int, what string) error {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1, 0))`, table+":"+tenant.String()); err != nil {
+		return err
+	}
+	var n int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM `+table+` WHERE tenant_id = $1`, tenant).Scan(&n); err != nil {
+		return err
+	}
+	if n >= max {
+		return errs.Conflictf("limit-reached", "the tenant has reached its limit of %d %s", max, what)
+	}
+	return nil
+}
+
+func nonNilSteps(s []Step) []Step {
+	if s == nil {
+		return []Step{}
+	}
+	return s
+}
+
+// Evaluation is what the router would do with an event for one route.
+type Evaluation struct {
+	Route    Route
+	Matched  bool
+	Notifies bool
+}
+
+// Evaluate runs a tenant's routes over an event the way the router does,
+// without delivering anything: evaluation stops at the first match without
+// continue.
+func Evaluate(ctx context.Context, tx pgx.Tx, tenant uuid.UUID, env *incident.Envelope) ([]Evaluation, error) {
+	rs, err := ListRoutes(ctx, tx, tenant)
+	if err != nil {
+		return nil, err
+	}
+	obj, _ := env.Data.Object.(map[string]any)
+	severity, _ := obj["severity"].(string)
+	out := make([]Evaluation, len(rs))
+	stopped := false
+	for i, r := range rs {
+		out[i].Route = r
+		if !r.Enabled || !r.Matches(env, severity) {
+			continue
+		}
+		out[i].Matched = true
+		if stopped {
+			continue
+		}
+		var on bool
+		if err := tx.QueryRow(ctx, `SELECT enabled FROM webhook_endpoints WHERE id = $1`, r.EndpointID).Scan(&on); err != nil {
+			return nil, err
+		}
+		out[i].Notifies = on
+		stopped = !r.Continue
+	}
+	return out, nil
+}
+
+// ReplayFailed queues an endpoint's deliveries with the given status,
+// created in [from, to), again. It returns how many.
+func ReplayFailed(ctx context.Context, tx pgx.Tx, endpoint uuid.UUID, status string, from, to time.Time) (int64, error) {
+	tag, err := tx.Exec(ctx, `
+		UPDATE webhook_deliveries SET status = 'pending', next_attempt_at = now(), created_at = now(), attempts = 0
+		 WHERE id IN (SELECT id FROM webhook_deliveries
+		               WHERE endpoint_id = $1 AND status = $2 AND created_at >= $3 AND created_at < $4
+		               ORDER BY event_seq LIMIT 10000)`, endpoint, status, from, to)
+	return tag.RowsAffected(), err
 }

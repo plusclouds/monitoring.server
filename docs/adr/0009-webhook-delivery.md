@@ -1,6 +1,6 @@
 # ADR-0009: Webhook delivery and signing
 
-**Status:** Proposed · **Date:** 2026-09-27 · **Updated:** 2026-09-28 (envelope aligned with PlusClouds)
+**Status:** Accepted · **Date:** 2026-09-27 · **Updated:** 2026-10-04 (implemented through M4)
 
 ## Context
 
@@ -62,7 +62,7 @@ Transactional outbox, signed according to Standard Webhooks.
 | `data.route` | Alert route ID, step number and step labels ([F06](../features/F06-notifications.md)) |
 | `data.actor` | For acknowledgements and manual resolves: the user's engine ID and external ID; otherwise null |
 
-Event types: `monitoring.incident.opened`, `monitoring.incident.updated` (severity or flapping change), `monitoring.incident.acknowledged`, `monitoring.incident.escalated`, `monitoring.incident.resolved`, `monitoring.incident.commented` (stream only: routes deliver it only when their `match.event_types` names it), `monitoring.incident.renotify`, `monitoring.tenant.device_limit_reached`, `monitoring.heartbeat`, `monitoring.webhook.test`. Grouped notifications ([F06](../features/F06-notifications.md)) carry the grouped incidents as `data.objects` (a list) with `subject` set to the group key. The SSE stream uses the same types and envelope.
+Event types: `monitoring.incident.opened`, `monitoring.incident.updated` (severity or flapping change), `monitoring.incident.acknowledged`, `monitoring.incident.escalated`, `monitoring.incident.resolved`, `monitoring.incident.commented` (stream only: routes deliver it only when their `match.event_types` names it), `monitoring.incident.renotify`, `monitoring.tenant.device_limit_reached`, `monitoring.heartbeat`, `monitoring.webhook.test`. Grouped notifications ([F06](../features/F06-notifications.md)) carry the grouped incidents as `data.objects`, a list of `{object, device, check}`, with `data.group` (`id`, `key`, `count`) and `subject` set to `group:<id>`. `data.object`, `data.device` and `data.check` are null in a grouped event. `renotify` and `escalated` go only to the route that scheduled them. `data.links.incident` links to the panel when the operator configures a URL template. The SSE stream uses the same types and envelope.
 
 - **Signing:** exactly as PlusClouds' `event_webhook` pusher: `webhook-id`, `webhook-timestamp` (Unix seconds), `webhook-signature` (`v1,<base64 HMAC-SHA256 over id.timestamp.body>`, several space-separated during rotation). The secret format `whsec_<base64>` is shared, so leo4 verifies engine events with the code it already has.
 
@@ -74,3 +74,7 @@ Event types: `monitoring.incident.opened`, `monitoring.incident.updated` (severi
 - Receivers must handle duplicates; n8n and Node-RED flows need a dedup step, which the integration guide will show.
 - One envelope across PlusClouds and the engine: receivers written for PlusClouds events (n8n, Node-RED, customer code) handle engine events too.
 - PlusClouds receives engine events on one leo4 endpoint and re-fires them through its own event system, so its existing listeners and pushers (email and SMS, panel inbox, chat, NATS live stream) deliver them. See [ADR-0012](0012-plusclouds-identity-and-external-ids.md#plusclouds-receiver).
+
+## Implementation notes
+
+The outbox described above is implemented as two tables: `events` holds each event once, and `webhook_deliveries` holds one row per event and endpoint. The router turns events into deliveries; the dispatcher claims and sends them. Notifications of incidents that something upstream could explain wait for `notifier.dependency_grace` before routing ([F05](../features/F05-state-and-incidents.md)). Delivery is polled every second; LISTEN/NOTIFY wake-up is not used yet.

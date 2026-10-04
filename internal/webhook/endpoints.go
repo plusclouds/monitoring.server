@@ -169,8 +169,11 @@ func ListEndpoints(ctx context.Context, tx pgx.Tx) ([]Endpoint, error) {
 
 // CreateEndpoint stores an endpoint and returns its new signing secret,
 // which is shown once.
-func (s *Store) CreateEndpoint(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid.UUID, in EndpointInput) (Endpoint, string, error) {
+func (s *Store) CreateEndpoint(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid.UUID, max int, in EndpointInput) (Endpoint, string, error) {
 	if err := in.validate(); err != nil {
+		return Endpoint{}, "", err
+	}
+	if err := withinLimit(ctx, tx, "webhook_endpoints", tenant, max, "webhooks"); err != nil {
 		return Endpoint{}, "", err
 	}
 	id, err := uuid.NewV7()

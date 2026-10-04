@@ -227,6 +227,12 @@ type Notifier struct {
 	// DependencyGrace holds back an incident's notification so an upstream
 	// failure found meanwhile can suppress it (F05).
 	DependencyGrace Duration `yaml:"dependency_grace"`
+	// IncidentURLTemplate builds data.links.incident, the incident in the
+	// panel. Placeholders: {incident_id}, {account_id}, {tenant_id}.
+	IncidentURLTemplate string `yaml:"incident_url_template"`
+	// DeliveryRetention is how long finished deliveries and routed events
+	// are kept for the delivery log and replay. 0 keeps them forever.
+	DeliveryRetention Duration `yaml:"delivery_retention"`
 }
 
 type Ingest struct {
@@ -309,6 +315,8 @@ type JIT struct {
 type TenantLimits struct {
 	MaxDevices              int      `yaml:"max_devices"`
 	MaxChecks               int      `yaml:"max_checks"`
+	MaxWebhooks             int      `yaml:"max_webhooks"`
+	MaxAlertRoutes          int      `yaml:"max_alert_routes"`
 	MinCheckIntervalSeconds int      `yaml:"min_check_interval_seconds"`
 	APIRatePerMinute        int      `yaml:"api_rate_per_minute"`
 	AllowedTargetNetworks   []string `yaml:"allowed_target_networks,omitempty"`

@@ -20,6 +20,7 @@ func toAPITenant(t tenancy.Tenant) gen.Tenant {
 		ConfigSource: gen.TenantConfigSource(t.ConfigSource),
 		Limits: gen.TenantLimits{
 			MaxDevices: &l.MaxDevices, MaxChecks: &l.MaxChecks,
+			MaxWebhooks: &l.MaxWebhooks, MaxAlertRoutes: &l.MaxAlertRoutes,
 			MinCheckIntervalSeconds: &l.MinCheckIntervalSeconds, ApiRatePerMinute: &l.APIRatePerMinute,
 			AllowedTargetNetworks: &nets, MetricClasses: &classes,
 			MaxApiKeyLifetimeDays: l.MaxAPIKeyLifetimeDays,
@@ -56,7 +57,7 @@ func limitsPatch(l *gen.TenantLimits) tenancy.LimitsPatch {
 		return tenancy.LimitsPatch{}
 	}
 	return tenancy.LimitsPatch{
-		MaxDevices: l.MaxDevices, MaxChecks: l.MaxChecks,
+		MaxDevices: l.MaxDevices, MaxChecks: l.MaxChecks, MaxWebhooks: l.MaxWebhooks, MaxAlertRoutes: l.MaxAlertRoutes,
 		MinCheckIntervalSeconds: l.MinCheckIntervalSeconds, APIRatePerMinute: l.ApiRatePerMinute,
 		AllowedTargetNetworks: l.AllowedTargetNetworks, MetricClasses: l.MetricClasses,
 		MaxAPIKeyLifetimeDays: l.MaxApiKeyLifetimeDays,

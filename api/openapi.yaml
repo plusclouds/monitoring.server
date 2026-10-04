@@ -1147,6 +1147,10 @@ paths:
         - { name: severity, in: query, schema: { type: string, enum: [warning, critical] } }
         - { name: device_id, in: query, schema: { type: string, format: uuid } }
         - { name: check_id, in: query, schema: { type: string, format: uuid } }
+        - name: suppressed
+          in: query
+          description: "`false` lists only incidents that were notified; `true` only those an upstream failure explains."
+          schema: { type: boolean }
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
       responses:
@@ -1429,6 +1433,73 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/WebhookDelivery" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/{webhook_id}/deliveries/replay:
+    post:
+      operationId: replayWebhookDeliveries
+      tags: [notifications]
+      summary: Send an endpoint's failed deliveries again, in bulk
+      description: |
+        Requires the operator role. Queues every delivery of the endpoint
+        with the given status, created in [from, to), again with a fresh
+        24-hour retry window, in their original order. For catching up after
+        a receiver outage longer than the retry window. At most 10,000 per call.
+      parameters:
+        - $ref: "#/components/parameters/WebhookID"
+        - { name: status, in: query, schema: { type: string, enum: [failed, cancelled], default: failed } }
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+      responses:
+        "202":
+          description: Queued
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [replayed]
+                properties:
+                  replayed: { type: integer }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /alert-routes/test:
+    post:
+      operationId: testAlertRoutes
+      tags: [notifications]
+      summary: Which routes a sample incident would reach
+      description: |
+        Evaluates the tenant's routes against an incident event built from a
+        real device and check, without sending anything. `notifies` is true
+        for routes that would deliver: enabled, matching, reached (no earlier
+        match without `continue`) and with an enabled endpoint.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                event_type:
+                  type: string
+                  enum: [monitoring.incident.opened, monitoring.incident.updated, monitoring.incident.acknowledged,
+                         monitoring.incident.resolved, monitoring.incident.commented]
+                  default: monitoring.incident.opened
+                severity: { type: string, enum: [warning, critical], default: critical }
+                device_id: { type: string, format: uuid }
+                check_id: { type: string, format: uuid, description: "Its device is used when device_id is left out" }
+      responses:
+        "200":
+          description: Every route in evaluation order
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [routes]
+                properties:
+                  routes:
+                    type: array
+                    items: { $ref: "#/components/schemas/RouteTestResult" }
         default: { $ref: "#/components/responses/Problem" }
 
   /alert-routes:
@@ -1916,6 +1987,8 @@ components:
       properties:
         max_devices: { type: integer, minimum: 0 }
         max_checks: { type: integer, minimum: 0 }
+        max_webhooks: { type: integer, minimum: 0, description: "Webhook endpoints the tenant may create" }
+        max_alert_routes: { type: integer, minimum: 0, description: "Alert routes the tenant may create" }
         min_check_interval_seconds: { type: integer, minimum: 1 }
         api_rate_per_minute: { type: integer, minimum: 0, description: "0 = unlimited" }
         allowed_target_networks:
@@ -2540,7 +2613,7 @@ components:
 
     AlertRoute:
       type: object
-      required: [id, name, position, enabled, match, endpoint_id, continue, labels, group_by, group_wait_seconds,
+      required: [id, name, position, enabled, match, endpoint_id, continue, labels, steps, group_by, group_wait_seconds,
                  repeat_interval_seconds, managed_by, external, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
@@ -2557,6 +2630,9 @@ components:
         group_by:
           type: array
           items: { $ref: "#/components/schemas/GroupField" }
+        steps:
+          type: array
+          items: { $ref: "#/components/schemas/RouteStep" }
         group_wait_seconds: { type: integer }
         repeat_interval_seconds: { type: [integer, "null"] }
         managed_by: { type: string }
@@ -2593,6 +2669,17 @@ components:
             `root_device_id` groups a switch outage with the incidents it
             explains.
           items: { $ref: "#/components/schemas/GroupField" }
+        steps:
+          type: array
+          maxItems: 10
+          description: |
+            Escalation. Step 0 is the notification itself; each later step is
+            sent `after_seconds` after it as `monitoring.incident.escalated`,
+            to this route only, with its labels in `data.route.labels` and
+            its number in `data.route.step`, while the incident is open (and
+            unacknowledged, for steps with `only_if_unacknowledged`). Empty:
+            one step with the route's labels.
+          items: { $ref: "#/components/schemas/RouteStep" }
         group_wait_seconds: { type: integer, minimum: 0, maximum: 600, default: 30 }
         repeat_interval_seconds:
           type: [integer, "null"]
@@ -2602,6 +2689,49 @@ components:
             Re-send open, unacknowledged, unsuppressed incidents this often as
             `monitoring.incident.renotify`, to this route only. Null: never.
         external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    RouteTestResult:
+      type: object
+      required: [id, name, matched, notifies, endpoint_id]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        endpoint_id: { type: string, format: uuid }
+        matched: { type: boolean }
+        notifies: { type: boolean }
+
+    RouteStep:
+      type: object
+      additionalProperties: false
+      required: [after_seconds]
+      properties:
+        after_seconds:
+          type: integer
+          minimum: 0
+          maximum: 604800
+          description: After the incident was notified. The first step is the notification itself (0).
+        labels:
+          type: object
+          maxProperties: 20
+          description: Merged over the route's labels in data.route.labels
+          additionalProperties: { type: string, maxLength: 200 }
+        only_if_unacknowledged: { type: boolean, default: false }
+        schedule:
+          type: object
+          additionalProperties: false
+          required: [from, to]
+          description: |
+            Send this step only within these hours. Due outside them, it waits
+            for the next window, unless the incident was resolved (or
+            acknowledged, with only_if_unacknowledged) meanwhile. `to` before
+            `from` spans midnight. Not allowed on the first step.
+          properties:
+            timezone: { type: string, default: UTC, examples: [Europe/Istanbul] }
+            days:
+              type: array
+              items: { type: string, enum: [mon, tue, wed, thu, fri, sat, sun] }
+            from: { type: string, pattern: "^[0-2][0-9]:[0-5][0-9]$", examples: ["08:00"] }
+            to: { type: string, pattern: "^[0-2][0-9]:[0-5][0-9]$", examples: ["18:00"] }
 
     GroupField:
       type: string

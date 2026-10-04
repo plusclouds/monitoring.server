@@ -30,7 +30,7 @@ type noise struct {
 	n      *webhook.Notifier
 }
 
-func newNoise(t *testing.T, grace time.Duration) *noise {
+func newNoise(t *testing.T, grace time.Duration, tune ...func(*config.Notifier)) *noise {
 	t.Helper()
 	e := setup(t, true)
 	if _, err := db.System.Exec(context.Background(),
@@ -46,6 +46,9 @@ func newNoise(t *testing.T, grace time.Duration) *noise {
 	}
 	cfg := config.Default()
 	cfg.Notifier.DependencyGrace = config.Duration(grace)
+	for _, f := range tune {
+		f(&cfg.Notifier)
+	}
 	if x.n, err = webhook.New(webhook.Options{System: db.System, Store: &webhook.Store{Keys: sharedKeys},
 		Sender: webhook.NewSender(cfg), Config: cfg.Notifier, Logger: slog.New(slog.DiscardHandler),
 		Registry: prometheus.NewRegistry()}); err != nil {
@@ -116,6 +119,9 @@ func TestDependencySuppression(t *testing.T) {
 	x.tick()
 	if got := x.rcv.types(); len(got) != 1 {
 		t.Fatalf("want only the switch notified, got %v", got)
+	}
+	if l := x.must(x.do("GET", "/v1/incidents?suppressed=true", x.key, nil), 200).body["items"].([]any); len(l) != 2 {
+		t.Errorf("suppressed filter: %d incidents, want 2", len(l))
 	}
 	swInc := x.incident(swPing)["id"]
 	for _, c := range []string{srvWeb, srvPing} {

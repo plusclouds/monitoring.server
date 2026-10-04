@@ -242,6 +242,13 @@ notifier:
   # dependency, its own host check) is notified this long after it opens,
   # so an upstream failure found meanwhile suppresses it (F05).
   dependency_grace: 30s
+  # Link to an incident in your panel, sent as data.links.incident. Empty:
+  # no link. Placeholders: {incident_id}, {account_id}, {tenant_id}.
+  incident_url_template: ""
+  # Finished deliveries (delivered, failed, cancelled) and routed events are
+  # deleted after this; the delivery log and bulk replay reach this far back.
+  delivery_retention: 720h      # 30 days; 0 keeps them forever
+  # incident_url_template: https://panel.plusclouds.com/monitoring/incidents/{incident_id}
   delivery_timeout: 10s        # default when an endpoint sets no timeout
   max_delivery_timeout: 30s    # cap for endpoint timeouts
   retry_schedule: [5s, 30s, 2m, 10m, 30m, 1h]   # last value repeats
@@ -343,6 +350,8 @@ platform:
   tenant_defaults:
     max_devices: 1000
     max_checks: 10000
+    max_webhooks: 20
+    max_alert_routes: 50
     min_check_interval_seconds: 30
     api_rate_per_minute: 1200
     # Empty = everything except RFC 1918, loopback and link-local.

@@ -42,7 +42,7 @@ func limitsFrom(c config.TenantLimits) Limits {
 		classes = []string{"standard"}
 	}
 	return Limits{
-		MaxDevices: c.MaxDevices, MaxChecks: c.MaxChecks,
+		MaxDevices: c.MaxDevices, MaxChecks: c.MaxChecks, MaxWebhooks: c.MaxWebhooks, MaxAlertRoutes: c.MaxAlertRoutes,
 		MinCheckIntervalSeconds: c.MinCheckIntervalSeconds, APIRatePerMinute: c.APIRatePerMinute,
 		AllowedTargetNetworks: nets, MetricClasses: classes,
 	}

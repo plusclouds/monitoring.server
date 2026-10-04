@@ -105,7 +105,16 @@ Verified with integration tests (`TestMetricsStoreAndQuery`, `TestRetention`, an
 
 Verified by `TestDependencySuppression` (switch and server, release under the server's own ping), `TestRouteGrouping` and `TestRepeatInterval`.
 
-Not built yet: escalation steps and schedules (phase 2), a per-check dependency grace, an incident list filter on `suppressed`, and suppressing incidents already notified when a root opens later.
+Not built yet: a per-check dependency grace, and suppressing incidents already notified when a root opens later.
+
+### Webhooks completed (after M4 part 1)
+
+Escalation steps with schedules (`monitoring.incident.escalated`), `POST /v1/alert-routes/test`, bulk replay of an endpoint's failed deliveries, `data.links.incident` from `notifier.incident_url_template`, `data.check.thresholds`, and the `suppressed` filter on incidents. The release also adds:
+- tenant limits `max_webhooks` (20) and `max_alert_routes` (50);
+- a check of the network policy when a webhook URL is saved;
+- `notifier.delivery_retention` (30 days) for finished deliveries and routed events.
+
+Migrations `00012` and `00013`. Verified by `TestEscalationSteps`, `TestAlertRouteTest`, `TestBulkReplay`, `TestScheduleNext`, `TestWebhookLimits`, `TestWebhookURLPolicy` and `TestDeliveryRetention`. F06 is complete except the tenant device-limit and heartbeat events (heartbeat comes with F11 in M5).
 
 ### M3.5 — usage metering (F13)
 

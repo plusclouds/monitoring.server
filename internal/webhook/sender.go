@@ -10,7 +10,10 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
@@ -108,9 +111,9 @@ func (s *Sender) Send(ctx context.Context, t Target, id string, body []byte) Att
 	return Attempt{StatusCode: resp.StatusCode, Response: string(b)}
 }
 
-// withRoute returns the stored envelope with data.route set for one
-// delivery.
-func withRoute(envelope []byte, route json.RawMessage) ([]byte, error) {
+// render fills the per-delivery parts of an event body: data.route, and
+// data.links.incident from the URL template for single-incident events.
+func render(envelope []byte, route json.RawMessage, incidentURL string, tenant uuid.UUID) ([]byte, error) {
 	var env map[string]json.RawMessage
 	if err := json.Unmarshal(envelope, &env); err != nil {
 		return nil, err
@@ -123,6 +126,16 @@ func withRoute(envelope []byte, route json.RawMessage) ([]byte, error) {
 		route = json.RawMessage("null")
 	}
 	data["route"] = route
+	if incidentURL != "" {
+		var subject, account string
+		_ = json.Unmarshal(env["subject"], &subject)
+		_ = json.Unmarshal(data["account_id"], &account)
+		if _, err := uuid.Parse(subject); err == nil && string(data["object"]) != "null" {
+			link := strings.NewReplacer("{incident_id}", subject, "{account_id}", account,
+				"{tenant_id}", tenant.String()).Replace(incidentURL)
+			data["links"], _ = json.Marshal(map[string]string{"incident": link})
+		}
+	}
 	d, err := json.Marshal(data)
 	if err != nil {
 		return nil, err

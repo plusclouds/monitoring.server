@@ -108,7 +108,7 @@ func (s *Server) ListIncidents(ctx context.Context, req gen.ListIncidentsRequest
 	if q.Limit != nil {
 		n = *q.Limit
 	}
-	f := incident.Filter{DeviceID: q.DeviceId, CheckID: q.CheckId, Limit: n + 1}
+	f := incident.Filter{DeviceID: q.DeviceId, CheckID: q.CheckId, Suppressed: q.Suppressed, Limit: n + 1}
 	if q.Status != nil {
 		v := string(*q.Status)
 		f.Status = &v

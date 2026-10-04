@@ -41,6 +41,8 @@ type Notifier struct {
 	deliveries *prometheus.CounterVec
 	pending    prometheus.Gauge
 	oldest     prometheus.Gauge
+
+	lastCleanup time.Time
 }
 
 // New builds a notifier and registers its metrics.
@@ -98,6 +100,15 @@ func (n *Notifier) Tick(ctx context.Context) {
 	}
 	if err := n.repeat(ctx); err != nil && ctx.Err() == nil {
 		n.log.Error("repeat notifications", "error", err)
+	}
+	if err := n.escalate(ctx); err != nil && ctx.Err() == nil {
+		n.log.Error("escalate incidents", "error", err)
+	}
+	if time.Since(n.lastCleanup) > time.Hour {
+		n.lastCleanup = time.Now()
+		if _, err := n.Cleanup(ctx); err != nil && ctx.Err() == nil {
+			n.log.Error("delivery retention", "error", err)
+		}
 	}
 	for {
 		k, err := n.dispatch(ctx)
@@ -271,7 +282,19 @@ func (n *Notifier) take(ctx context.Context, tx pgx.Tx, e unrouted, env *inciden
 	} else if err := n.enqueue(ctx, tx, e.tenant, e.id, e.seq, e.typ, deref(e.subject), r); err != nil {
 		return err
 	}
-	if e.subject == nil || r.RepeatInterval == 0 {
+	if e.subject == nil {
+		return nil
+	}
+	if steps := r.stepsOf(); e.typ == incident.EventOpened && len(steps) > 1 {
+		for i, st := range steps[1:] {
+			if _, err := tx.Exec(ctx, `INSERT INTO route_escalations (tenant_id, route_id, incident_id, step, due_at)
+				SELECT $1, $2, id, $4, now() + make_interval(secs => $5) FROM incidents WHERE id::text = $3
+				ON CONFLICT DO NOTHING`, e.tenant, r.ID, *e.subject, i+1, st.After.Seconds()); err != nil {
+				return err
+			}
+		}
+	}
+	if r.RepeatInterval == 0 {
 		return nil
 	}
 	switch e.typ {
@@ -288,13 +311,23 @@ func (n *Notifier) take(ctx context.Context, tx pgx.Tx, e unrouted, env *inciden
 }
 
 // enqueue creates a delivery of an event to a route's endpoint, unless the
-// endpoint is disabled.
+// endpoint is disabled, with the first step's labels.
 func (n *Notifier) enqueue(ctx context.Context, tx pgx.Tx, tenant, event uuid.UUID, seq int64, typ, subject string, r Route) error {
+	return n.enqueueStep(ctx, tx, tenant, event, seq, typ, subject, r, 0)
+}
+
+func (n *Notifier) enqueueStep(ctx context.Context, tx pgx.Tx, tenant, event uuid.UUID, seq int64, typ, subject string,
+	r Route, step int) error {
 	var on bool
 	if err := tx.QueryRow(ctx, `SELECT enabled FROM webhook_endpoints WHERE id = $1`, r.EndpointID).Scan(&on); err != nil || !on {
 		return err
 	}
-	info, _ := json.Marshal(routeInfo{ID: r.ID, Name: r.Name, Step: 0, Labels: nonNilMap(r.Labels)})
+	steps := r.stepsOf()
+	labels := map[string]string{}
+	if step < len(steps) {
+		labels = nonNilMap(steps[step].Labels)
+	}
+	info, _ := json.Marshal(routeInfo{ID: r.ID, Name: r.Name, Step: step, Labels: labels})
 	id, err := uuid.NewV7()
 	if err != nil {
 		return err
@@ -393,7 +426,7 @@ func (n *Notifier) deliver(ctx context.Context, c claimed) error {
 	if err != nil {
 		return err
 	}
-	body, err := withRoute(envelope, c.route)
+	body, err := render(envelope, c.route, n.o.Config.IncidentURLTemplate, c.tenant)
 	if err != nil {
 		return err
 	}

@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
+	"net/netip"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -13,6 +17,8 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/api/gen"
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/errs"
+	"github.com/plusclouds/monitoring.server/internal/incident"
+	"github.com/plusclouds/monitoring.server/internal/tenancy"
 	"github.com/plusclouds/monitoring.server/internal/webhook"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
@@ -77,7 +83,10 @@ func (s *Server) CreateWebhook(ctx context.Context, req gen.CreateWebhookRequest
 	var e webhook.Endpoint
 	var secret string
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
-		e, secret, err = s.hooks.CreateEndpoint(ctx, tx, p.Actor, t.ID, webhookInput(*req.Body))
+		if err := s.checkWebhookURL(ctx, t, req.Body.Url); err != nil {
+			return err
+		}
+		e, secret, err = s.hooks.CreateEndpoint(ctx, tx, p.Actor, t.ID, t.Limits.MaxWebhooks, webhookInput(*req.Body))
 		return err
 	})
 	if err != nil {
@@ -95,13 +104,16 @@ func (s *Server) UpsertWebhook(ctx context.Context, req gen.UpsertWebhookRequest
 	k := s.key(req.Params.Source, req.Params.Type, req.ExternalId)
 	in := webhookInput(*req.Body)
 	in.External = k.Ref()
+	if err := s.checkWebhookURL(ctx, t, in.URL); err != nil {
+		return nil, err
+	}
 	var e webhook.Endpoint
 	var secret string
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
 		cur, err := webhook.EndpointByExternal(ctx, tx, k)
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
-			e, secret, err = s.hooks.CreateEndpoint(ctx, tx, p.Actor, t.ID, in)
+			e, secret, err = s.hooks.CreateEndpoint(ctx, tx, p.Actor, t.ID, t.Limits.MaxWebhooks, in)
 		case err == nil:
 			in.External = keepType(cur.External, k)
 			e, err = s.hooks.UpdateEndpoint(ctx, tx, p.Actor, cur.ID, in)
@@ -144,6 +156,9 @@ func (s *Server) UpdateWebhook(ctx context.Context, req gen.UpdateWebhookRequest
 	}
 	var e webhook.Endpoint
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
+		if err := s.checkWebhookURL(ctx, t, req.Body.Url); err != nil {
+			return err
+		}
 		e, err = s.hooks.UpdateEndpoint(ctx, tx, p.Actor, req.WebhookId, webhookInput(*req.Body))
 		return err
 	})
@@ -345,8 +360,13 @@ func toAPIRoute(r webhook.Route) (gen.AlertRoute, error) {
 		v := int(r.RepeatInterval.Seconds())
 		repeat = &v
 	}
+	steps, serr := via[[]gen.RouteStep](nonNilSteps(r.Steps))
+	if err == nil {
+		err = serr
+	}
 	return gen.AlertRoute{
-		Id: r.ID, Name: r.Name, Position: r.Position, Enabled: r.Enabled, Match: m, EndpointId: r.EndpointID,
+		Steps: steps,
+		Id:    r.ID, Name: r.Name, Position: r.Position, Enabled: r.Enabled, Match: m, EndpointId: r.EndpointID,
 		Continue: r.Continue, Labels: labels, ManagedBy: r.ManagedBy, External: toAPIExternal(r.External),
 		GroupBy: groupBy, GroupWaitSeconds: int(r.GroupWait.Seconds()), RepeatIntervalSeconds: repeat,
 		CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
@@ -372,6 +392,13 @@ func routeInput(b gen.AlertRouteWrite) (webhook.RouteInput, error) {
 	}
 	if b.RepeatIntervalSeconds != nil {
 		in.RepeatInterval = time.Duration(*b.RepeatIntervalSeconds) * time.Second
+	}
+	if b.Steps != nil {
+		steps, err := via[[]webhook.Step](*b.Steps)
+		if err != nil {
+			return in, err
+		}
+		in.Steps = steps
 	}
 	if b.Match != nil {
 		m, err := via[webhook.Match](*b.Match)
@@ -416,7 +443,7 @@ func (s *Server) CreateAlertRoute(ctx context.Context, req gen.CreateAlertRouteR
 	}
 	var r webhook.Route
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
-		r, err = webhook.CreateRoute(ctx, tx, p.Actor, t.ID, in)
+		r, err = webhook.CreateRoute(ctx, tx, p.Actor, t.ID, t.Limits.MaxAlertRoutes, in)
 		return err
 	})
 	if err != nil {
@@ -444,7 +471,7 @@ func (s *Server) UpsertAlertRoute(ctx context.Context, req gen.UpsertAlertRouteR
 		switch {
 		case errors.Is(err, errs.ErrNotFound):
 			created = true
-			r, err = webhook.CreateRoute(ctx, tx, p.Actor, t.ID, in)
+			r, err = webhook.CreateRoute(ctx, tx, p.Actor, t.ID, t.Limits.MaxAlertRoutes, in)
 		case err == nil:
 			in.External = keepType(cur.External, k)
 			r, err = webhook.UpdateRoute(ctx, tx, p.Actor, cur.ID, in)
@@ -512,4 +539,107 @@ func (s *Server) DeleteAlertRoute(ctx context.Context, req gen.DeleteAlertRouteR
 		return nil, err
 	}
 	return gen.DeleteAlertRoute204Response{}, nil
+}
+
+func nonNilSteps(s []webhook.Step) []webhook.Step {
+	if s == nil {
+		return []webhook.Step{}
+	}
+	return s
+}
+
+func (s *Server) TestAlertRoutes(ctx context.Context, req gen.TestAlertRoutesRequestObject) (gen.TestAlertRoutesResponseObject, error) {
+	_, t, err := tenantScope(ctx, roleReadOnly, false)
+	if err != nil {
+		return nil, err
+	}
+	b := req.Body
+	typ, severity := incident.EventOpened, "critical"
+	if b.EventType != nil {
+		typ = string(*b.EventType)
+	}
+	if b.Severity != nil {
+		severity = string(*b.Severity)
+	}
+	var evals []webhook.Evaluation
+	err = s.tx(ctx, t, func(tx pgx.Tx) error {
+		env, err := incident.Preview(ctx, tx, t.ID, typ, severity, b.DeviceId, b.CheckId)
+		if err != nil {
+			return err
+		}
+		evals, err = webhook.Evaluate(ctx, tx, t.ID, &env)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	out := gen.TestAlertRoutes200JSONResponse{Routes: make([]gen.RouteTestResult, len(evals))}
+	for i, e := range evals {
+		out.Routes[i] = gen.RouteTestResult{EndpointId: e.Route.EndpointID, Id: e.Route.ID, Matched: e.Matched,
+			Name: e.Route.Name, Notifies: e.Notifies}
+	}
+	return out, nil
+}
+
+func (s *Server) ReplayWebhookDeliveries(ctx context.Context, req gen.ReplayWebhookDeliveriesRequestObject) (gen.ReplayWebhookDeliveriesResponseObject, error) {
+	p, t, err := tenantScope(ctx, roleOperator, true)
+	if err != nil {
+		return nil, err
+	}
+	q := req.Params
+	status := "failed"
+	if q.Status != nil {
+		status = string(*q.Status)
+	}
+	if !q.From.Before(q.To) {
+		return nil, errs.Invalidf("from", "must be before to")
+	}
+	var n int64
+	err = s.tx(ctx, t, func(tx pgx.Tx) error {
+		if _, err := webhook.GetEndpoint(ctx, tx, req.WebhookId); err != nil {
+			return err
+		}
+		if n, err = webhook.ReplayFailed(ctx, tx, req.WebhookId, status, q.From, q.To); err != nil {
+			return err
+		}
+		return audit.Write(ctx, tx, p.Actor.Event(t.ID, "webhook.replay", "webhook", req.WebhookId.String(), nil,
+			map[string]any{"status": status, "from": q.From, "to": q.To, "count": n}))
+	})
+	if err != nil {
+		return nil, err
+	}
+	return gen.ReplayWebhookDeliveries202JSONResponse{Replayed: int(n)}, nil
+}
+
+// checkWebhookURL applies the delivery network policy to a webhook URL when
+// it is saved, so a blocked target fails at once instead of at the first
+// delivery (v0.4.1). Delivery checks again: DNS can change. A hostname that
+// does not resolve now is accepted.
+func (s *Server) checkWebhookURL(ctx context.Context, t *tenancy.Tenant, raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil || u.Hostname() == "" {
+		return nil // the endpoint's own validation reports it
+	}
+	host := u.Hostname()
+	var addrs []netip.Addr
+	if ip, err := netip.ParseAddr(host); err == nil {
+		addrs = []netip.Addr{ip}
+	} else if strings.EqualFold(host, "localhost") || strings.HasSuffix(strings.ToLower(host), ".localhost") {
+		addrs = []netip.Addr{netip.MustParseAddr("127.0.0.1")}
+	} else {
+		rctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+		defer cancel()
+		addrs, _ = net.DefaultResolver.LookupNetIP(rctx, "ip", host)
+	}
+	var deny []netip.Prefix
+	if s.exec != nil {
+		deny = s.exec.Deny
+	}
+	policy := &plugin.NetPolicy{Deny: deny, Allow: t.Limits.AllowedTargetNetworks, DenyPrivate: !t.IsPlatform}
+	for _, a := range addrs {
+		if err := policy.Check(a); err != nil {
+			return errs.Invalidf("url", "%s", err.Error())
+		}
+	}
+	return nil
 }
