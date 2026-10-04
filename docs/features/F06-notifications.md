@@ -54,7 +54,19 @@ As in [ADR-0009](../adr/0009-webhook-delivery.md): outbox, Standard Webhooks sig
 
 ## Implementation status
 
-M2 implements endpoints, rotation, ordered routes with `continue`, signed delivery with retries, ordering and the delivery log. Grouping (`group_by`, `group_wait`) and `repeat_interval` are not implemented yet; until then every event is delivered on its own. See [progress](../progress.md#deferred-from-m2).
+M2 implements endpoints, rotation, ordered routes with `continue`, signed delivery with retries, ordering and the delivery log. M4 adds grouping and repeats:
+
+- **Grouping.**
+  - `group_by` can use `root_device_id`, `device_id`, `site_id`, `severity`, `check_id`, `plugin` and `device_type`. `group_wait_seconds` runs from 0 to 600 and defaults to 30.
+  - Groups are kept per route, event type and key.
+  - A group of one is sent as the plain event. A larger group is sent as one event of the same type, with `data.objects` (each incident's `object`, `device` and `check`) and `data.group` (`id`, `key`, `count`); `data.object`, `data.device` and `data.check` are null.
+- **Repeats.**
+  - `repeat_interval_seconds` runs from 300 to 604800.
+  - Open, unacknowledged, unsuppressed incidents are re-sent to that route only as `monitoring.incident.renotify`.
+  - Acknowledging or resolving an incident stops its repeats.
+- **Suppressed incidents** ([F05](F05-state-and-incidents.md)) are not notified.
+
+Steps and schedules stay in phase 2.
 
 ## Acceptance criteria
 

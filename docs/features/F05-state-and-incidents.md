@@ -55,7 +55,7 @@ Acknowledgement belongs to the incident, not the state: an acknowledged incident
 - One incident per check (per object for collectors) per problem episode. Fields: `severity`, `status` (`open`, `acknowledged`, `resolved`), `opened_at`, `acknowledged_at/by`, `resolved_at`, `root_device_id`, `suppressed`, `flapping`, `summary`, `last_output`, `comments`.
 - Incident writes and their outbox events are one transaction ([ADR-0009](../adr/0009-webhook-delivery.md)).
 
-### Dependency suppression (phase 2, data model in MVP)
+### Dependency suppression (implemented in M4)
 
 - When a device's **host check** (flagged `is_host_check`, typically ping) is in PROBLEM, incidents on every device that depends on it are opened as `suppressed` and linked to the root incident, and no notifications are sent for them. "Depends on" follows the dependency graph, including the dependency every device has on its container, transitively ([ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)). With several failed roots, the incident links to the nearest one.
 - Order matters: when a switch dies, its children's checks may fail before the switch's own check. Child incidents wait `dependency_grace` (default 30 s) before notifying, and are suppressed if an ancestor opens an incident within that window.
@@ -88,3 +88,12 @@ In the MVP, state for a check is processed only by the node that owns its shard.
 ## Decided
 
 - **Incidents stay per check** (per object for collectors). Several problems on one device are combined in notifications through route grouping ([F06](F06-notifications.md)), not merged into one incident, so each problem keeps its own state, acknowledgement and resolution.
+
+## Implementation status: dependency suppression (M4)
+
+- **When it applies.** An incident is opened suppressed when an open host-check incident exists upstream: on the device itself (for its other checks), on its containers, or on the devices it depends on, transitively, nearest first. It records `root_incident_id`, and `root_device_id` (its own device when not suppressed).
+- **Waiting for a root.** The notification of an incident with anything upstream waits `notifier.dependency_grace` (default 30 s, platform-wide rather than per check). At that point it is checked again, so a root that opens a little later still suppresses it. Later events of the same incident wait with it.
+- **When the root resolves.** Its suppressed incidents are released, host-check incidents first:
+  - an incident that another open root still explains is linked to that root;
+  - otherwise it stops being suppressed and is announced with `monitoring.incident.opened` (`object.unsuppressed: true`).
+- **No retroactive suppression.** Incidents that were already notified are not suppressed when a root opens after the grace.

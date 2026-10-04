@@ -226,7 +226,7 @@ runner:
 # engine role (F05)
 # The state rules themselves (late = 2x interval, stale = 3x interval,
 # flapping at 30 %/20 %) are fixed by F05 and not configurable here.
-# Per-check options (failure_count, dependency_grace, ...) are set via the API.
+# Per-check options (failure_count, recovery_count, ...) are set via the API.
 # ---------------------------------------------------------------------------
 engine:
   state_writers: 16        # parallel state/incident transactions
@@ -238,6 +238,10 @@ notifier:
   workers: 32
   claim_batch: 100
   poll_interval: 1s
+  # An incident on a device with something upstream (a container, a
+  # dependency, its own host check) is notified this long after it opens,
+  # so an upstream failure found meanwhile suppresses it (F05).
+  dependency_grace: 30s
   delivery_timeout: 10s        # default when an endpoint sets no timeout
   max_delivery_timeout: 30s    # cap for endpoint timeouts
   retry_schedule: [5s, 30s, 2m, 10m, 30m, 1h]   # last value repeats

@@ -2382,8 +2382,8 @@ components:
     Incident:
       type: object
       required: [id, check_id, device_id, severity, status, summary, last_output, rule_id, rule_name, flapping,
-                 suppressed, opened_at, acknowledged_at, acknowledged_by, acknowledged_by_external_id,
-                 resolved_at, resolved_by, updated_at]
+                 suppressed, root_incident_id, root_device_id, opened_at, acknowledged_at, acknowledged_by,
+                 acknowledged_by_external_id, resolved_at, resolved_by, updated_at]
       properties:
         id: { type: string, format: uuid }
         check_id: { type: [string, "null"], format: uuid }
@@ -2395,7 +2395,21 @@ components:
         rule_id: { type: [string, "null"], description: "The threshold rule that caused it, if any" }
         rule_name: { type: [string, "null"] }
         flapping: { type: boolean }
-        suppressed: { type: boolean }
+        suppressed:
+          type: boolean
+          description: |
+            An upstream failure explains it (the device's own host check, a
+            container or a dependency is down), so it is not notified. When
+            the root recovers and this one still fails, it stops being
+            suppressed and is notified with `monitoring.incident.opened`.
+        root_incident_id:
+          type: [string, "null"]
+          format: uuid
+          description: The incident that explains this one, while suppressed
+        root_device_id:
+          type: [string, "null"]
+          format: uuid
+          description: The root incident's device, or this incident's own; routes can group by it
         opened_at: { type: string, format: date-time }
         acknowledged_at: { type: [string, "null"], format: date-time }
         acknowledged_by: { type: [string, "null"], format: uuid, description: "User ID" }
@@ -2526,8 +2540,8 @@ components:
 
     AlertRoute:
       type: object
-      required: [id, name, position, enabled, match, endpoint_id, continue, labels, managed_by, external,
-                 created_at, updated_at]
+      required: [id, name, position, enabled, match, endpoint_id, continue, labels, group_by, group_wait_seconds,
+                 repeat_interval_seconds, managed_by, external, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -2540,6 +2554,11 @@ components:
           type: object
           description: Sent as data.route.labels; the receiver decides what they mean (recipient, channel).
           additionalProperties: { type: string }
+        group_by:
+          type: array
+          items: { $ref: "#/components/schemas/GroupField" }
+        group_wait_seconds: { type: integer }
+        repeat_interval_seconds: { type: [integer, "null"] }
         managed_by: { type: string }
         external:
           oneOf:
@@ -2562,7 +2581,31 @@ components:
           type: object
           maxProperties: 20
           additionalProperties: { type: string, maxLength: 200 }
+        group_by:
+          type: array
+          maxItems: 7
+          description: |
+            Collect matching events with the same values of these fields for
+            `group_wait_seconds`, then send them as one event of the same type
+            whose `data.objects` lists each incident (`object`, `device`,
+            `check`) and `data.group` holds the key and count. A group of one
+            is sent as the plain event. Empty: every event on its own.
+            `root_device_id` groups a switch outage with the incidents it
+            explains.
+          items: { $ref: "#/components/schemas/GroupField" }
+        group_wait_seconds: { type: integer, minimum: 0, maximum: 600, default: 30 }
+        repeat_interval_seconds:
+          type: [integer, "null"]
+          minimum: 300
+          maximum: 604800
+          description: |
+            Re-send open, unacknowledged, unsuppressed incidents this often as
+            `monitoring.incident.renotify`, to this route only. Null: never.
         external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    GroupField:
+      type: string
+      enum: [root_device_id, device_id, site_id, severity, check_id, plugin, device_type]
 
     Availability:
       type: string

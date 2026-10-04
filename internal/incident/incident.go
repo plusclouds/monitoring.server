@@ -37,6 +37,8 @@ type Incident struct {
 	RuleName          *string    `json:"rule_name"`
 	Flapping          bool       `json:"flapping"`
 	Suppressed        bool       `json:"suppressed"`
+	RootIncidentID    *uuid.UUID `json:"root_incident_id"` // set while suppressed: the incident that explains this one
+	RootDeviceID      *uuid.UUID `json:"root_device_id"`   // the root incident's device, or this incident's own
 	OpenedAt          time.Time  `json:"opened_at"`
 	AcknowledgedAt    *time.Time `json:"acknowledged_at"`
 	AcknowledgedBy    *uuid.UUID `json:"acknowledged_by"`
@@ -47,13 +49,13 @@ type Incident struct {
 }
 
 const cols = `id, tenant_id, check_id, device_id, severity, status, summary, last_output, rule_id, rule_name,
-	flapping, suppressed, opened_at, acknowledged_at, acknowledged_by, acknowledged_by_ext, resolved_at,
+	flapping, suppressed, root_incident_id, root_device_id, opened_at, acknowledged_at, acknowledged_by, acknowledged_by_ext, resolved_at,
 	resolved_by, updated_at`
 
 func scan(row pgx.Row) (Incident, error) {
 	var i Incident
 	err := row.Scan(&i.ID, &i.TenantID, &i.CheckID, &i.DeviceID, &i.Severity, &i.Status, &i.Summary,
-		&i.LastOutput, &i.RuleID, &i.RuleName, &i.Flapping, &i.Suppressed, &i.OpenedAt, &i.AcknowledgedAt,
+		&i.LastOutput, &i.RuleID, &i.RuleName, &i.Flapping, &i.Suppressed, &i.RootIncidentID, &i.RootDeviceID, &i.OpenedAt, &i.AcknowledgedAt,
 		&i.AcknowledgedBy, &i.AcknowledgedByExt, &i.ResolvedAt, &i.ResolvedBy, &i.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return i, errs.ErrNotFound
