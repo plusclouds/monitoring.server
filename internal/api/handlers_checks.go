@@ -67,7 +67,7 @@ func (s *Server) ListDeviceChecks(ctx context.Context, req gen.ListDeviceChecksR
 }
 
 func (s *Server) CreateCheck(ctx context.Context, req gen.CreateCheckRequestObject) (gen.CreateCheckResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (s *Server) GetCheck(ctx context.Context, req gen.GetCheckRequestObject) (g
 }
 
 func (s *Server) UpdateCheck(ctx context.Context, req gen.UpdateCheckRequestObject) (gen.UpdateCheckResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +123,7 @@ func (s *Server) UpdateCheck(ctx context.Context, req gen.UpdateCheckRequestObje
 }
 
 func (s *Server) DeleteCheck(ctx context.Context, req gen.DeleteCheckRequestObject) (gen.DeleteCheckResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +182,7 @@ func (s *Server) ListCredentials(ctx context.Context, req gen.ListCredentialsReq
 }
 
 func (s *Server) CreateCredential(ctx context.Context, req gen.CreateCredentialRequestObject) (gen.CreateCredentialResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (s *Server) CreateCredential(ctx context.Context, req gen.CreateCredentialR
 }
 
 func (s *Server) UpsertCredential(ctx context.Context, req gen.UpsertCredentialRequestObject) (gen.UpsertCredentialResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func (s *Server) GetCredential(ctx context.Context, req gen.GetCredentialRequest
 }
 
 func (s *Server) UpdateCredential(ctx context.Context, req gen.UpdateCredentialRequestObject) (gen.UpdateCredentialResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +261,7 @@ func (s *Server) UpdateCredential(ctx context.Context, req gen.UpdateCredentialR
 }
 
 func (s *Server) DeleteCredential(ctx context.Context, req gen.DeleteCredentialRequestObject) (gen.DeleteCredentialResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}

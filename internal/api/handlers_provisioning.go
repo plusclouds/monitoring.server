@@ -98,6 +98,18 @@ func (s *Server) DeleteTenant(ctx context.Context, req gen.DeleteTenantRequestOb
 	return gen.DeleteTenant204Response{}, nil
 }
 
+func (s *Server) RestoreTenant(ctx context.Context, req gen.RestoreTenantRequestObject) (gen.RestoreTenantResponseObject, error) {
+	p, err := platformScope(ctx)
+	if err != nil {
+		return nil, err
+	}
+	t, err := s.tenants.RestoreTenant(ctx, p.Actor, s.source(req.Params.Source), req.ExternalId)
+	if err != nil {
+		return nil, err
+	}
+	return gen.RestoreTenant200JSONResponse(toAPITenant(t)), nil
+}
+
 func (s *Server) ListMembers(ctx context.Context, req gen.ListMembersRequestObject) (gen.ListMembersResponseObject, error) {
 	if _, err := platformScope(ctx); err != nil {
 		return nil, err

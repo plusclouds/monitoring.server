@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-04 · **Latest release tag:** `v0.2.1`
+**Last updated:** 2026-10-04 · **Latest release tag:** `v0.3.0-m3`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -10,12 +10,12 @@ This page records which milestones are done and what comes next. The milestone d
 | --- | --- | --- | --- |
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, `http` and `icmp` plugins | **Done** | Merged in PR #2; released as `v0.1.0-m1` to `v0.1.3-m1` |
 | M2 — first loop | F02, F04, F05, F06 (single node) | **Done** | Merged in PRs #3 and #4; released as `v0.2.0-m2`, client fixes in `v0.2.1`. Deferred items below |
-| M3 — metrics | F07, Grafana data source and first dashboards | **Done (not merged yet)** | On a feature branch; deferred items below |
-| M4 — targets | F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Not started | |
+| M3 — metrics | F07, Grafana data source and first dashboards | **Done** | Merged in PR #6; released as `v0.3.0-m3`, client decisions in `v0.3.1`. Deferred items below |
+| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Not started | Next milestone. Grouping comes first (decided 2026-10-04) so an outage does not send one notification per host |
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
-| Unassigned | F13 usage metering (MVP scope) | Not started | Needs a milestone; the runner now exists, so M3 is the earliest |
+| Unassigned | F13 usage metering (MVP scope) | Not started | Only checks are billed, each with its plugin's platform-set weight; usage per device is check-hours × weights (decided 2026-10-04). Milestone waits for PlusClouds billing to say how usage reaches it |
 
 ## Done
 
@@ -95,6 +95,18 @@ Verified with integration tests (`TestMetricsStoreAndQuery`, `TestRetention`, an
 | Persisting plugin state across restarts | F03 | Kept in memory per check; a restart costs one interval of rate data |
 | Postman collection for the new endpoints | — | The OpenAPI spec and `/docs` are current |
 
+### v0.3.1 — decisions with the PlusClouds client (2026-10-04)
+
+| Change | Why |
+| --- | --- |
+| `POST /v1/tenants/by-external-id/{id}/restore` undeletes a tenant within `platform.tenant_purge_grace` (default 30 days). After the grace the maintenance role purges it: all data except the audit log is removed, the tenant row stays as a `purged` tombstone, and the external ID is free for a new tenant. Migration `00009` | Returning customers, and deleted tenants no longer keep data forever |
+| The `operator` role configures what is monitored: sites, devices, checks, credentials, webhooks and alert routes. `admin` keeps API keys, members and the audit log | PlusClouds reserves `admin` for the service owner; customers are read-only or operator and must configure their own monitoring |
+| Alert routes match `check_ids` and `device_ids` | Customers send one alarm, or one host, to its own webhook |
+| `PATCH` (JSON Merge Patch) for sites, by ID and by external ID | Same as devices and checks |
+| The stale sweep skips suspended tenants | Their checks stop on purpose; their state now stays as it was instead of turning UNKNOWN |
+
+Decided, no code: customers own their webhooks and see the server-generated secret once (no client-supplied or platform-wide secret). PlusClouds sets limits (10 devices and 10 checks for now) at provisioning and disables extra checks itself on a downgrade. Private targets wait for remote probes (M5); no operator deny-list changes for PlusClouds' internal ranges for now. Bulk device sync is not needed yet.
+
 ## Verification
 
 - `scripts/ci.sh lint`, `scripts/ci.sh test` and `scripts/ci.sh security` pass on `feat/m2-first-loop` as of 2026-10-04.
@@ -103,6 +115,6 @@ Verified with integration tests (`TestMetricsStoreAndQuery`, `TestRetention`, an
 
 ## Next steps
 
-1. Review and merge M3, then set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.
-3. Assign F13 (usage metering) to a milestone; check-hours can be counted from runner results.
+1. Deploy `v0.3.1` and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
+2. M4: alert grouping, repeat notifications and dependency suppression first, then the F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.
+3. F13 (usage metering: weighted checks per device): assign a milestone once PlusClouds billing has said how usage should reach it.

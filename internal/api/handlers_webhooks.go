@@ -70,7 +70,7 @@ func (s *Server) ListWebhooks(ctx context.Context, _ gen.ListWebhooksRequestObje
 }
 
 func (s *Server) CreateWebhook(ctx context.Context, req gen.CreateWebhookRequestObject) (gen.CreateWebhookResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (s *Server) CreateWebhook(ctx context.Context, req gen.CreateWebhookRequest
 }
 
 func (s *Server) UpsertWebhook(ctx context.Context, req gen.UpsertWebhookRequestObject) (gen.UpsertWebhookResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (s *Server) GetWebhook(ctx context.Context, req gen.GetWebhookRequestObject
 }
 
 func (s *Server) UpdateWebhook(ctx context.Context, req gen.UpdateWebhookRequestObject) (gen.UpdateWebhookResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +154,7 @@ func (s *Server) UpdateWebhook(ctx context.Context, req gen.UpdateWebhookRequest
 }
 
 func (s *Server) DeleteWebhook(ctx context.Context, req gen.DeleteWebhookRequestObject) (gen.DeleteWebhookResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +166,7 @@ func (s *Server) DeleteWebhook(ctx context.Context, req gen.DeleteWebhookRequest
 }
 
 func (s *Server) RotateWebhookSecret(ctx context.Context, req gen.RotateWebhookSecretRequestObject) (gen.RotateWebhookSecretResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -384,7 +384,7 @@ func (s *Server) ListAlertRoutes(ctx context.Context, _ gen.ListAlertRoutesReque
 }
 
 func (s *Server) CreateAlertRoute(ctx context.Context, req gen.CreateAlertRouteRequestObject) (gen.CreateAlertRouteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -405,7 +405,7 @@ func (s *Server) CreateAlertRoute(ctx context.Context, req gen.CreateAlertRouteR
 }
 
 func (s *Server) UpsertAlertRoute(ctx context.Context, req gen.UpsertAlertRouteRequestObject) (gen.UpsertAlertRouteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -460,7 +460,7 @@ func (s *Server) GetAlertRoute(ctx context.Context, req gen.GetAlertRouteRequest
 }
 
 func (s *Server) UpdateAlertRoute(ctx context.Context, req gen.UpdateAlertRouteRequestObject) (gen.UpdateAlertRouteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -481,7 +481,7 @@ func (s *Server) UpdateAlertRoute(ctx context.Context, req gen.UpdateAlertRouteR
 }
 
 func (s *Server) DeleteAlertRoute(ctx context.Context, req gen.DeleteAlertRouteRequestObject) (gen.DeleteAlertRouteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}

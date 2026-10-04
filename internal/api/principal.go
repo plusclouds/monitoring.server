@@ -19,6 +19,11 @@ const (
 	rolePlatform = "platform"
 )
 
+// roleConfig may configure what is monitored in its tenant: sites,
+// devices, checks, credentials, webhooks and alert routes (v0.3.1). API
+// keys, members and the audit log stay with admin.
+const roleConfig = roleOperator
+
 var roleRank = map[string]int{roleReadOnly: 1, roleOperator: 2, roleAdmin: 3, rolePlatform: 4}
 
 // Principal is who is calling and on behalf of which tenant.

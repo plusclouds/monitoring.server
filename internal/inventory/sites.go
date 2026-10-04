@@ -97,6 +97,11 @@ func GetSite(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Site, error) {
 	return scanSite(tx.QueryRow(ctx, `SELECT `+siteCols+` FROM sites WHERE id = $1`, id))
 }
 
+// LockSite returns a site locked for update.
+func LockSite(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Site, error) {
+	return scanSite(tx.QueryRow(ctx, `SELECT `+siteCols+` FROM sites WHERE id = $1 FOR UPDATE`, id))
+}
+
 // SiteByExternal finds a site by external ID.
 func SiteByExternal(ctx context.Context, tx pgx.Tx, k extref.Key) (Site, error) {
 	return one(ctx, tx, `SELECT `+siteCols+` FROM sites WHERE `+extref.Where(1)+` LIMIT 2`, k.Args(), scanSite)

@@ -37,6 +37,16 @@ type MaintainerOptions struct {
 	Config   config.Metrics
 	Logger   *slog.Logger
 	Registry prometheus.Registerer
+	// Jobs are other singleton jobs run under the same lock, such as the
+	// tenant purge.
+	Jobs []Job
+}
+
+// Job is a periodic maintenance job.
+type Job struct {
+	Name  string
+	Every time.Duration
+	Run   func(context.Context) error
 }
 
 // Maintainer keeps the metrics store in shape: partitions ahead, rollups
@@ -134,6 +144,9 @@ func (m *Maintainer) lead(ctx context.Context) (bool, error) {
 		{name: "rollup_5m", every: c.Rollups.FiveMinuteEvery.D(), run: func(ctx context.Context) error { _, err := m.Rollup5m(ctx); return err }},
 		{name: "rollup_1h", every: c.Rollups.HourlyEvery.D(), run: func(ctx context.Context) error { _, err := m.Rollup1h(ctx); return err }},
 		{name: "retention", every: c.RetentionEvery.D(), run: func(ctx context.Context) error { _, err := m.ApplyRetention(ctx); return err }},
+	}
+	for _, j := range m.o.Jobs {
+		jobs = append(jobs, &job{name: j.Name, every: j.Every, run: j.Run})
 	}
 	tick := time.NewTicker(5 * time.Second)
 	defer tick.Stop()

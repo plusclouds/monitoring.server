@@ -112,7 +112,7 @@ func (s *Service) PatchTenant(ctx context.Context, actor audit.Actor, source, ex
 		return Tenant{}, err
 	}
 	return s.change(ctx, actor, cur.ID, func(t *Tenant) error {
-		if t.Status == StatusDeleted {
+		if t.Gone() {
 			return ErrNotFound
 		}
 		if name != nil {
@@ -196,10 +196,63 @@ func (s *Service) change(ctx context.Context, actor audit.Actor, id uuid.UUID, f
 			action = "tenant.suspend"
 		case next.Status == StatusActive && cur.Status == StatusSuspended:
 			action = "tenant.resume"
+		case next.Status == StatusActive && cur.Status == StatusDeleted:
+			action = "tenant.restore"
 		}
 		return audit.Write(ctx, tx, actor.Event(id, action, "tenant", id.String(), before, after))
 	})
 	return out, err
+}
+
+// RestoreTenant undeletes a deleted tenant (v0.3.1). Its data is intact
+// until the purge grace has passed; a purged tenant has released its
+// external ID, so it is not found. Restoring a tenant that is not deleted
+// changes nothing.
+func (s *Service) RestoreTenant(ctx context.Context, actor audit.Actor, source, externalID string) (Tenant, error) {
+	cur, err := ByExternal(ctx, s.DB, source, externalID)
+	if err != nil {
+		return Tenant{}, err
+	}
+	return s.change(ctx, actor, cur.ID, func(t *Tenant) error {
+		if t.Status == StatusPurged {
+			return ErrNotFound
+		}
+		if t.Status == StatusDeleted {
+			t.Status = StatusActive
+		}
+		return nil
+	})
+}
+
+// Purge removes the data of tenants deleted longer than grace ago, keeping
+// their audit logs, and releases their external IDs (v0.3.1). It runs on
+// the maintenance role with the system pool and returns the purged IDs.
+func Purge(ctx context.Context, db *pgxpool.Pool, grace time.Duration) ([]uuid.UUID, error) {
+	rows, err := db.Query(ctx, `SELECT id FROM tenants WHERE status = 'deleted' AND deleted_at < now() - $1::interval`, grace)
+	if err != nil {
+		return nil, err
+	}
+	ids, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		return nil, err
+	}
+	var done []uuid.UUID
+	for _, id := range ids {
+		err := pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
+			var ext *string
+			if err := tx.QueryRow(ctx, `SELECT purge_tenant($1)`, id).Scan(&ext); err != nil {
+				return err
+			}
+			return audit.Write(ctx, tx, audit.Event{TenantID: id, ActorKind: audit.ActorSystem, Action: "tenant.purge",
+				ObjectType: "tenant", ObjectID: id.String(), Before: map[string]any{"external_id": ext},
+				After: map[string]any{"status": StatusPurged}})
+		})
+		if err != nil {
+			return done, err
+		}
+		done = append(done, id)
+	}
+	return done, nil
 }
 
 // User is the minimal mirror of a PlusClouds user: no personal data.

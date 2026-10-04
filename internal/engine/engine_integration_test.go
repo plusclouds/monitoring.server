@@ -199,3 +199,42 @@ func TestDeletingCheckResolvesIncident(t *testing.T) {
 		t.Errorf("resolved_by = %v", by)
 	}
 }
+
+// v0.3.1: checks of a suspended tenant do not run on purpose, so the stale
+// sweep leaves their state alone; an active tenant's stale check turns UNKNOWN.
+func TestSweepSkipsSuspendedTenants(t *testing.T) {
+	f := setup(t, `[]`)
+	f.apply(t, plugin.OK, 1)
+	ctx := context.Background()
+	if _, err := db.System.Exec(ctx, `UPDATE check_state SET last_result_at = now() - interval '1 hour'`); err != nil {
+		t.Fatal(err)
+	}
+	sweep := func() string {
+		t.Helper()
+		eng, err := engine.New(engine.Options{System: db.System, Results: make(chan runner.Result),
+			SweepEvery: 20 * time.Millisecond, Logger: slog.New(slog.DiscardHandler)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		run, stop := context.WithTimeout(ctx, 200*time.Millisecond)
+		defer stop()
+		_ = eng.Run(run)
+		var status string
+		if err := db.System.QueryRow(ctx, `SELECT status FROM check_state WHERE check_id = $1`, f.check).Scan(&status); err != nil {
+			t.Fatal(err)
+		}
+		return status
+	}
+	if _, err := db.System.Exec(ctx, `UPDATE tenants SET status = 'suspended' WHERE id = $1`, f.tenant); err != nil {
+		t.Fatal(err)
+	}
+	if s := sweep(); s != "OK" {
+		t.Errorf("suspended tenant: status %s, want OK", s)
+	}
+	if _, err := db.System.Exec(ctx, `UPDATE tenants SET status = 'active' WHERE id = $1`, f.tenant); err != nil {
+		t.Fatal(err)
+	}
+	if s := sweep(); s != "UNKNOWN" {
+		t.Errorf("active tenant: status %s, want UNKNOWN", s)
+	}
+}

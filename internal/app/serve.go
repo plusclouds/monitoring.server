@@ -28,6 +28,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
+	"github.com/plusclouds/monitoring.server/internal/tenancy"
 	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
 
@@ -171,8 +172,16 @@ func Serve(ctx context.Context, o ServeOptions) error {
 		g.Go(func() error { return n.Run(gctx) })
 	}
 	if has(config.RoleMaintenance) {
+		grace := o.Config.Platform.TenantPurgeGrace.D()
+		purge := metrics.Job{Name: "tenant_purge", Every: time.Hour, Run: func(ctx context.Context) error {
+			ids, err := tenancy.Purge(ctx, pools.system, grace)
+			if len(ids) > 0 {
+				log.Info("deleted tenants purged", "tenant_ids", ids)
+			}
+			return err
+		}}
 		m, err := metrics.NewMaintainer(metrics.MaintainerOptions{System: pools.system, Config: o.Config.Metrics,
-			Logger: log.Logger, Registry: reg})
+			Logger: log.Logger, Registry: reg, Jobs: []metrics.Job{purge}})
 		if err != nil {
 			return err
 		}

@@ -7,6 +7,11 @@ info:
     Every action is an API call. This spec is the source of truth (ADR-0007):
     Go server interfaces are generated from it.
 
+    **Roles.** read-only reads everything. operator also acknowledges,
+    comments, resolves, runs checks now, and configures what is monitored:
+    sites, devices, checks, credentials, webhooks and alert routes. admin
+    also manages API keys and members and reads the audit log.
+
     **Authentication.** `Authorization: Bearer <key>`.
     - A tenant API key acts in its own tenant with its role.
     - The platform key (used by the PlusClouds API) provisions tenants and
@@ -276,9 +281,33 @@ paths:
       operationId: deleteTenant
       tags: [provisioning]
       summary: Soft-delete a tenant (platform only)
-      description: Checks stop and the API returns 404 for it; data is purged after the platform grace period.
+      description: |
+        Checks stop and the API returns 404 for it. Until the platform's
+        purge grace (default 30 days) has passed, `POST …/restore` brings it
+        back intact. After that its data is purged, its audit log is kept,
+        and the external ID can be used for a new tenant.
       responses:
         "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tenants/by-external-id/{external_id}/restore:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+    post:
+      operationId: restoreTenant
+      tags: [provisioning]
+      summary: Undelete a deleted tenant (platform only)
+      description: |
+        The tenant becomes active with its devices, checks, webhooks and
+        history; checks start again. A tenant that is not deleted is
+        returned unchanged. 404 once the tenant has been purged.
+      responses:
+        "200":
+          description: The tenant
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tenant" }
         default: { $ref: "#/components/responses/Problem" }
 
   /tenants/{tenant_id}/members:
@@ -411,7 +440,7 @@ paths:
       operationId: createCredential
       tags: [credentials]
       summary: Store a credential
-      description: Requires the admin role. Secret fields are encrypted at rest and never returned (ADR-0006).
+      description: Requires the operator role. Secret fields are encrypted at rest and never returned (ADR-0006).
       requestBody:
         required: true
         content:
@@ -541,6 +570,27 @@ paths:
       - $ref: "#/components/parameters/ExternalID"
       - $ref: "#/components/parameters/ExternalSource"
       - $ref: "#/components/parameters/ExternalType"
+    patch:
+      operationId: patchSiteByExternalID
+      tags: [sites]
+      summary: Change some fields of a site found by its external ID
+      requestBody:
+        required: true
+        description: |
+          JSON Merge Patch (RFC 7396) of SiteWrite: a field left out stays as it
+          is, null clears an optional field. The result is validated like a PUT.
+        content:
+          application/merge-patch+json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+          application/json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+      responses:
+        "200":
+          description: The site
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        default: { $ref: "#/components/responses/Problem" }
     put:
       operationId: upsertSite
       tags: [sites]
@@ -570,6 +620,27 @@ paths:
       operationId: getSite
       tags: [sites]
       summary: One site
+      responses:
+        "200":
+          description: The site
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        default: { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: patchSite
+      tags: [sites]
+      summary: Change some fields of a site
+      requestBody:
+        required: true
+        description: |
+          JSON Merge Patch (RFC 7396) of SiteWrite: a field left out stays as it
+          is, null clears an optional field. The result is validated like a PUT.
+        content:
+          application/merge-patch+json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+          application/json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
       responses:
         "200":
           description: The site
@@ -642,7 +713,7 @@ paths:
       operationId: createDevice
       tags: [devices]
       summary: Add a device
-      description: Requires the admin role. Counts against the tenant's `max_devices`.
+      description: Requires the operator role. Counts against the tenant's `max_devices`.
       requestBody:
         required: true
         content:
@@ -934,7 +1005,7 @@ paths:
       tags: [checks]
       summary: Add a check to the device
       description: |
-        Requires the admin role. The config is validated against the
+        Requires the operator role. The config is validated against the
         plugin's schema; the interval must respect the plugin's and the
         tenant's minimum. Counts against the tenant's `max_checks`.
       requestBody:
@@ -1195,7 +1266,7 @@ paths:
       operationId: createWebhook
       tags: [notifications]
       summary: Add a webhook endpoint
-      description: Requires the admin role. The response carries the signing secret once (ADR-0009).
+      description: Requires the operator role. The response carries the signing secret once (ADR-0009).
       requestBody:
         required: true
         content:
@@ -1298,7 +1369,7 @@ paths:
       tags: [notifications]
       summary: Replace the signing secret
       description: |
-        Requires the admin role. Deliveries carry signatures with the old and
+        Requires the operator role. Deliveries carry signatures with the old and
         the new secret until `previous_valid_until`, so receivers can switch
         without losing events.
       parameters:
@@ -1380,7 +1451,7 @@ paths:
       operationId: createAlertRoute
       tags: [notifications]
       summary: Add an alert route
-      description: Requires the admin role. Without a position, the route is evaluated last.
+      description: Requires the operator role. Without a position, the route is evaluated last.
       requestBody:
         required: true
         content:
@@ -1741,7 +1812,7 @@ components:
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        status: { type: string, enum: [active, suspended, deleted] }
+        status: { type: string, enum: [active, suspended, deleted, purged] }
         is_platform: { type: boolean }
         config_source: { type: string, enum: [api, file] }
         limits: { $ref: "#/components/schemas/TenantLimits" }
@@ -2321,6 +2392,16 @@ components:
             type: string
             enum: [monitoring.incident.opened, monitoring.incident.updated, monitoring.incident.acknowledged,
                    monitoring.incident.resolved, monitoring.incident.commented]
+        check_ids:
+          type: array
+          description: Only incidents of these checks (one alarm to its own webhook).
+          maxItems: 100
+          items: { type: string, format: uuid }
+        device_ids:
+          type: array
+          description: Only incidents of checks on these devices.
+          maxItems: 100
+          items: { type: string, format: uuid }
 
     AlertRoute:
       type: object
