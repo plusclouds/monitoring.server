@@ -25,7 +25,7 @@ type Manifest struct {
     NeedsRawSocket  bool            // ICMP
     MaxConcurrency  int             // per runner; 0 = default
     PerTargetLimit  int             // concurrent runs against one address
-    BillingClass    string          // "basic", "standard", "push", "advanced", "free" (F13)
+    BillingClass    string          // replaced by Billable bool when F13 is built; weights come from the config (F13)
 }
 
 type MetricDef struct {
