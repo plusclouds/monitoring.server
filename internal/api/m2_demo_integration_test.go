@@ -19,6 +19,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/credential"
 	"github.com/plusclouds/monitoring.server/internal/engine"
 	"github.com/plusclouds/monitoring.server/internal/execute"
+	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
@@ -104,7 +105,11 @@ func startPipeline(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	eng, err := engine.New(engine.Options{System: db.System, Results: results, Writers: 2, Logger: log})
+	mw, err := metrics.NewWriter(metrics.WriterOptions{System: db.System, Config: cfg.Metrics.Write, Logger: log})
+	if err != nil {
+		t.Fatal(err)
+	}
+	eng, err := engine.New(engine.Options{System: db.System, Results: results, Writers: 2, Logger: log, Metrics: mw})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,6 +122,7 @@ func startPipeline(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Go(func() { _ = run.Run(ctx) })
 	wg.Go(func() { _ = eng.Run(ctx) })
+	wg.Go(func() { _ = mw.Run(ctx) })
 	wg.Go(func() { _ = n.Run(ctx) })
 	t.Cleanup(func() { cancel(); wg.Wait() })
 }
@@ -178,6 +184,12 @@ func TestM2Demo(t *testing.T) {
 
 	up.Store(true)
 	rcv.wait(t, "monitoring.incident.resolved", 10*time.Second)
+
+	// The same results were stored as metrics (F07).
+	q := e.must(e.do("GET", "/v1/metrics/query?check_id="+chk+"&name=status_code&agg=max&step=10", k, nil), 200)
+	if s := q.body["series"].([]any); len(s) != 1 || len(s[0].(map[string]any)["points"].([]any)) == 0 {
+		t.Errorf("no status_code points: %s", q.raw)
+	}
 
 	deliveries := e.must(e.do("GET", "/v1/webhooks/"+hook.body["id"].(string)+"/deliveries", k, nil), 200)
 	for _, it := range deliveries.body["items"].([]any) {

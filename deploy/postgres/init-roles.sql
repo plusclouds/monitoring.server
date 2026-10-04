@@ -7,12 +7,17 @@
 -- monitor_app     subject to row-level security; used by the api role
 -- monitor_system  BYPASSRLS; used by runner, engine, notifier, ingest,
 --                 maintenance and the admin commands
+-- monitor_grafana read-only on the Grafana views (F07); every tenant, so
+--                 for the platform operator's Grafana only. Optional.
 --
 -- The role names are fixed: migrations grant privileges to them by name.
 
 CREATE ROLE monitor_owner  LOGIN PASSWORD 'change-me-owner';
 CREATE ROLE monitor_app    LOGIN PASSWORD 'change-me-app';
 CREATE ROLE monitor_system LOGIN BYPASSRLS PASSWORD 'change-me-system';
+CREATE ROLE monitor_grafana LOGIN PASSWORD 'change-me-grafana';
+ALTER ROLE monitor_grafana SET statement_timeout = '30s';
+ALTER ROLE monitor_grafana SET default_transaction_read_only = on;
 
 CREATE DATABASE monitor OWNER monitor_owner;
 
@@ -21,4 +26,4 @@ CREATE DATABASE monitor OWNER monitor_owner;
 -- The database owner owns the public schema (PostgreSQL 15+). Nobody else
 -- may create objects in it.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system;
+GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system, monitor_grafana;

@@ -24,6 +24,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/engine"
 	"github.com/plusclouds/monitoring.server/internal/execute"
 	"github.com/plusclouds/monitoring.server/internal/logging"
+	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
@@ -42,7 +43,7 @@ type ServeOptions struct {
 
 // implementedRoles grows as milestones land; the others are accepted in the
 // config but not started yet.
-var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine, config.RoleNotifier}
+var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine, config.RoleNotifier, config.RoleMaintenance}
 
 // Serve runs until ctx is cancelled.
 func Serve(ctx context.Context, o ServeOptions) error {
@@ -100,6 +101,9 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	defer pools.close()
 	status.AddReadiness("database", pools.ping)
 
+	if o.Config.Metrics.Backend == "timescale" {
+		return fmt.Errorf("metrics.backend: timescale is not implemented yet; use auto or postgres")
+	}
 	for _, r := range o.Roles {
 		if !slices.Contains(implementedRoles, r) {
 			log.Warn("role is not implemented yet and will not start", "role", r)
@@ -122,7 +126,13 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	// through a channel (ADR-0001).
 	if has(config.RoleRunner) || has(config.RoleEngine) {
 		results := make(chan runner.Result, max(o.Config.Runner.ResultBuffer, 1))
-		eng, err := engine.New(engine.Options{System: pools.system, Results: results,
+		mw, err := metrics.NewWriter(metrics.WriterOptions{System: pools.system, Config: o.Config.Metrics.Write,
+			Logger: log.Logger, Registry: reg})
+		if err != nil {
+			return err
+		}
+		g.Go(func() error { return mw.Run(gctx) })
+		eng, err := engine.New(engine.Options{System: pools.system, Results: results, Metrics: mw,
 			Writers: o.Config.Engine.StateWriters, Logger: log.Logger, Registry: reg})
 		if err != nil {
 			return err
@@ -159,6 +169,14 @@ func Serve(ctx context.Context, o ServeOptions) error {
 			return err
 		}
 		g.Go(func() error { return n.Run(gctx) })
+	}
+	if has(config.RoleMaintenance) {
+		m, err := metrics.NewMaintainer(metrics.MaintainerOptions{System: pools.system, Config: o.Config.Metrics,
+			Logger: log.Logger, Registry: reg})
+		if err != nil {
+			return err
+		}
+		g.Go(func() error { return m.Run(gctx) })
 	}
 	if has(config.RoleAPI) {
 		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Keys: keys, Logger: log.Logger, Registry: reg})

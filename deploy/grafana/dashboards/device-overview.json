@@ -1,0 +1,502 @@
+{
+  "uid": "monitor-device-overview",
+  "title": "Device overview",
+  "description": "Availability, incidents, checks and metrics of a tenant's devices (F07).",
+  "tags": [
+    "monitor",
+    "devices"
+  ],
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "label": "Tenant",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "definition": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      },
+      {
+        "name": "device",
+        "label": "Device",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT name AS __text, id::text AS __value FROM devices_v WHERE tenant_id = '$tenant' ORDER BY name",
+        "definition": "SELECT name AS __text, id::text AS __value FROM devices_v WHERE tenant_id = '$tenant' ORDER BY name",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      },
+      {
+        "name": "metric",
+        "label": "Metric",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT DISTINCT name FROM metric_series_v WHERE device_id = '$device' ORDER BY 1",
+        "definition": "SELECT DISTINCT name FROM metric_series_v WHERE device_id = '$device' ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {},
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Devices by availability",
+      "type": "piechart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT availability AS metric, count(*) AS value FROM devices_v WHERE tenant_id = '$tenant' GROUP BY 1"
+        }
+      ],
+      "options": {
+        "reduceOptions": {
+          "values": true,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "pieType": "donut",
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "values": [
+            "value"
+          ]
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "up"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "down"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unmonitored"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "disabled"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "gray"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "title": "Devices",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 18,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT name, type, address, site_name AS site, availability, open_incidents\n  FROM devices_v WHERE tenant_id = '$tenant'\n ORDER BY (availability = 'down') DESC, open_incidents DESC, name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "availability"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "up": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "down": {
+                        "color": "red",
+                        "index": 1
+                      },
+                      "unknown": {
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "unmonitored": {
+                        "color": "text",
+                        "index": 3
+                      },
+                      "disabled": {
+                        "color": "text",
+                        "index": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "title": "Open incidents",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT opened_at, severity, status, device_name AS device, check_name AS check, summary, duration\n  FROM incidents_v WHERE tenant_id = '$tenant' AND status <> 'resolved'\n ORDER BY severity = 'critical' DESC, opened_at"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "WARNING": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "CRITICAL": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "UNKNOWN": {
+                        "color": "purple",
+                        "index": 3
+                      },
+                      "warning": {
+                        "color": "orange",
+                        "index": 4
+                      },
+                      "critical": {
+                        "color": "red",
+                        "index": 5
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "title": "Checks of $device",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT name, plugin, status, phase, since, last_result_at, last_output\n  FROM check_states_v WHERE device_id = '$device' ORDER BY name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "index": 0
+                      },
+                      "WARNING": {
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "CRITICAL": {
+                        "color": "red",
+                        "index": 2
+                      },
+                      "UNKNOWN": {
+                        "color": "purple",
+                        "index": 3
+                      },
+                      "warning": {
+                        "color": "orange",
+                        "index": 4
+                      },
+                      "critical": {
+                        "color": "red",
+                        "index": 5
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "title": "Metrics of $device",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), m.name AS metric, avg(value) AS value\n  FROM metrics_raw m\n WHERE m.device_id = '$device' AND m.name IN ($metric) AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), m.name AS metric, sum(sum) / sum(count) AS value\n  FROM metrics_5m m\n WHERE m.device_id = '$device' AND m.name IN ($metric) AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), m.name AS metric, sum(sum) / sum(count) AS value\n  FROM metrics_1h m\n WHERE m.device_id = '$device' AND m.name IN ($metric) AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5,
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    }
+  ],
+  "links": []
+}

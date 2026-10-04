@@ -113,8 +113,12 @@ func (db *DB) Reset(t *testing.T) {
 	}
 	defer owner.Close()
 	_, err = owner.Exec(context.Background(),
-		`TRUNCATE audit_events, api_keys, tenant_members, users, tenants, installation CASCADE`)
+		`TRUNCATE audit_events, api_keys, tenant_members, users, tenants, installation,
+		          metric_samples, metric_rollup_5m, metric_rollup_1h, metric_rollup_watermarks, retention_policies CASCADE`)
 	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := owner.Exec(context.Background(), `DELETE FROM retention_classes WHERE id > 3`); err != nil {
 		t.Fatal(err)
 	}
 }

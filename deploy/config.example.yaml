@@ -69,7 +69,7 @@ database:
 # Metrics store (ADR-0003, F07)
 # ---------------------------------------------------------------------------
 metrics:
-  backend: auto            # auto | postgres | timescale (auto = timescale when the extension exists)
+  backend: auto            # auto | postgres | timescale (not implemented yet; auto uses postgres)
   # Metrics share the config database in the MVP (ADR-0008). A separate
   # metrics database is a later option.
   write:

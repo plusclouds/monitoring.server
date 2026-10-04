@@ -1,6 +1,6 @@
 # ADR-0003: Metrics storage layout in plain PostgreSQL
 
-**Status:** Proposed · **Date:** 2026-09-27
+**Status:** Accepted · **Date:** 2026-09-27 · **Implemented:** M3, 2026-10-04
 
 ## Context
 
@@ -56,7 +56,7 @@ CREATE TABLE metric_samples (
     retention_class  smallint    NOT NULL,
     group_id         bigint      NOT NULL,
     ts               timestamptz NOT NULL,
-    values           float8[]    NOT NULL    -- NaN = not collected this run
+    vals             float8[]    NOT NULL    -- NaN = not collected this run ("values" is reserved)
 ) PARTITION BY LIST (retention_class);
 -- e.g. metric_samples_c1 PARTITION OF metric_samples FOR VALUES IN (1)
 --      PARTITION BY RANGE (ts); then one child per day.
@@ -96,3 +96,14 @@ The engine talks to metrics only through a Go interface (`metrics.Store`: `Write
 - Grafana queries on raw data pay an `unnest` cost; long-range panels should use the rollup views. The dashboard pack will use `$__interval` to pick the right view.
 - Arrays with `NaN` placeholders mean a sparse metric (one collected every tenth run) wastes some space. Acceptable; revisit if a plugin needs very sparse metrics.
 - **Load-test gate:** before MVP sign-off, run 10,000 simulated devices for 24 hours on a reference PostgreSQL server and record insert latency, disk growth and rollup lag. If disk growth exceeds the estimate by more than 50 %, revisit this ADR.
+
+## Implementation notes (M3)
+
+These follow from building it; the decision itself is unchanged.
+
+- **Partition periods.** Raw samples and 5-minute rollups are partitioned by day, hourly rollups by month. Names carry the UTC start: `metric_samples_c2_d20261004` and `metric_rollup_1h_c2_m202610`.
+- **Partition functions.** `metrics_ensure_partitions(from, until)` and `metrics_drop_expired()` are `SECURITY DEFINER` functions owned by the schema owner, so the system role creates and drops partitions without owning the tables. Dropping takes a 5-second lock timeout, so writers never queue behind a long dashboard query.
+- **Missing partitions.** The writer creates a missing partition itself when `COPY` reports one, so writes do not depend on the maintenance role being up.
+- **Layout versions.** `layout_version` is a hash of the class and of each slot's name, unit and kind, so a layout change gets a new group without anyone having to bump a version.
+- **Late data.** Each rollup run recomputes one bucket before its watermark. Data later than that is not rolled up yet (see progress, deferred from M3).
+- **Grafana access.** The views run with the owner's rights and show every tenant. They are granted only to the optional role `monitor_grafana`, which is read-only and has a statement timeout.

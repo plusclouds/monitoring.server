@@ -1,6 +1,6 @@
 # F07: Metrics store, rollups and retention
 
-**Status:** Draft · **Phase:** MVP (PostgreSQL backend); phase 2 (TimescaleDB); phase 3 (ClickHouse) · **Related:** [ADR-0003](../adr/0003-metrics-storage-layout.md)
+**Status:** Implemented (MVP, PostgreSQL backend) · **Phase:** MVP (PostgreSQL backend); phase 2 (TimescaleDB); phase 3 (ClickHouse) · **Related:** [ADR-0003](../adr/0003-metrics-storage-layout.md)
 
 ## Summary
 
@@ -48,3 +48,12 @@ Metrics from checks, collectors and push ingestion are written in batches to the
 ## Decided
 
 - **Retention per plan** is done with retention classes, not per-tenant policies, because partitions are shared across tenants. A plan that needs longer or shorter retention maps to its own class (for example `standard-30d`, `standard-1y`), and the tenant's `metric_classes` limit ([F01](F01-tenancy-auth-audit.md)) decides which classes its checks may use.
+
+## Implementation status (M3)
+
+What exists and what was deferred is recorded in [progress](../progress.md#m3--metrics-f07). Differences from the text above:
+
+- **Sample arrays.** The array column is `vals`, because `values` is a reserved word.
+- **Retention class.** A metric goes to its plugin's class when the tenant's `metric_classes` allows it, else `standard`, else the tenant's first allowed class.
+- **Query alignment.** Buckets start at multiples of `step` since 2000-01-01 UTC. The query fills buckets the rollups have not reached yet from the finer level.
+- **Standalone installs** set retention with `monitor admin retention`, because they have no platform key.

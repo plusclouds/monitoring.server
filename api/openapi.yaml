@@ -51,6 +51,8 @@ tags:
     description: Check state and incidents (F05)
   - name: notifications
     description: Webhook endpoints, alert routes and deliveries (F06, ADR-0009)
+  - name: metrics
+    description: Stored check metrics, rollups and retention (F07, ADR-0003)
 
 paths:
   /me:
@@ -1457,6 +1459,126 @@ paths:
         "204": { description: Deleted }
         default: { $ref: "#/components/responses/Problem" }
 
+  /metrics/series:
+    get:
+      operationId: listMetricSeries
+      tags: [metrics]
+      summary: List stored metric series of a device or check
+      description: |
+        A series is one metric of one check. When a plugin's metric layout
+        or the retention class changes, a new series with the same name
+        starts; queries merge them by check, object and name.
+      parameters:
+        - $ref: "#/components/parameters/MetricDeviceID"
+        - $ref: "#/components/parameters/MetricCheckID"
+        - $ref: "#/components/parameters/MetricName"
+        - $ref: "#/components/parameters/MetricObject"
+      responses:
+        "200":
+          description: Series, at most 200
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/MetricSeries" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /metrics/query:
+    get:
+      operationId: queryMetrics
+      tags: [metrics]
+      summary: Points of the selected series
+      description: |
+        Buckets of `step` seconds, aggregated with `agg`. Buckets start at
+        multiples of `step` since 2000-01-01T00:00:00Z, so the first one may
+        begin before `from`.
+        Without `resolution`, the store picks raw samples for steps under
+        5 minutes, 5-minute rollups for steps under an hour and hourly
+        rollups above, and a coarser level when the finer one's retention
+        no longer covers `from`. Recent buckets the rollups have not reached
+        yet are read from the finer level. At most 10,000 points per series.
+      parameters:
+        - $ref: "#/components/parameters/MetricDeviceID"
+        - $ref: "#/components/parameters/MetricCheckID"
+        - $ref: "#/components/parameters/MetricName"
+        - $ref: "#/components/parameters/MetricObject"
+        - { name: from, in: query, description: "Default: an hour before `to`", schema: { type: string, format: date-time } }
+        - { name: to, in: query, description: "Default: now", schema: { type: string, format: date-time } }
+        - name: step
+          in: query
+          description: Bucket size in seconds. Default gives about 500 points, at least 10 s.
+          schema: { type: integer, minimum: 1 }
+        - { name: agg, in: query, schema: { type: string, enum: [avg, min, max, sum], default: avg } }
+        - { name: resolution, in: query, schema: { type: string, enum: [raw, 5m, 1h] } }
+      responses:
+        "200":
+          description: Series with points
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MetricQueryResult" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /metrics/retention-classes:
+    get:
+      operationId: listRetentionClasses
+      tags: [metrics]
+      summary: Retention classes and how long each level is kept
+      description: |
+        Retention is platform-wide per class, because partitions are shared
+        by all tenants. A tenant's `metric_classes` limit decides which
+        classes its checks store into: the plugin's class when allowed,
+        else `standard`, else the tenant's first class.
+      responses:
+        "200":
+          description: Classes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/RetentionClass" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /metrics/retention-classes/{name}:
+    put:
+      operationId: putRetentionClass
+      tags: [metrics]
+      summary: Create a retention class or replace its retention (platform only)
+      description: |
+        A null or missing level is kept until a policy is set. The next
+        maintenance run (hourly) drops partitions older than the new
+        retention. Rollups need the level below: 5-minute retention may not
+        be shorter than raw, hourly not shorter than 5-minute.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema: { type: string, pattern: "^[a-z0-9][a-z0-9-]{0,39}$" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RetentionWrite" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RetentionClass" }
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RetentionClass" }
+        default: { $ref: "#/components/responses/Problem" }
+
 components:
   securitySchemes:
     bearer:
@@ -1547,6 +1669,27 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    MetricDeviceID:
+      name: device_id
+      in: query
+      description: A device_id or a check_id is required.
+      schema: { type: string, format: uuid }
+    MetricCheckID:
+      name: check_id
+      in: query
+      schema: { type: string, format: uuid }
+    MetricName:
+      name: name
+      in: query
+      description: Metric names, as in the plugin's manifest. Repeat for several.
+      style: form
+      explode: true
+      schema: { type: array, items: { type: string }, maxItems: 50 }
+    MetricObject:
+      name: object
+      in: query
+      description: Object key within the check (interface index, VM UUID); empty for single-object checks.
+      schema: { type: string }
 
   responses:
     Problem:
@@ -2243,3 +2386,67 @@ components:
       type: object
       description: A JSON Merge Patch (RFC 7396) document.
       additionalProperties: true
+
+    MetricSeries:
+      type: object
+      required: [id, device_id, check_id, plugin, object, name, unit, kind, retention_class]
+      properties:
+        id: { type: integer, format: int64 }
+        device_id: { type: string, format: uuid }
+        check_id: { type: string, format: uuid }
+        plugin: { type: string }
+        object: { type: string }
+        name: { type: string }
+        unit: { type: string }
+        kind: { type: string, enum: [gauge, rate] }
+        retention_class: { type: string }
+
+    MetricPoint:
+      type: object
+      required: [t, v]
+      properties:
+        t: { type: string, format: date-time, description: Bucket start }
+        v: { type: number, format: double }
+
+    MetricQueryResult:
+      type: object
+      required: [resolution, step, series]
+      properties:
+        resolution: { type: string, enum: [raw, 5m, 1h] }
+        step: { type: integer, description: Bucket size in seconds }
+        series:
+          type: array
+          items: { $ref: "#/components/schemas/MetricQuerySeries" }
+
+    MetricQuerySeries:
+      type: object
+      required: [device_id, check_id, object, name, unit, series_ids, points]
+      properties:
+        device_id: { type: string, format: uuid }
+        check_id: { type: string, format: uuid }
+        object: { type: string }
+        name: { type: string }
+        unit: { type: string }
+        series_ids:
+          type: array
+          items: { type: integer, format: int64 }
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/MetricPoint" }
+
+    RetentionWrite:
+      type: object
+      additionalProperties: false
+      properties:
+        raw_days: { type: [integer, "null"], minimum: 1, maximum: 36600 }
+        rollup_5m_days: { type: [integer, "null"], minimum: 1, maximum: 36600 }
+        rollup_1h_days: { type: [integer, "null"], minimum: 1, maximum: 36600 }
+
+    RetentionClass:
+      type: object
+      required: [name, raw_days, rollup_5m_days, rollup_1h_days]
+      properties:
+        name: { type: string }
+        raw_days: { type: [integer, "null"] }
+        rollup_5m_days: { type: [integer, "null"] }
+        rollup_1h_days: { type: [integer, "null"] }

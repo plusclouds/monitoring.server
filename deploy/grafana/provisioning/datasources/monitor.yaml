@@ -1,0 +1,21 @@
+# PostgreSQL data source for the monitoring engine's Grafana views (F07).
+# The monitor_grafana role reads only the views, never the base tables, and
+# sees every tenant: this Grafana is for the platform operator.
+apiVersion: 1
+datasources:
+  - name: Monitor
+    uid: monitor-pg
+    type: grafana-postgresql-datasource
+    access: proxy
+    isDefault: true
+    url: ${MONITOR_GRAFANA_DB_HOST}
+    user: monitor_grafana
+    jsonData:
+      database: monitor
+      sslmode: ${MONITOR_GRAFANA_DB_SSLMODE}
+      postgresVersion: 1500
+      timescaledb: false
+      maxOpenConns: 10
+    secureJsonData:
+      password: ${MONITOR_GRAFANA_PASSWORD}
+    editable: false
