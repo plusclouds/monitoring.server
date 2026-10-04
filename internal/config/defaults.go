@@ -83,6 +83,7 @@ func Default() Config {
 			ClaimBatch:         100,
 			PollInterval:       dur(time.Second),
 			DependencyGrace:    dur(30 * time.Second),
+			DeliveryRetention:  dur(30 * 24 * time.Hour),
 			DeliveryTimeout:    dur(10 * time.Second),
 			MaxDeliveryTimeout: dur(30 * time.Second),
 			RetrySchedule: []Duration{
@@ -128,6 +129,8 @@ func Default() Config {
 			TenantDefaults: TenantLimits{
 				MaxDevices:              1000,
 				MaxChecks:               10000,
+				MaxWebhooks:             20,
+				MaxAlertRoutes:          50,
 				MinCheckIntervalSeconds: 30,
 				APIRatePerMinute:        1200,
 				MetricClasses:           []string{"standard"},

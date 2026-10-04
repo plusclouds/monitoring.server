@@ -71,6 +71,7 @@ func Bootstrap(ctx context.Context, db *pgxpool.Pool, o BootstrapOptions) (Boots
 		// It has no plan limits.
 		if res.PlatformTenantID, err = createTenant(ctx, tx, "platform", true, config.TenantLimits{
 			MaxDevices: 1 << 30, MaxChecks: 1 << 30, MinCheckIntervalSeconds: 5, APIRatePerMinute: 0,
+			MaxWebhooks: 1000, MaxAlertRoutes: 1000,
 		}); err != nil {
 			return err
 		}
@@ -122,10 +123,11 @@ func createTenant(ctx context.Context, tx pgx.Tx, name string, platform bool, l 
 	}
 	_, err = tx.Exec(ctx, `
 		INSERT INTO tenants (id, name, is_platform, max_devices, max_checks, min_check_interval_seconds,
-		                     api_rate_per_minute, allowed_target_networks, metric_classes, provisioned)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::cidr[], $9, 'bootstrap')`,
+		                     api_rate_per_minute, allowed_target_networks, metric_classes, provisioned,
+		                     max_webhooks, max_alert_routes)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8::cidr[], $9, 'bootstrap', $10, $11)`,
 		id, name, platform, l.MaxDevices, l.MaxChecks, l.MinCheckIntervalSeconds, l.APIRatePerMinute,
-		nonNil(l.AllowedTargetNetworks), classes)
+		nonNil(l.AllowedTargetNetworks), classes, l.MaxWebhooks, l.MaxAlertRoutes)
 	return id, err
 }
 

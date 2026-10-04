@@ -86,12 +86,13 @@ func getForUpdate(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Incident, error
 
 // Filter narrows List. Status "active" means open or acknowledged.
 type Filter struct {
-	Status   *string
-	Severity *string
-	DeviceID *uuid.UUID
-	CheckID  *uuid.UUID
-	Before   *uuid.UUID // cursor: incidents with a smaller (older) ID
-	Limit    int
+	Status     *string
+	Severity   *string
+	DeviceID   *uuid.UUID
+	CheckID    *uuid.UUID
+	Suppressed *bool
+	Before     *uuid.UUID // cursor: incidents with a smaller (older) ID
+	Limit      int
 }
 
 // List returns incidents, newest first.
@@ -102,7 +103,8 @@ func List(ctx context.Context, tx pgx.Tx, f Filter) ([]Incident, error) {
 		   AND ($3::uuid IS NULL OR device_id = $3)
 		   AND ($4::uuid IS NULL OR check_id = $4)
 		   AND ($5::uuid IS NULL OR id < $5)
-		 ORDER BY id DESC LIMIT $6`, f.Status, f.Severity, f.DeviceID, f.CheckID, f.Before, f.Limit)
+		   AND ($7::boolean IS NULL OR suppressed = $7)
+		 ORDER BY id DESC LIMIT $6`, f.Status, f.Severity, f.DeviceID, f.CheckID, f.Before, f.Limit, f.Suppressed)
 	if err != nil {
 		return nil, err
 	}

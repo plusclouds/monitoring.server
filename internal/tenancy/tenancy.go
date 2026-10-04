@@ -66,6 +66,8 @@ type Tenant struct {
 type Limits struct {
 	MaxDevices              int
 	MaxChecks               int
+	MaxWebhooks             int
+	MaxAlertRoutes          int
 	MinCheckIntervalSeconds int
 	APIRatePerMinute        int
 	AllowedTargetNetworks   []netip.Prefix
@@ -77,6 +79,8 @@ type Limits struct {
 type LimitsPatch struct {
 	MaxDevices              *int
 	MaxChecks               *int
+	MaxWebhooks             *int
+	MaxAlertRoutes          *int
 	MinCheckIntervalSeconds *int
 	APIRatePerMinute        *int
 	AllowedTargetNetworks   *[]string
@@ -93,6 +97,8 @@ func (p LimitsPatch) Apply(l Limits) (Limits, error) {
 	}
 	set(&l.MaxDevices, p.MaxDevices)
 	set(&l.MaxChecks, p.MaxChecks)
+	set(&l.MaxWebhooks, p.MaxWebhooks)
+	set(&l.MaxAlertRoutes, p.MaxAlertRoutes)
 	set(&l.MinCheckIntervalSeconds, p.MinCheckIntervalSeconds)
 	set(&l.APIRatePerMinute, p.APIRatePerMinute)
 	if p.MaxAPIKeyLifetimeDays != nil {
@@ -128,7 +134,7 @@ func ParseNetworks(in []string) ([]netip.Prefix, error) {
 const tenantCols = `id, name, status, is_platform, config_source, max_devices, max_checks,
 	min_check_interval_seconds, api_rate_per_minute, allowed_target_networks, metric_classes,
 	max_api_key_lifetime_days, external_source, external_type, external_id, provisioned,
-	created_at, updated_at, deleted_at`
+	created_at, updated_at, deleted_at, max_webhooks, max_alert_routes`
 
 func scanTenant(row pgx.Row) (Tenant, error) {
 	var t Tenant
@@ -136,7 +142,7 @@ func scanTenant(row pgx.Row) (Tenant, error) {
 		&t.Limits.MaxDevices, &t.Limits.MaxChecks, &t.Limits.MinCheckIntervalSeconds,
 		&t.Limits.APIRatePerMinute, &t.Limits.AllowedTargetNetworks, &t.Limits.MetricClasses,
 		&t.Limits.MaxAPIKeyLifetimeDays, &t.ExternalSource, &t.ExternalType, &t.ExternalID,
-		&t.Provisioned, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt)
+		&t.Provisioned, &t.CreatedAt, &t.UpdatedAt, &t.DeletedAt, &t.Limits.MaxWebhooks, &t.Limits.MaxAlertRoutes)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return t, ErrNotFound
 	}
@@ -184,6 +190,7 @@ func (t Tenant) Snapshot() map[string]any {
 		"name": t.Name, "status": t.Status,
 		"limits": map[string]any{
 			"max_devices": t.Limits.MaxDevices, "max_checks": t.Limits.MaxChecks,
+			"max_webhooks": t.Limits.MaxWebhooks, "max_alert_routes": t.Limits.MaxAlertRoutes,
 			"min_check_interval_seconds": t.Limits.MinCheckIntervalSeconds,
 			"api_rate_per_minute":        t.Limits.APIRatePerMinute,
 			"allowed_target_networks":    nets, "metric_classes": t.Limits.MetricClasses,
@@ -199,12 +206,14 @@ func insert(ctx context.Context, tx pgx.Tx, t Tenant) (bool, error) {
 	tag, err := tx.Exec(ctx, `
 		INSERT INTO tenants (id, name, status, max_devices, max_checks, min_check_interval_seconds,
 		                     api_rate_per_minute, allowed_target_networks, metric_classes,
-		                     max_api_key_lifetime_days, external_source, external_type, external_id, provisioned)
-		VALUES ($1, $2, 'active', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		                     max_api_key_lifetime_days, external_source, external_type, external_id, provisioned,
+		                     max_webhooks, max_alert_routes)
+		VALUES ($1, $2, 'active', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		ON CONFLICT (external_source, external_id) WHERE external_id IS NOT NULL DO NOTHING`,
 		t.ID, t.Name, t.Limits.MaxDevices, t.Limits.MaxChecks, t.Limits.MinCheckIntervalSeconds,
 		t.Limits.APIRatePerMinute, nonNilPrefixes(t.Limits.AllowedTargetNetworks), nonNilStrings(t.Limits.MetricClasses),
-		t.Limits.MaxAPIKeyLifetimeDays, t.ExternalSource, t.ExternalType, t.ExternalID, t.Provisioned)
+		t.Limits.MaxAPIKeyLifetimeDays, t.ExternalSource, t.ExternalType, t.ExternalID, t.Provisioned,
+		t.Limits.MaxWebhooks, t.Limits.MaxAlertRoutes)
 	if err != nil {
 		return false, mapError(err)
 	}
@@ -221,13 +230,14 @@ func update(ctx context.Context, tx pgx.Tx, t Tenant) (Tenant, error) {
 		UPDATE tenants SET name = $2, status = $3, max_devices = $4, max_checks = $5,
 		       min_check_interval_seconds = $6, api_rate_per_minute = $7, allowed_target_networks = $8,
 		       metric_classes = $9, max_api_key_lifetime_days = $10, external_type = $11,
+		       max_webhooks = $12, max_alert_routes = $13,
 		       deleted_at = CASE WHEN $3 = 'deleted' THEN coalesce(deleted_at, now()) END,
 		       updated_at = now()
 		 WHERE id = $1
 		RETURNING `+tenantCols,
 		t.ID, t.Name, t.Status, t.Limits.MaxDevices, t.Limits.MaxChecks, t.Limits.MinCheckIntervalSeconds,
 		t.Limits.APIRatePerMinute, nonNilPrefixes(t.Limits.AllowedTargetNetworks), nonNilStrings(t.Limits.MetricClasses),
-		t.Limits.MaxAPIKeyLifetimeDays, t.ExternalType))
+		t.Limits.MaxAPIKeyLifetimeDays, t.ExternalType, t.Limits.MaxWebhooks, t.Limits.MaxAlertRoutes))
 }
 
 // mapError turns constraint violations into validation errors.

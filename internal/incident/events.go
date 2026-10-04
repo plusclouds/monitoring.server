@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/plusclouds/monitoring.server/internal/errs"
 	"github.com/plusclouds/monitoring.server/internal/extref"
 )
 
@@ -22,6 +23,9 @@ const (
 	// EventRenotify repeats an open, unacknowledged incident for a route
 	// with repeat_interval (F06). It goes to that route only.
 	EventRenotify = "monitoring.incident.renotify"
+	// EventEscalated is a later escalation step of a route, sent to that
+	// route only with the step's labels.
+	EventEscalated = "monitoring.incident.escalated"
 )
 
 // ObjectType is data.object_type of incident events, in PlusClouds' style.
@@ -81,6 +85,8 @@ type CheckRef struct {
 	RuleID     *string   `json:"rule_id"`
 	RuleName   *string   `json:"rule_name"`
 	RunbookURL *string   `json:"runbook_url"`
+	// Thresholds are the check's threshold rules, as in the API.
+	Thresholds json.RawMessage `json:"thresholds"`
 }
 
 // Actor is who acknowledged, resolved or commented.
@@ -122,10 +128,10 @@ func write(ctx context.Context, tx pgx.Tx, typ string, inc Incident, actor *Acto
 		obj[k] = v
 	}
 	data.Object = obj
-	if data.Device, err = device(ctx, tx, inc.DeviceID); err != nil {
+	if data.Device, err = deviceRef(ctx, tx, inc.DeviceID); err != nil {
 		return id, 0, err
 	}
-	if data.Check, err = check(ctx, tx, inc); err != nil {
+	if data.Check, err = checkRef(ctx, tx, inc); err != nil {
 		return id, 0, err
 	}
 	now := time.Now().UTC()
@@ -140,7 +146,7 @@ func write(ctx context.Context, tx pgx.Tx, typ string, inc Incident, actor *Acto
 	return id, seq, err
 }
 
-func device(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {
+func deviceRef(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {
 	if id == nil {
 		return nil, nil
 	}
@@ -174,16 +180,55 @@ func device(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {
 	return &out, nil
 }
 
-func check(ctx context.Context, tx pgx.Tx, inc Incident) (*CheckRef, error) {
+func checkRef(ctx context.Context, tx pgx.Tx, inc Incident) (*CheckRef, error) {
 	if inc.CheckID == nil {
 		return nil, nil
 	}
 	c := &CheckRef{ID: *inc.CheckID, RuleID: inc.RuleID, RuleName: inc.RuleName}
-	err := tx.QueryRow(ctx, `SELECT c.name, c.plugin, c.runbook_url, s.last_output
+	err := tx.QueryRow(ctx, `SELECT c.name, c.plugin, c.runbook_url, s.last_output, c.thresholds
 		FROM checks c LEFT JOIN check_state s ON s.check_id = c.id WHERE c.id = $1`, *inc.CheckID).
-		Scan(&c.Name, &c.Plugin, &c.RunbookURL, &c.LastOutput)
+		Scan(&c.Name, &c.Plugin, &c.RunbookURL, &c.LastOutput, &c.Thresholds)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	return c, err
+}
+
+// Preview builds the envelope an event about a sample incident would have,
+// without storing anything, so routes can be tested (F06). device and
+// check are optional; when check is set without device, its device is used.
+func Preview(ctx context.Context, tx pgx.Tx, tenant uuid.UUID, typ, severity string, device, check *uuid.UUID) (Envelope, error) {
+	if check != nil && device == nil {
+		var d uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT device_id FROM checks WHERE id = $1`, *check).Scan(&d); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return Envelope{}, errs.Invalidf("check_id", "check %s does not exist", *check)
+			}
+			return Envelope{}, err
+		}
+		device = &d
+	}
+	now := time.Now().UTC()
+	inc := Incident{ID: uuid.Nil, TenantID: tenant, CheckID: check, DeviceID: device, Severity: severity,
+		Status: StatusOpen, Summary: "route test", OpenedAt: now, UpdatedAt: now, RootDeviceID: device}
+	var account *string
+	if err := tx.QueryRow(ctx, `SELECT external_id FROM tenant_by_id($1)`, tenant).Scan(&account); err != nil {
+		return Envelope{}, err
+	}
+	data := Data{AccountID: account, ObjectType: ObjectType, Route: json.RawMessage("null")}
+	obj := map[string]any{}
+	b, _ := json.Marshal(inc)
+	_ = json.Unmarshal(b, &obj)
+	data.Object = obj
+	var err error
+	if data.Device, err = deviceRef(ctx, tx, device); err != nil {
+		return Envelope{}, err
+	}
+	if device != nil && data.Device == nil {
+		return Envelope{}, errs.Invalidf("device_id", "device %s does not exist", *device)
+	}
+	if data.Check, err = checkRef(ctx, tx, inc); err != nil {
+		return Envelope{}, err
+	}
+	return Envelope{SpecVersion: "1.0", Type: typ, Time: now, DataContentType: "application/json", Data: data}, nil
 }

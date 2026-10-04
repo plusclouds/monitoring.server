@@ -1,6 +1,6 @@
 # F06: Webhook notifications and alert routes
 
-**Status:** Draft · **Phase:** MVP (webhooks, routes, grouping, repeat); phase 2 (escalation steps, schedules) · **Related:** [ADR-0009](../adr/0009-webhook-delivery.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
+**Status:** Implemented (webhooks, routes, grouping, repeat, escalation steps, schedules) · **Related:** [ADR-0009](../adr/0009-webhook-delivery.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
 
 ## Summary
 
@@ -37,8 +37,10 @@ A route matches incidents and sends them to an endpoint:
 - Routes are evaluated in order; the first match wins unless `continue` is true.
 - **Grouping:** incidents with the same `group_by` values within `group_wait` are sent as one event with a list of incidents. This keeps a switch failure to one message.
 - **Repeat:** open, unacknowledged incidents are re-sent as `monitoring.incident.renotify` every `repeat_interval`.
-- **Steps (phase 2):** each step is a separate event with its own labels; the receiver (n8n, Node-RED, PlusClouds) decides who the labels mean. Acknowledgement stops later steps. Schedules (phase 2) restrict a step to time ranges, for business hours versus night.
-- In the MVP, a route has exactly one step at `0m`.
+- **Steps:**
+  - Each step is a separate event with its own labels; the receiver (n8n, Node-RED, PlusClouds) decides what the labels mean.
+  - Acknowledging an incident stops the later steps that set `only_if_unacknowledged`.
+  - A schedule restricts a step to time windows, such as business hours versus night.
 
 ### Event contents
 
@@ -50,7 +52,7 @@ As in [ADR-0009](../adr/0009-webhook-delivery.md): outbox, Standard Webhooks sig
 
 ## API
 
-`/v1/webhooks` (CRUD, `by-external-id/{external_id}`, `{id}/test`, `{id}/deliveries`, `{id}/deliveries/{d}/replay`, `{id}/rotate-secret`), `/v1/alert-routes` (CRUD, `by-external-id/{external_id}`, `test` with a sample incident to show which routes match), `/v1/schedules` (phase 2).
+`/v1/webhooks` (CRUD, `by-external-id/{external_id}`, `{id}/test`, `{id}/deliveries`, `{id}/deliveries/{d}/replay`, `{id}/deliveries/replay` in bulk, `{id}/rotate-secret`), `/v1/alert-routes` (CRUD, `by-external-id/{external_id}`, `test` with a sample incident to show which routes match). Schedules are part of each step rather than a separate resource.
 
 ## Implementation status
 
@@ -66,7 +68,25 @@ M2 implements endpoints, rotation, ordered routes with `continue`, signed delive
   - Acknowledging or resolving an incident stops its repeats.
 - **Suppressed incidents** ([F05](F05-state-and-incidents.md)) are not notified.
 
-Steps and schedules stay in phase 2.
+Completed after M4 part 1:
+
+- **Escalation steps.** A route's `steps` list starts with the notification itself.
+  - **Timing.** Each later step is sent `after_seconds` after the notification, as `monitoring.incident.escalated`, to that route only.
+  - **Content.** The route's labels are merged with the step's labels, and the step number goes in `data.route.step`.
+  - **Skips.** A step is skipped when the incident has been resolved or suppressed, or acknowledged if the step sets `only_if_unacknowledged`. Every outcome is recorded in `route_escalations`.
+- **Schedules.** A step can carry a schedule with a time zone, weekdays and from/to times. A window whose `to` is before its `from` spans midnight. A step that falls due outside its windows waits for the next one. The first step cannot have a schedule.
+- **Route test.** `POST /v1/alert-routes/test` builds the event of a sample incident from a real device and check, and lists for every route whether it matches and whether it would deliver.
+- **Bulk replay.** `POST /v1/webhooks/{id}/deliveries/replay?status=failed&from=&to=` queues an endpoint's failed or cancelled deliveries again, up to 10,000 per call.
+- **Payload additions.**
+  - `data.links.incident` from `notifier.incident_url_template` (placeholders `{incident_id}`, `{account_id}` and `{tenant_id}`).
+  - `data.check.thresholds`.
+- **Incident list.** `GET /v1/incidents?suppressed=` filters on suppression.
+
+- **Limits.** Tenant limits `max_webhooks` (default 20) and `max_alert_routes` (default 50) can be set with the platform tenant PATCH. A create beyond either limit returns 409 `limit-reached`.
+- **URL check when saved.** A webhook URL that the tenant's network policy blocks is refused with 422 `invalid-value` when it is created or updated. The check covers IP literals, `localhost`, and the addresses a hostname resolves to at that moment, and it is the same check that runs at delivery. Delivery still checks again, because DNS can change.
+- **Delivery retention.** `notifier.delivery_retention` (default 30 days) deletes finished deliveries, then routed events that no delivery or open group still needs. Pending deliveries are never deleted.
+
+Still not built: `monitoring.tenant.device_limit_reached`, and `monitoring.heartbeat` (planned with F11 in M5).
 
 ## Acceptance criteria
 

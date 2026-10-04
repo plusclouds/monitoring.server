@@ -198,7 +198,19 @@ func TestWebhookSecretsAndRotation(t *testing.T) {
 func TestWebhookSSRFGuard(t *testing.T) {
 	e := setup(t, true)
 	rcv := newReceiver(t)
+	// Refused when saved (v0.4.1)...
+	e.must(e.do("POST", "/v1/webhooks", e.adminKey, map[string]any{"name": "h", "url": rcv.URL}), 422)
+	// ...and at delivery, when the policy changed after the URL was saved
+	// (as with a DNS name that later resolves to a private address).
+	setNets := func(nets string) {
+		if _, err := db.System.Exec(context.Background(),
+			`UPDATE tenants SET allowed_target_networks = $1::cidr[] WHERE NOT is_platform`, nets); err != nil {
+			t.Fatal(err)
+		}
+	}
+	setNets("{127.0.0.0/8}")
 	id := e.must(e.do("POST", "/v1/webhooks", e.adminKey, map[string]any{"name": "h", "url": rcv.URL}), 201).body["id"].(string)
+	setNets("{}")
 	r := e.must(e.do("POST", "/v1/webhooks/"+id+"/test", e.adminKey, nil), 200)
 	if r.body["ok"] != false || !strings.Contains(r.body["error"].(string), "network policy") || len(rcv.types()) != 0 {
 		t.Errorf("SSRF guard: %s", r.raw)

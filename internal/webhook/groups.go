@@ -251,3 +251,103 @@ func (n *Notifier) repeat(ctx context.Context) error {
 		return nil
 	})
 }
+
+// escalate sends the escalation steps that are due, as
+// monitoring.incident.escalated with the step's labels. A step waits for
+// its schedule's next window; it is skipped when the incident was resolved
+// or suppressed meanwhile, or acknowledged and the step asks for that.
+func (n *Notifier) escalate(ctx context.Context) error {
+	return pgx.BeginFunc(ctx, n.o.System, func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, `SELECT route_id, incident_id, step FROM route_escalations
+			WHERE done_at IS NULL AND due_at <= now() ORDER BY due_at LIMIT 100 FOR UPDATE SKIP LOCKED`)
+		if err != nil {
+			return err
+		}
+		type due struct {
+			route, incident uuid.UUID
+			step            int
+		}
+		list, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (due, error) {
+			var d due
+			err := r.Scan(&d.route, &d.incident, &d.step)
+			return d, err
+		})
+		if err != nil {
+			return err
+		}
+		finish := func(d due, outcome string) error {
+			_, err := tx.Exec(ctx, `UPDATE route_escalations SET done_at = now(), outcome = $4
+				WHERE route_id = $1 AND incident_id = $2 AND step = $3`, d.route, d.incident, d.step, outcome)
+			return err
+		}
+		for _, d := range list {
+			r, err := GetRoute(ctx, tx, d.route)
+			if err != nil {
+				return err
+			}
+			inc, err := incident.Get(ctx, tx, d.incident)
+			if err != nil {
+				return err
+			}
+			steps := r.stepsOf()
+			switch {
+			case inc.Status == incident.StatusResolved || d.step >= len(steps) || !r.Enabled:
+				err = finish(d, "skipped-resolved")
+			case inc.Suppressed:
+				err = finish(d, "skipped-suppressed")
+			case inc.Status == incident.StatusAcknowledged && steps[d.step].OnlyIfUnacknowledged:
+				err = finish(d, "skipped-acknowledged")
+			default:
+				now := time.Now()
+				if sc := steps[d.step].Schedule; sc != nil {
+					if next := sc.Next(now); next.After(now) {
+						_, err = tx.Exec(ctx, `UPDATE route_escalations SET due_at = $4
+							WHERE route_id = $1 AND incident_id = $2 AND step = $3`, d.route, d.incident, d.step, next)
+						if err != nil {
+							return err
+						}
+						continue
+					}
+				}
+				id, seq, eerr := incident.EmitRouted(ctx, tx, incident.EventEscalated, inc)
+				if eerr != nil {
+					return eerr
+				}
+				if eerr := n.enqueueStep(ctx, tx, inc.TenantID, id, seq, incident.EventEscalated, inc.ID.String(), r, d.step); eerr != nil {
+					return eerr
+				}
+				err = finish(d, "sent")
+			}
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+// Cleanup applies notifier.delivery_retention: finished deliveries older
+// than it are deleted, then routed events that no pending delivery or open
+// group still needs. It returns the number of deliveries deleted.
+func (n *Notifier) Cleanup(ctx context.Context) (int64, error) {
+	keep := n.o.Config.DeliveryRetention.D()
+	if keep <= 0 {
+		return 0, nil
+	}
+	tag, err := n.o.System.Exec(ctx, `DELETE FROM webhook_deliveries WHERE id IN (
+		SELECT id FROM webhook_deliveries WHERE status <> 'pending' AND created_at < now() - $1::interval LIMIT 50000)`, keep)
+	if err != nil {
+		return 0, err
+	}
+	_, err = n.o.System.Exec(ctx, `DELETE FROM events WHERE id IN (
+		SELECT e.id FROM events e
+		 WHERE e.routed_at IS NOT NULL AND e.time < now() - $1::interval
+		   AND NOT EXISTS (SELECT 1 FROM webhook_deliveries d WHERE d.event_id = e.id)
+		   AND NOT EXISTS (SELECT 1 FROM alert_group_events m JOIN alert_groups g ON g.id = m.group_id
+		                    WHERE m.event_id = e.id AND g.flushed_at IS NULL)
+		 LIMIT 50000)`, keep)
+	if err == nil {
+		_, err = n.o.System.Exec(ctx, `DELETE FROM alert_groups WHERE flushed_at < now() - $1::interval`, keep)
+	}
+	return tag.RowsAffected(), err
+}
