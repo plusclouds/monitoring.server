@@ -51,6 +51,8 @@ flowchart LR
 
 ## Suggested milestones
 
+Current status of each milestone: [implementation progress](../progress.md).
+
 | Milestone | Contents | Demo |
 | --- | --- | --- |
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, HTTP and ping plugins | Create a tenant and key; `GET /v1/plugins` lists two plugins |
