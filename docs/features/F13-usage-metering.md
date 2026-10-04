@@ -19,10 +19,22 @@ A **check-hour** is one check, enabled on a device, for one hour (or part of it)
 
 Only checks are billed, and each counts by its plugin's weight. There are no tiers or classes.
 
-- Every plugin declares a default weight in its manifest (`BillingWeight`, replacing `BillingClass`), for example `icmp` 1, `http` 2, `snmp.interfaces` 5. Defaults are confirmed with PlusClouds pricing before F13 ships.
-- The platform overrides a plugin's weight with `PUT /v1/usage/weights/{plugin}`; every check of that plugin, in every tenant, uses it. There is no per-check or per-tenant weight.
-- A weight change applies from the hour it is made. The weight in force is recorded on every usage line, so an invoice for a past period is reproduced exactly.
-- Companion checks that exist only to support another check (`mqtt.connection` next to a push check) have weight 0.
+- Weights are set in the server config file, per plugin type; every check of that plugin, in every tenant, uses it. There is no per-check or per-tenant weight, and no API to change them:
+
+  ```yaml
+  usage:
+    weights:            # plugin type: weight per check-hour
+      icmp: 1
+      http: 2
+      snmp.interfaces: 5
+    default_weight: 1   # plugins not listed
+  ```
+
+- Weights are confirmed with PlusClouds pricing before F13 ships; the values above are examples.
+- **Applying a change.** At start the server compares the file's weights with the weights in force in the database. Each difference is recorded with an effective time (the next full hour) and an audit event (actor `file`). Like the rest of the config, a change needs a restart; a weight change goes with a price change, so this is acceptable.
+- **History.** The database keeps every weight with the time it took effect, so an invoice for a past period is reproduced exactly. The weight in force is also copied onto every usage line.
+- **Several nodes** must carry the same weights. If they differ, the node that started last wins, and it logs a warning naming the plugins that differ.
+- Companion checks that exist only to support another check (`mqtt.connection` next to a push check) are not billed: the manifest marks them (`Billable: false`, replacing `BillingClass`), and they count with weight 0 whatever the config says.
 - **Usage returned:** per device, `weighted_units = Σ over its checks (check_hours × weight)`, with the per-check lines (check-hours, weight, units) underneath for the invoice.
 
 ### What counts
@@ -98,8 +110,7 @@ Usage tables are not part of metric retention. They are kept for a platform-leve
 | `GET /v1/usage/devices?from=&to=` | tenant (any role), platform | Per device: `weighted_units`, with its checks' lines (plugin, check-hours, weight, units), per day |
 | `GET /v1/usage/tenants?from=&to=` | platform only | Weighted units per tenant, with tenant external IDs, for billing runs |
 | `GET /v1/usage/current` | tenant, platform | Weighted units per hour of the checks active now (running estimate, not billable) |
-| `GET /v1/usage/weights` | any | Weight per plugin |
-| `PUT /v1/usage/weights/{plugin}` | platform only | Set a plugin's weight from the current hour; audited |
+| `GET /v1/usage/weights` | any | Weight in force per plugin, and the default weight; read-only, since weights come from the config file |
 
 - `from` and `to` are whole UTC days. Responses mark each day `closed: true|false`; billing uses closed days only.
 - leo4 runs its billing job by pulling closed days. Pulling the same period twice returns the same data, so a failed job is simply rerun.
@@ -113,7 +124,7 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 - A check created at 10:15 and deleted at 10:40 produces 1 check-hour for that day.
 - A device with `icmp` (weight 1) and `http` (weight 2) checks, enabled all day, produces 48 check-hours and 72 weighted units.
 - An XCP-ng pool whose collector discovers 50 VMs is billed as its collector check only.
-- Changing a plugin's weight at 14:20 bills that day's checks of the plugin with the old weight until 14:00 and the new one from 14:00 on; reading an earlier closed day returns the old weight.
+- Changing a plugin's weight in the config and restarting at 14:20 bills that plugin's checks with the old weight until 15:00 and the new one from 15:00; reading an earlier closed day returns the old weight. Restarting without a change records nothing.
 - Disabling a check stops its check-hours from the next hour; re-enabling starts a new period.
 - Suspending a tenant ends every open period in the same transaction.
 - Rerunning the day close for a closed day changes nothing.
@@ -127,7 +138,7 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 
 ## Decided
 
-- **Checks only, weighted** (2026-10-04): no tiers or classes and no discovered-object unit. Each plugin has a platform-set weight; usage per device is check-hours × weights.
+- **Checks only, weighted** (2026-10-04): no tiers or classes and no discovered-object unit. Each plugin has a weight from the server config file (`usage.weights`, with `default_weight` for unlisted plugins); usage per device is check-hours × weights.
 - **Auto-registered devices** (MQTT sensors, LLM applications) are billed through their own push check.
 
 - **Unit length:** hourly. A check active for any part of an hour is billed for that hour.

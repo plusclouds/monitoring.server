@@ -15,7 +15,7 @@ This page records which milestones are done and what comes next. The milestone d
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
-| Unassigned | F13 usage metering (MVP scope) | Not started | Only checks are billed, each with its plugin's platform-set weight; usage per device is check-hours × weights (decided 2026-10-04). Milestone waits for PlusClouds billing to say how usage reaches it |
+| Unassigned | F13 usage metering (MVP scope) | Not started | Only checks are billed, each with its plugin's weight from the config file (`usage.weights`); usage per device is check-hours × weights (decided 2026-10-04). Milestone waits for PlusClouds billing to say how usage reaches it |
 
 ## Done
 
