@@ -19,6 +19,14 @@ func (c *Config) Validate(roles []string) error {
 	v.roles(roles)
 	v.oneOf("tls.min_version", c.TLS.MinVersion, "1.2", "1.3")
 	v.oneOf("metrics.backend", c.Metrics.Backend, "auto", "postgres", "timescale")
+	if c.Usage.DefaultWeight < 0 {
+		v.add("usage.default_weight: must not be negative")
+	}
+	for plugin, w := range c.Usage.Weights {
+		if w < 0 || w > 1e6 {
+			v.add("usage.weights.%s: must be between 0 and 1000000", plugin)
+		}
+	}
 	v.oneOf("runner.icmp.mode", c.Runner.ICMP.Mode, "auto", "privileged", "unprivileged")
 	v.oneOf("crypto.key_provider", c.Crypto.KeyProvider, "file")
 	v.cidrs("outbound.deny_networks", c.Outbound.DenyNetworks)

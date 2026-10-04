@@ -58,6 +58,8 @@ tags:
     description: Webhook endpoints, alert routes and deliveries (F06, ADR-0009)
   - name: metrics
     description: Stored check metrics, rollups and retention (F07, ADR-0003)
+  - name: usage
+    description: Billable usage for PlusClouds billing (F13)
 
 paths:
   /me:
@@ -1650,6 +1652,113 @@ paths:
               schema: { $ref: "#/components/schemas/RetentionClass" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /usage/tenants:
+    get:
+      operationId: listTenantUsage
+      tags: [usage]
+      summary: Billable usage of every tenant per closed hour (platform only)
+      description: |
+        The contract PlusClouds billing pulls (F13). One item per tenant
+        per closed UTC hour with billable checks, ordered by hour and
+        account. `billable_check_seconds` is Σ(seconds a check was billable
+        in the hour × its plugin's weight); the breakdown shows the
+        unweighted seconds and weight per plugin. Only the latest revision
+        of an hour is returned; a revision changes only for a correction.
+
+        `from` and `to` must be whole UTC hours, at most 31 days apart. A
+        range that reaches an hour not closed yet returns 422 with type
+        `usage-hour-open`; its detail names the end of the closed hours.
+        Hours are closed 5 minutes after they end.
+      parameters:
+        - $ref: "#/components/parameters/UsageFrom"
+        - $ref: "#/components/parameters/UsageTo"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Usage
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/UsageHour" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /usage/hours:
+    get:
+      operationId: listUsageHours
+      tags: [usage]
+      summary: The tenant's own closed hours
+      description: Same item shape as `/usage/tenants`, including hours without billable checks.
+      parameters:
+        - $ref: "#/components/parameters/UsageFrom"
+        - $ref: "#/components/parameters/UsageTo"
+      responses:
+        "200":
+          description: Usage
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/UsageHour" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /usage/current:
+    get:
+      operationId: getCurrentUsage
+      tags: [usage]
+      summary: Checks billable right now, weighted (an estimate, not billable)
+      responses:
+        "200":
+          description: Current usage
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checks, weighted_checks, by_plugin]
+                properties:
+                  checks: { type: integer }
+                  weighted_checks: { type: number, format: double }
+                  by_plugin:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      required: [checks, weight]
+                      properties:
+                        checks: { type: integer }
+                        weight: { type: number, format: double }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /usage/weights:
+    get:
+      operationId: getUsageWeights
+      tags: [usage]
+      summary: Billing weight per plugin in force now
+      description: Set by the operator in the server config (`usage.weights`); read-only here.
+      responses:
+        "200":
+          description: Weights
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [default_weight, weights]
+                properties:
+                  default_weight: { type: number, format: double }
+                  weights:
+                    type: object
+                    additionalProperties: { type: number, format: double }
+        default: { $ref: "#/components/responses/Problem" }
+
 components:
   securitySchemes:
     bearer:
@@ -1740,6 +1849,18 @@ components:
       in: path
       required: true
       schema: { type: string, format: uuid }
+    UsageFrom:
+      name: from
+      in: query
+      required: true
+      description: Start of the first hour, a whole UTC hour.
+      schema: { type: string, format: date-time }
+    UsageTo:
+      name: to
+      in: query
+      required: true
+      description: End of the last hour (exclusive), a whole UTC hour.
+      schema: { type: string, format: date-time }
     MetricDeviceID:
       name: device_id
       in: query
@@ -2531,3 +2652,30 @@ components:
         raw_days: { type: [integer, "null"] }
         rollup_5m_days: { type: [integer, "null"] }
         rollup_1h_days: { type: [integer, "null"] }
+
+    UsageHour:
+      type: object
+      required: [account_id, period_start, period_end, billable_check_seconds, device_seconds, revision, breakdown]
+      properties:
+        account_id:
+          type: [string, "null"]
+          description: The tenant's external ID (the PlusClouds account UUID) when the hour was closed
+        period_start: { type: string, format: date-time }
+        period_end: { type: string, format: date-time }
+        billable_check_seconds:
+          type: number
+          format: double
+          description: Σ(seconds billable × plugin weight)
+        device_seconds:
+          type: integer
+          format: int64
+          description: Σ seconds devices existed; informational, not billed
+        revision: { type: integer }
+        breakdown:
+          type: object
+          additionalProperties:
+            type: object
+            required: [count_seconds, weight]
+            properties:
+              count_seconds: { type: integer, format: int64 }
+              weight: { type: number, format: double }

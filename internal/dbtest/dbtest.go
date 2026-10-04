@@ -114,7 +114,8 @@ func (db *DB) Reset(t *testing.T) {
 	defer owner.Close()
 	_, err = owner.Exec(context.Background(),
 		`TRUNCATE audit_events, api_keys, tenant_members, users, tenants, installation,
-		          metric_samples, metric_rollup_5m, metric_rollup_1h, metric_rollup_watermarks, retention_policies CASCADE`)
+		          metric_samples, metric_rollup_5m, metric_rollup_1h, metric_rollup_watermarks, retention_policies,
+		          usage_weights, usage_close CASCADE`)
 	if err != nil {
 		t.Fatal(err)
 	}

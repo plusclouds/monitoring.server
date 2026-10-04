@@ -1,6 +1,6 @@
 # F13: Usage metering
 
-**Status:** Draft, shape agreed with PlusClouds billing on 2026-10-04 (counting rules await their confirmation) · **Phase:** MVP (metering and usage API); phase 3 (usage from customer-run servers) · **Related:** [F01](F01-tenancy-auth-audit.md), [F03](F03-plugin-sdk.md), [F04](F04-scheduler-and-runner.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
+**Status:** Implemented in M3.5 (counting rules await PlusClouds' confirmation) · **Phase:** MVP (metering and usage API); phase 3 (usage from customer-run servers) · **Related:** [F01](F01-tenancy-auth-audit.md), [F03](F03-plugin-sdk.md), [F04](F04-scheduler-and-runner.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
 
 ## Summary
 
@@ -37,7 +37,7 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
   - A change needs a restart, like the rest of the config; no release is needed.
   - Closed hours keep the weight they were computed with, so a weight change never revises a past hour.
 - **History.** The database keeps every weight with the time it took effect. Every usage row carries the weights it was computed with.
-- **Several nodes** must carry the same weights. If they differ, the node that started last wins and logs a warning naming the plugins that differ.
+- **Which node.** The maintenance node (one at a time) records the weights from its own config at start and every hour. Give every node the same `usage` section.
 - **Companion checks** exist only to support another check, such as `mqtt.connection` next to a push check. The plugin manifest marks them (`Billable: false`, replacing `BillingClass`), and they are never billed, whatever the config says.
 
 ### What counts
@@ -169,3 +169,13 @@ A server that PlusClouds does not host can be billed only if it reports. One con
 - **Counting rules:** awaiting PlusClouds' confirmation of the table above.
 - **Default weights** for the M4 plugins, with PlusClouds pricing.
 - **LLM units** ([F14](F14-llm-monitoring.md)): whether spans, content storage and judge evaluations get their own meters.
+
+## Implementation status (M3.5)
+
+What exists and what was left out is recorded in [progress](../progress.md#m35--usage-metering-f13). Differences from the text above:
+
+- **Periods are kept by database triggers** on `checks`, `devices` and `tenants` (migration `00010`), not by application code. Any path that changes a check, device or tenant therefore updates its periods in the same transaction, so the hourly consistency job is not needed.
+- **Counting starts at deploy.** The migration opens periods for what exists at that moment.
+- **No `runs_on` yet.** Remote probes arrive in M5.
+- **No billable flag yet.** The manifest's `Billable` flag waits for the first companion plugin; until then, a weight of 0 in the config does the same.
+- **Corrections** are written with `monitor admin usage-recompute --from --to --reason`.

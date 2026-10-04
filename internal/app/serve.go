@@ -29,6 +29,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
 	"github.com/plusclouds/monitoring.server/internal/tenancy"
+	"github.com/plusclouds/monitoring.server/internal/usage"
 	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
 
@@ -180,8 +181,9 @@ func Serve(ctx context.Context, o ServeOptions) error {
 			}
 			return err
 		}}
+		jobs := append([]metrics.Job{purge}, usageJobs(pools.system, o.Config, log)...)
 		m, err := metrics.NewMaintainer(metrics.MaintainerOptions{System: pools.system, Config: o.Config.Metrics,
-			Logger: log.Logger, Registry: reg, Jobs: []metrics.Job{purge}})
+			Logger: log.Logger, Registry: reg, Jobs: jobs})
 		if err != nil {
 			return err
 		}
@@ -197,6 +199,31 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	err = g.Wait()
 	log.Info("monitor stopped")
 	return err
+}
+
+// usageJobs are the metering jobs of the maintenance node (F13): record the
+// config's weights, close ended hours, and apply usage retention.
+func usageJobs(db *pgxpool.Pool, c config.Config, log *logging.Logger) []metrics.Job {
+	return []metrics.Job{
+		{Name: "usage_weights", Every: time.Hour, Run: func(ctx context.Context) error {
+			changes, err := usage.SyncWeights(ctx, db, c.Usage, time.Now())
+			for _, ch := range changes {
+				log.Info("usage weight recorded", "plugin", ch.Plugin, "weight", ch.To, "effective_from", ch.Effective())
+			}
+			return err
+		}},
+		{Name: "usage_close", Every: time.Minute, Run: func(ctx context.Context) error {
+			hours, err := usage.CloseHours(ctx, db, c.Platform.UsageCloseDelay.D(), time.Now())
+			if len(hours) > 0 {
+				log.Info("usage hours closed", "count", len(hours), "last", hours[len(hours)-1])
+			}
+			return err
+		}},
+		{Name: "usage_retention", Every: time.Hour, Run: func(ctx context.Context) error {
+			_, err := usage.ApplyRetention(ctx, db, c.Platform.UsageRetention.D())
+			return err
+		}},
+	}
 }
 
 func reloadOnHUP(ctx context.Context, o ServeOptions) {

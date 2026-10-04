@@ -348,7 +348,20 @@ platform:
   audit_retention: 8760h        # applied by partition drop; source IPs are personal data
   # Usage metering (F13). Kept apart from metric retention.
   usage_retention: 9504h        # 13 months
-  usage_day_close_delay: 1h     # a UTC day is closed this long after midnight
+  usage_close_delay: 5m         # a UTC hour is closed this long after it ends
+
+# ---------------------------------------------------------------------------
+# Usage metering (F13)
+# ---------------------------------------------------------------------------
+# Billing weight per plugin type: a check counts weight x seconds. Prices are
+# set by PlusClouds billing, never here. A change is recorded by the
+# maintenance node at start and applies from the next full UTC hour; closed
+# hours keep the weights they were computed with.
+usage:
+  weights:
+    icmp: 1
+    http: 2
+  default_weight: 1   # plugins not listed
 
 # ---------------------------------------------------------------------------
 # Monitoring the monitor (F11)
