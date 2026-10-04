@@ -48,10 +48,11 @@ type Route struct {
 	EndpointID uuid.UUID
 	Continue   bool
 	Labels     map[string]string // step labels; receivers decide what they mean
-	ManagedBy  string
-	External   *extref.Ref
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	Grouping
+	ManagedBy string
+	External  *extref.Ref
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // RouteInput is the client-writable part of a route. Position 0 appends.
@@ -63,7 +64,36 @@ type RouteInput struct {
 	EndpointID uuid.UUID
 	Continue   bool
 	Labels     map[string]string
-	External   *extref.Ref
+	Grouping
+	External *extref.Ref
+}
+
+// Grouping is how a route batches and repeats notifications (F06).
+type Grouping struct {
+	// GroupBy collects matching events with the same values into one event
+	// after GroupWait. Empty: every event goes out on its own.
+	GroupBy   []string
+	GroupWait time.Duration
+	// RepeatInterval re-sends open, unacknowledged incidents; 0 never.
+	RepeatInterval time.Duration
+}
+
+// GroupFields are the values a route can group by.
+var GroupFields = []string{"root_device_id", "device_id", "site_id", "severity", "check_id", "plugin", "device_type"}
+
+func (g Grouping) validate() error {
+	for _, f := range g.GroupBy {
+		if !slices.Contains(GroupFields, f) {
+			return errs.Invalidf("group_by", "%q is not one of %v", f, GroupFields)
+		}
+	}
+	if g.GroupWait < 0 || g.GroupWait > 10*time.Minute {
+		return errs.Invalidf("group_wait_seconds", "must be 0 to 600")
+	}
+	if r := g.RepeatInterval; r != 0 && (r < 5*time.Minute || r > 7*24*time.Hour) {
+		return errs.Invalidf("repeat_interval_seconds", "must be 300 to 604800")
+	}
+	return nil
 }
 
 var knownEvents = []string{incident.EventOpened, incident.EventUpdated, incident.EventAcknowledged,
@@ -86,6 +116,9 @@ func (in *RouteInput) validate(ctx context.Context, tx pgx.Tx) error {
 	if len(in.Match.CheckIDs) > 100 || len(in.Match.DeviceIDs) > 100 {
 		return errs.Invalidf("match", "at most 100 check_ids and 100 device_ids")
 	}
+	if err := in.Grouping.validate(); err != nil {
+		return err
+	}
 	if len(in.Labels) > 20 {
 		return errs.Invalidf("labels", "at most 20 labels")
 	}
@@ -97,8 +130,9 @@ func (in *RouteInput) validate(ctx context.Context, tx pgx.Tx) error {
 	return in.External.Validate()
 }
 
-const routeCols = `id, tenant_id, name, position, enabled, match, endpoint_id, continue, labels, managed_by,
-	external_source, external_type, external_id, created_at, updated_at`
+const routeCols = `id, tenant_id, name, position, enabled, match, endpoint_id, continue, labels, group_by,
+	group_wait_seconds, coalesce(repeat_interval_seconds, 0), managed_by, external_source, external_type, external_id,
+	created_at, updated_at`
 
 var routeConstraints = map[string]string{
 	"alert_routes_tenant_id_name_key": "an alert route with this name already exists",
@@ -108,8 +142,10 @@ var routeConstraints = map[string]string{
 func scanRoute(row pgx.Row) (Route, error) {
 	var r Route
 	var src, typ, ext *string
+	var wait, repeat int
 	err := row.Scan(&r.ID, &r.TenantID, &r.Name, &r.Position, &r.Enabled, &r.Match, &r.EndpointID, &r.Continue,
-		&r.Labels, &r.ManagedBy, &src, &typ, &ext, &r.CreatedAt, &r.UpdatedAt)
+		&r.Labels, &r.GroupBy, &wait, &repeat, &r.ManagedBy, &src, &typ, &ext, &r.CreatedAt, &r.UpdatedAt)
+	r.GroupWait, r.RepeatInterval = time.Duration(wait)*time.Second, time.Duration(repeat)*time.Second
 	if errors.Is(err, pgx.ErrNoRows) {
 		return r, errs.ErrNotFound
 	}
@@ -119,7 +155,9 @@ func scanRoute(row pgx.Row) (Route, error) {
 
 func (r Route) snapshot() map[string]any {
 	return map[string]any{"name": r.Name, "position": r.Position, "enabled": r.Enabled, "match": r.Match,
-		"endpoint_id": r.EndpointID, "continue": r.Continue, "labels": r.Labels, "external": r.External}
+		"endpoint_id": r.EndpointID, "continue": r.Continue, "labels": r.Labels, "external": r.External,
+		"group_by": r.GroupBy, "group_wait_seconds": int(r.GroupWait.Seconds()),
+		"repeat_interval_seconds": int(r.RepeatInterval.Seconds())}
 }
 
 // GetRoute returns one route.
@@ -175,10 +213,11 @@ func CreateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid.
 	src, typ, ext := in.External.Columns()
 	r, err := scanRoute(tx.QueryRow(ctx, `
 		INSERT INTO alert_routes (id, tenant_id, name, position, enabled, match, endpoint_id, continue, labels,
+		                          group_by, group_wait_seconds, repeat_interval_seconds,
 		                          external_source, external_type, external_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING `+routeCols,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, nullif($12, 0), $13, $14, $15) RETURNING `+routeCols,
 		id, tenant, in.Name, in.Position, in.Enabled, in.Match, in.EndpointID, in.Continue, nonNilMap(in.Labels),
-		src, typ, ext))
+		nonNilStrings(in.GroupBy), int(in.GroupWait.Seconds()), int(in.RepeatInterval.Seconds()), src, typ, ext))
 	if err != nil {
 		return Route{}, errs.FromDB(err, routeConstraints)
 	}
@@ -200,6 +239,8 @@ func UpdateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	next := cur
 	next.Name, next.Position, next.Enabled, next.Match = in.Name, in.Position, in.Enabled, in.Match
 	next.EndpointID, next.Continue, next.Labels, next.External = in.EndpointID, in.Continue, nonNilMap(maps.Clone(in.Labels)), in.External
+	next.Grouping = in.Grouping
+	next.GroupBy = nonNilStrings(in.GroupBy)
 	before, after := normalize(cur.snapshot()), normalize(next.snapshot())
 	if reflect.DeepEqual(before, after) {
 		return cur, nil
@@ -207,9 +248,11 @@ func UpdateRoute(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	src, typ, ext := next.External.Columns()
 	out, err := scanRoute(tx.QueryRow(ctx, `
 		UPDATE alert_routes SET name = $2, position = $3, enabled = $4, match = $5, endpoint_id = $6, continue = $7,
-		       labels = $8, external_source = $9, external_type = $10, external_id = $11, updated_at = now()
+		       labels = $8, external_source = $9, external_type = $10, external_id = $11, group_by = $12,
+		       group_wait_seconds = $13, repeat_interval_seconds = nullif($14, 0), updated_at = now()
 		 WHERE id = $1 RETURNING `+routeCols,
-		id, next.Name, next.Position, next.Enabled, next.Match, next.EndpointID, next.Continue, next.Labels, src, typ, ext))
+		id, next.Name, next.Position, next.Enabled, next.Match, next.EndpointID, next.Continue, next.Labels, src, typ, ext,
+		next.GroupBy, int(next.GroupWait.Seconds()), int(next.RepeatInterval.Seconds())))
 	if err != nil {
 		return Route{}, errs.FromDB(err, routeConstraints)
 	}
@@ -260,4 +303,11 @@ func (r Route) Matches(e *incident.Envelope, severity string) bool {
 		}
 	}
 	return true
+}
+
+func nonNilStrings(s []string) []string {
+	if s == nil {
+		return []string{}
+	}
+	return s
 }

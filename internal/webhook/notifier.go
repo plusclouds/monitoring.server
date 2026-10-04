@@ -93,6 +93,12 @@ func (n *Notifier) Tick(ctx context.Context) {
 			break
 		}
 	}
+	if err := n.flushGroups(ctx); err != nil && ctx.Err() == nil {
+		n.log.Error("flush alert groups", "error", err)
+	}
+	if err := n.repeat(ctx); err != nil && ctx.Err() == nil {
+		n.log.Error("repeat notifications", "error", err)
+	}
 	for {
 		k, err := n.dispatch(ctx)
 		if err != nil {
@@ -121,35 +127,73 @@ type routeInfo struct {
 	Labels map[string]string `json:"labels"`
 }
 
-// route turns a batch of unrouted events into deliveries.
+// unrouted is an event waiting for the router.
+type unrouted struct {
+	id, tenant uuid.UUID
+	seq        int64
+	typ        string
+	subject    *string
+	raw        []byte
+	held       bool // route_after was set: the dependency grace has passed
+}
+
+// route turns a batch of unrouted events into deliveries and group
+// members. An opened incident with something upstream waits for the
+// dependency grace, and the later events of its incident wait with it; a
+// suppressed incident is not notified (F05).
 func (n *Notifier) route(ctx context.Context) (int, error) {
 	var count int
 	err := pgx.BeginFunc(ctx, n.o.System, func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, `SELECT id, tenant_id, seq, type, subject, envelope FROM events
-			WHERE routed_at IS NULL ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED`, max(n.o.Config.ClaimBatch, 1))
+		rows, err := tx.Query(ctx, `SELECT id, tenant_id, seq, type, subject, envelope, route_after IS NOT NULL FROM events
+			WHERE routed_at IS NULL AND (route_after IS NULL OR route_after <= now())
+			ORDER BY seq LIMIT $1 FOR UPDATE SKIP LOCKED`, max(n.o.Config.ClaimBatch, 1))
 		if err != nil {
 			return err
 		}
-		type ev struct {
-			id, tenant uuid.UUID
-			seq        int64
-			typ        string
-			subject    *string
-			raw        []byte
-		}
-		evs, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (ev, error) {
-			var e ev
-			err := r.Scan(&e.id, &e.tenant, &e.seq, &e.typ, &e.subject, &e.raw)
+		evs, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (unrouted, error) {
+			var e unrouted
+			err := r.Scan(&e.id, &e.tenant, &e.seq, &e.typ, &e.subject, &e.raw, &e.held)
 			return e, err
 		})
 		if err != nil || len(evs) == 0 {
 			return err
 		}
+		count = len(evs)
 		routes := map[uuid.UUID][]Route{}
-		enabled := map[uuid.UUID]bool{}
-		ids := make([]uuid.UUID, 0, len(evs))
+		var done []uuid.UUID
 		for _, e := range evs {
-			ids = append(ids, e.id)
+			wait, err := n.hold(ctx, tx, e)
+			if err != nil {
+				return err
+			}
+			if !wait.IsZero() {
+				if _, err := tx.Exec(ctx, `UPDATE events SET route_after = $2 WHERE id = $1`, e.id, wait); err != nil {
+					return err
+				}
+				continue
+			}
+			done = append(done, e.id)
+			var env incident.Envelope
+			if err := json.Unmarshal(e.raw, &env); err != nil {
+				n.log.Error("unreadable event", "event_id", e.id, "error", err)
+				continue
+			}
+			obj, _ := env.Data.Object.(map[string]any)
+			if suppressed, _ := obj["suppressed"].(bool); suppressed {
+				continue
+			}
+			if e.held && e.typ == incident.EventOpened && e.subject != nil {
+				// The grace has passed: an upstream incident may explain this one now.
+				id, err := uuid.Parse(*e.subject)
+				if err != nil {
+					continue
+				}
+				if suppressed, err := incident.Suppress(ctx, tx, id); err != nil {
+					return err
+				} else if suppressed {
+					continue
+				}
+			}
 			rs, ok := routes[e.tenant]
 			if !ok {
 				if rs, err = ListRoutes(ctx, tx, e.tenant); err != nil {
@@ -157,53 +201,116 @@ func (n *Notifier) route(ctx context.Context) (int, error) {
 				}
 				routes[e.tenant] = rs
 			}
-			var env incident.Envelope
-			if err := json.Unmarshal(e.raw, &env); err != nil {
-				n.log.Error("unreadable event", "event_id", e.id, "error", err)
-				continue
-			}
-			severity := ""
-			if obj, ok := env.Data.Object.(map[string]any); ok {
-				severity, _ = obj["severity"].(string)
-			}
+			severity, _ := obj["severity"].(string)
 			for _, r := range rs {
 				if !r.Enabled || !r.Matches(&env, severity) {
 					continue
 				}
-				on, ok := enabled[r.EndpointID]
-				if !ok {
-					if err := tx.QueryRow(ctx, `SELECT enabled FROM webhook_endpoints WHERE id = $1`, r.EndpointID).Scan(&on); err != nil {
-						return err
-					}
-					enabled[r.EndpointID] = on
-				}
-				if on {
-					info, _ := json.Marshal(routeInfo{ID: r.ID, Name: r.Name, Step: 0, Labels: nonNilMap(r.Labels)})
-					id, err := uuid.NewV7()
-					if err != nil {
-						return err
-					}
-					subject := ""
-					if e.subject != nil {
-						subject = *e.subject
-					}
-					if _, err := tx.Exec(ctx, `INSERT INTO webhook_deliveries (id, tenant_id, event_id, event_seq, event_type,
-						subject, endpoint_id, route_id, route) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-						ON CONFLICT (event_id, endpoint_id) DO NOTHING`,
-						id, e.tenant, e.id, e.seq, e.typ, subject, r.EndpointID, r.ID, json.RawMessage(info)); err != nil {
-						return err
-					}
+				if err := n.take(ctx, tx, e, &env, r); err != nil {
+					return err
 				}
 				if !r.Continue {
 					break
 				}
 			}
 		}
-		count = len(evs)
-		_, err = tx.Exec(ctx, `UPDATE events SET routed_at = now() WHERE id = ANY($1)`, ids)
+		if len(done) == 0 {
+			return nil
+		}
+		_, err = tx.Exec(ctx, `UPDATE events SET routed_at = now() WHERE id = ANY($1)`, done)
 		return err
 	})
 	return count, err
+}
+
+// hold returns when an event may be routed, or zero for now: after an
+// earlier held event of the same incident, or, for an incident just opened
+// with something upstream, after the dependency grace.
+func (n *Notifier) hold(ctx context.Context, tx pgx.Tx, e unrouted) (time.Time, error) {
+	if e.subject == nil || *e.subject == "" {
+		return time.Time{}, nil
+	}
+	var earlier *time.Time
+	if err := tx.QueryRow(ctx, `SELECT max(route_after) FROM events
+		WHERE subject = $1 AND routed_at IS NULL AND seq < $2 AND tenant_id = $3`, *e.subject, e.seq, e.tenant).
+		Scan(&earlier); err != nil {
+		return time.Time{}, err
+	}
+	if earlier != nil && earlier.After(time.Now()) {
+		return *earlier, nil
+	}
+	grace := n.o.Config.DependencyGrace.D()
+	if e.held || e.typ != incident.EventOpened || grace <= 0 {
+		return time.Time{}, nil
+	}
+	var device, check *uuid.UUID
+	var opened time.Time
+	err := tx.QueryRow(ctx, `SELECT device_id, check_id, opened_at FROM incidents WHERE id::text = $1`, *e.subject).
+		Scan(&device, &check, &opened)
+	if errors.Is(err, pgx.ErrNoRows) || device == nil || check == nil {
+		return time.Time{}, nil
+	}
+	if err != nil {
+		return time.Time{}, err
+	}
+	up, err := incident.HasUpstream(ctx, tx, *device, *check)
+	if err != nil || !up || !opened.Add(grace).After(time.Now()) {
+		return time.Time{}, err
+	}
+	return opened.Add(grace), nil
+}
+
+// take hands a matched event to a route: into a group when the route
+// groups, else straight to a delivery. It records the notification for
+// repeat_interval.
+func (n *Notifier) take(ctx context.Context, tx pgx.Tx, e unrouted, env *incident.Envelope, r Route) error {
+	if len(r.GroupBy) > 0 {
+		if err := n.addToGroup(ctx, tx, e, env, r); err != nil {
+			return err
+		}
+	} else if err := n.enqueue(ctx, tx, e.tenant, e.id, e.seq, e.typ, deref(e.subject), r); err != nil {
+		return err
+	}
+	if e.subject == nil || r.RepeatInterval == 0 {
+		return nil
+	}
+	switch e.typ {
+	case incident.EventOpened, incident.EventUpdated:
+		_, err := tx.Exec(ctx, `INSERT INTO route_notifications (tenant_id, route_id, incident_id, last_sent_at)
+			SELECT $1, $2, id, now() FROM incidents WHERE id::text = $3
+			ON CONFLICT (route_id, incident_id) DO UPDATE SET last_sent_at = now()`, e.tenant, r.ID, *e.subject)
+		return err
+	case incident.EventResolved:
+		_, err := tx.Exec(ctx, `DELETE FROM route_notifications WHERE route_id = $1 AND incident_id::text = $2`, r.ID, *e.subject)
+		return err
+	}
+	return nil
+}
+
+// enqueue creates a delivery of an event to a route's endpoint, unless the
+// endpoint is disabled.
+func (n *Notifier) enqueue(ctx context.Context, tx pgx.Tx, tenant, event uuid.UUID, seq int64, typ, subject string, r Route) error {
+	var on bool
+	if err := tx.QueryRow(ctx, `SELECT enabled FROM webhook_endpoints WHERE id = $1`, r.EndpointID).Scan(&on); err != nil || !on {
+		return err
+	}
+	info, _ := json.Marshal(routeInfo{ID: r.ID, Name: r.Name, Step: 0, Labels: nonNilMap(r.Labels)})
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO webhook_deliveries (id, tenant_id, event_id, event_seq, event_type,
+		subject, endpoint_id, route_id, route) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		ON CONFLICT (event_id, endpoint_id) DO NOTHING`,
+		id, tenant, event, seq, typ, subject, r.EndpointID, r.ID, json.RawMessage(info))
+	return err
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 // claimed is a delivery taken for sending.

@@ -336,9 +336,19 @@ func toAPIRoute(r webhook.Route) (gen.AlertRoute, error) {
 	if labels == nil {
 		labels = map[string]string{}
 	}
+	groupBy := make([]gen.GroupField, len(r.GroupBy))
+	for i, f := range r.GroupBy {
+		groupBy[i] = gen.GroupField(f)
+	}
+	var repeat *int
+	if r.RepeatInterval > 0 {
+		v := int(r.RepeatInterval.Seconds())
+		repeat = &v
+	}
 	return gen.AlertRoute{
 		Id: r.ID, Name: r.Name, Position: r.Position, Enabled: r.Enabled, Match: m, EndpointId: r.EndpointID,
 		Continue: r.Continue, Labels: labels, ManagedBy: r.ManagedBy, External: toAPIExternal(r.External),
+		GroupBy: groupBy, GroupWaitSeconds: int(r.GroupWait.Seconds()), RepeatIntervalSeconds: repeat,
 		CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
 	}, err
 }
@@ -350,6 +360,18 @@ func routeInput(b gen.AlertRouteWrite) (webhook.RouteInput, error) {
 	deref(&in.Continue, b.Continue)
 	if b.Labels != nil {
 		in.Labels = *b.Labels
+	}
+	in.GroupWait = 30 * time.Second
+	if b.GroupWaitSeconds != nil {
+		in.GroupWait = time.Duration(*b.GroupWaitSeconds) * time.Second
+	}
+	if b.GroupBy != nil {
+		for _, f := range *b.GroupBy {
+			in.GroupBy = append(in.GroupBy, string(f))
+		}
+	}
+	if b.RepeatIntervalSeconds != nil {
+		in.RepeatInterval = time.Duration(*b.RepeatIntervalSeconds) * time.Second
 	}
 	if b.Match != nil {
 		m, err := via[webhook.Match](*b.Match)

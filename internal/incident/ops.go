@@ -28,12 +28,21 @@ func Open(ctx context.Context, tx pgx.Tx, in OpenInput) (Incident, error) {
 	if err != nil {
 		return Incident{}, err
 	}
+	// A failure explained by an upstream one is opened suppressed (F05).
+	root, err := FindRoot(ctx, tx, in.DeviceID, in.CheckID)
+	if err != nil {
+		return Incident{}, err
+	}
+	rootIncident, rootDevice := (*uuid.UUID)(nil), in.DeviceID
+	if root != nil {
+		rootIncident, rootDevice = &root.IncidentID, root.DeviceID
+	}
 	inc, err := scan(tx.QueryRow(ctx, `
 		INSERT INTO incidents (id, tenant_id, check_id, device_id, severity, status, summary, last_output,
-		                       rule_id, rule_name, flapping, opened_at)
-		VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10, now()) RETURNING `+cols,
+		                       rule_id, rule_name, flapping, suppressed, root_incident_id, root_device_id, opened_at)
+		VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10, $11, $12, $13, now()) RETURNING `+cols,
 		id, in.TenantID, in.CheckID, in.DeviceID, in.Severity, in.Summary, in.LastOutput, in.RuleID,
-		in.RuleName, in.Flapping))
+		in.RuleName, in.Flapping, root != nil, rootIncident, rootDevice))
 	if err != nil {
 		return Incident{}, err
 	}
@@ -77,7 +86,10 @@ func Resolve(ctx context.Context, tx pgx.Tx, id uuid.UUID, by string, actor *Act
 	if err != nil {
 		return Incident{}, false, err
 	}
-	return inc, true, emit(ctx, tx, EventResolved, inc, actor, nil)
+	if err := emit(ctx, tx, EventResolved, inc, actor, nil); err != nil {
+		return Incident{}, false, err
+	}
+	return inc, true, release(ctx, tx, inc.ID)
 }
 
 // Acknowledge marks an open incident as being handled; escalation stops

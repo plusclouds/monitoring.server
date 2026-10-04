@@ -82,6 +82,7 @@ func Default() Config {
 			Workers:            32,
 			ClaimBatch:         100,
 			PollInterval:       dur(time.Second),
+			DependencyGrace:    dur(30 * time.Second),
 			DeliveryTimeout:    dur(10 * time.Second),
 			MaxDeliveryTimeout: dur(30 * time.Second),
 			RetrySchedule: []Duration{

@@ -224,6 +224,9 @@ type Notifier struct {
 	GiveUpAfter           Duration   `yaml:"give_up_after"`
 	SecretRotationOverlap Duration   `yaml:"secret_rotation_overlap"`
 	ResponseCapture       ByteSize   `yaml:"response_capture"`
+	// DependencyGrace holds back an incident's notification so an upstream
+	// failure found meanwhile can suppress it (F05).
+	DependencyGrace Duration `yaml:"dependency_grace"`
 }
 
 type Ingest struct {

@@ -19,6 +19,9 @@ const (
 	EventAcknowledged = "monitoring.incident.acknowledged"
 	EventResolved     = "monitoring.incident.resolved"
 	EventCommented    = "monitoring.incident.commented"
+	// EventRenotify repeats an open, unacknowledged incident for a route
+	// with repeat_interval (F06). It goes to that route only.
+	EventRenotify = "monitoring.incident.renotify"
 )
 
 // ObjectType is data.object_type of incident events, in PlusClouds' style.
@@ -87,17 +90,29 @@ type Actor struct {
 	ExternalID *string    `json:"external_id"`
 }
 
-// emit writes an event about an incident in tx.
+// emit writes an event about an incident in tx, for the router.
 func emit(ctx context.Context, tx pgx.Tx, typ string, inc Incident, actor *Actor, extra map[string]any) error {
+	_, _, err := write(ctx, tx, typ, inc, actor, extra, false)
+	return err
+}
+
+// EmitRouted writes an event that is already routed: the caller creates its
+// deliveries. It returns the event's ID and sequence number.
+func EmitRouted(ctx context.Context, tx pgx.Tx, typ string, inc Incident) (uuid.UUID, int64, error) {
+	return write(ctx, tx, typ, inc, nil, nil, true)
+}
+
+func write(ctx context.Context, tx pgx.Tx, typ string, inc Incident, actor *Actor, extra map[string]any,
+	routed bool) (uuid.UUID, int64, error) {
 	id, err := uuid.NewV7()
 	if err != nil {
-		return err
+		return id, 0, err
 	}
 	var installation uuid.UUID
 	var account *string
 	if err := tx.QueryRow(ctx, `SELECT (SELECT id FROM installation),
 		       (SELECT external_id FROM tenant_by_id($1))`, inc.TenantID).Scan(&installation, &account); err != nil {
-		return err
+		return id, 0, err
 	}
 	data := Data{AccountID: account, ObjectType: ObjectType, Actor: actor, Route: json.RawMessage("null")}
 	obj := map[string]any{}
@@ -108,19 +123,21 @@ func emit(ctx context.Context, tx pgx.Tx, typ string, inc Incident, actor *Actor
 	}
 	data.Object = obj
 	if data.Device, err = device(ctx, tx, inc.DeviceID); err != nil {
-		return err
+		return id, 0, err
 	}
 	if data.Check, err = check(ctx, tx, inc); err != nil {
-		return err
+		return id, 0, err
 	}
 	now := time.Now().UTC()
 	env := Envelope{
 		SpecVersion: "1.0", ID: id, Source: "/monitoring/" + installation.String() + "/" + inc.TenantID.String(),
 		Type: typ, Time: now, DataContentType: "application/json", Subject: inc.ID.String(), Data: data,
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO events (id, tenant_id, type, subject, time, envelope) VALUES ($1, $2, $3, $4, $5, $6)`,
-		id, inc.TenantID, typ, env.Subject, now, env)
-	return err
+	var seq int64
+	err = tx.QueryRow(ctx, `INSERT INTO events (id, tenant_id, type, subject, time, envelope, routed_at)
+		VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $7 THEN now() END) RETURNING seq`,
+		id, inc.TenantID, typ, env.Subject, now, env, routed).Scan(&seq)
+	return id, seq, err
 }
 
 func device(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {
