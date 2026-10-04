@@ -89,18 +89,14 @@ jobs:
           git checkout -q --force FETCH_HEAD
           git clean -qffdx
 
-      # v1.2.3 -> 1.2.3. Only plain releases move :latest; pre-releases such
-      # as v0.1.0-m1 or v1.2.0-rc1 get their own tag only.
+      # v1.2.3 -> 1.2.3. Every version tag, pre-releases included, also
+      # moves :latest, so :latest is always the most recent tagged build.
       - name: Image tags
         id: tags
         run: |
           version="${GITHUB_REF_NAME#v}"
-          tags="-t $REGISTRY/$IMAGE:$version"
-          if [[ "$version" != *-* ]]; then
-            tags="$tags -t $REGISTRY/$IMAGE:latest"
-          fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tags=$tags" >> "$GITHUB_OUTPUT"
+          echo "tags=-t $REGISTRY/$IMAGE:$version -t $REGISTRY/$IMAGE:latest" >> "$GITHUB_OUTPUT"
 
       # Building needs no credentials (public base images), so it uses its own
       # Docker config: ~/.docker/buildx on the shared runner is root-owned
