@@ -119,6 +119,8 @@ func (s *Server) Handler() (http.Handler, error) {
 		return nil, err
 	}
 	spec.Servers = nil // routes are matched after /v1 is stripped
+	// PATCH bodies are JSON Merge Patch documents: JSON for the validator.
+	openapi3filter.RegisterBodyDecoder("application/merge-patch+json", openapi3filter.JSONBodyDecoder)
 	validate := middleware.OapiRequestValidatorWithOptions(spec, &middleware.Options{
 		Options: openapi3filter.Options{
 			// Authentication is done by our own middleware before validation.

@@ -204,7 +204,10 @@ paths:
       operationId: listTenants
       tags: [provisioning]
       summary: List tenants (platform only)
-      description: Used by the PlusClouds reconciliation job.
+      description: |
+        Used by the PlusClouds reconciliation job. To read one tenant without
+        writing it, filter by its external ID: `?external_source=plusclouds&external_id=<account uuid>`
+        returns it as the only item, or no items. This never creates a tenant.
       parameters:
         - { name: external_source, in: query, schema: { type: string } }
         - { name: external_id, in: query, schema: { type: string } }
@@ -605,6 +608,14 @@ paths:
         - { name: type, in: query, schema: { type: string } }
         - { name: site_id, in: query, schema: { type: string, format: uuid } }
         - { name: parent_id, in: query, schema: { type: string, format: uuid } }
+        - name: availability
+          in: query
+          description: Only devices with one of these availabilities; repeat for several.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { $ref: "#/components/schemas/Availability" }
         - name: tag
           in: query
           description: "`key=value`; repeat for several tags, all must match."
@@ -648,6 +659,29 @@ paths:
       - $ref: "#/components/parameters/ExternalID"
       - $ref: "#/components/parameters/ExternalSource"
       - $ref: "#/components/parameters/ExternalType"
+    patch:
+      operationId: patchDeviceByExternalID
+      tags: [devices]
+      summary: Change some fields of a device found by its external ID
+      description: 404 when no device has this external ID; never creates one.
+      requestBody:
+        required: true
+        description: |
+          JSON Merge Patch (RFC 7396) of DeviceWrite: a field left out stays as it
+          is, null clears an optional field, and objects (tags, external) merge key by
+          key. The result is validated like a PUT.
+        content:
+          application/merge-patch+json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+          application/json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+      responses:
+        "200":
+          description: The device
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        default: { $ref: "#/components/responses/Problem" }
     put:
       operationId: upsertDevice
       tags: [devices]
@@ -678,6 +712,28 @@ paths:
       operationId: getDevice
       tags: [devices]
       summary: One device
+      responses:
+        "200":
+          description: The device
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        default: { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: patchDevice
+      tags: [devices]
+      summary: Change some fields of a device
+      requestBody:
+        required: true
+        description: |
+          JSON Merge Patch (RFC 7396) of DeviceWrite: a field left out stays as it
+          is, null clears an optional field, and objects (tags, external) merge key by
+          key. The result is validated like a PUT.
+        content:
+          application/merge-patch+json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+          application/json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
       responses:
         "200":
           description: The device
@@ -918,6 +974,28 @@ paths:
       operationId: getCheck
       tags: [checks]
       summary: One check
+      responses:
+        "200":
+          description: The check
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Check" }
+        default: { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: patchCheck
+      tags: [checks]
+      summary: Change some fields of a check
+      requestBody:
+        required: true
+        description: |
+          JSON Merge Patch (RFC 7396) of CheckWrite: a field left out stays as it
+          is, null clears an optional field, and objects (config, credentials; thresholds is replaced whole) merge key by
+          key. The result is validated like a PUT.
+        content:
+          application/merge-patch+json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
+          application/json:
+            schema: { $ref: "#/components/schemas/MergePatch" }
       responses:
         "200":
           description: The check
@@ -1777,7 +1855,7 @@ components:
     Device:
       type: object
       required: [id, name, address, type, tags, notes, parent_id, site_id, physical_peer_id, inventory,
-                 managed_by, external, created_at, updated_at]
+                 managed_by, external, status, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -1794,6 +1872,7 @@ components:
           type: object
           description: Vendor, model, serial and firmware, written by plugins.
         managed_by: { type: string, description: "`api`, `file`, or the collector that discovered it" }
+        status: { $ref: "#/components/schemas/DeviceStatus" }
         external:
           oneOf:
             - $ref: "#/components/schemas/ExternalRef"
@@ -2139,3 +2218,28 @@ components:
           maxProperties: 20
           additionalProperties: { type: string, maxLength: 200 }
         external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    Availability:
+      type: string
+      enum: [up, down, unknown, unmonitored, disabled]
+
+    DeviceStatus:
+      type: object
+      readOnly: true
+      description: |
+        Rolled-up state. availability comes from the device's host check
+        (is_host_check): down while it is in PROBLEM, up when OK or PENDING,
+        unknown when UNKNOWN or without a result yet, disabled when the host
+        check is disabled, unmonitored without a host check. health is the
+        worst severity among open and acknowledged incidents.
+      required: [availability, since, health, open_incidents]
+      properties:
+        availability: { $ref: "#/components/schemas/Availability" }
+        since: { type: [string, "null"], format: date-time, description: "When availability last changed" }
+        health: { type: string, enum: [ok, warning, critical] }
+        open_incidents: { type: integer }
+
+    MergePatch:
+      type: object
+      description: A JSON Merge Patch (RFC 7396) document.
+      additionalProperties: true

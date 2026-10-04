@@ -43,16 +43,19 @@ type RuleState struct {
 
 // State is a check's state machine, stored in check_state.
 type State struct {
-	Phase           string               `json:"phase"`
-	Status          string               `json:"status"` // last effective status: OK, WARNING, CRITICAL, UNKNOWN
-	Since           time.Time            `json:"since"`  // when Status last changed
-	ConsecutiveBad  int                  `json:"consecutive_bad"`
-	ConsecutiveGood int                  `json:"consecutive_good"`
-	Flapping        bool                 `json:"flapping"`
-	History         uint32               `json:"history"` // bit 0 = latest result changed good/bad
-	LastBad         bool                 `json:"last_bad"`
-	Rules           map[string]RuleState `json:"rules,omitempty"`
-	Severity        string               `json:"severity,omitempty"` // severity of the open incident
+	Phase  string    `json:"phase"`
+	Status string    `json:"status"` // last effective status: OK, WARNING, CRITICAL, UNKNOWN
+	Since  time.Time `json:"since"`  // when Status last changed
+	// AvailabilitySince is when the check last entered or left PROBLEM:
+	// the device's up/down time when this is its host check.
+	AvailabilitySince time.Time            `json:"availability_since,omitzero"`
+	ConsecutiveBad    int                  `json:"consecutive_bad"`
+	ConsecutiveGood   int                  `json:"consecutive_good"`
+	Flapping          bool                 `json:"flapping"`
+	History           uint32               `json:"history"` // bit 0 = latest result changed good/bad
+	LastBad           bool                 `json:"last_bad"`
+	Rules             map[string]RuleState `json:"rules,omitempty"`
+	Severity          string               `json:"severity,omitempty"` // severity of the open incident
 }
 
 // Config is what evaluation needs from the check.
@@ -212,6 +215,9 @@ func Evaluate(cfg Config, prev State, in Input) Outcome {
 		case startFlap:
 			out.Action, out.Severity = ActionUpdate, s.Severity
 		}
+	}
+	if (prev.Phase == PhaseProblem) != (s.Phase == PhaseProblem) || s.AvailabilitySince.IsZero() {
+		s.AvailabilitySince = in.Time
 	}
 	out.State = s
 	return out

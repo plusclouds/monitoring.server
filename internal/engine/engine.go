@@ -195,15 +195,16 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 	output := r.Output
 	_, err = tx.Exec(ctx, `
 		INSERT INTO check_state (check_id, tenant_id, phase, status, since, machine, last_result_at, last_status,
-		                         last_output, last_metrics, incident_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		                         last_output, last_metrics, incident_id, availability_since)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (check_id) DO UPDATE SET
 		       phase = excluded.phase, status = excluded.status, since = excluded.since, machine = excluded.machine,
+		       availability_since = excluded.availability_since,
 		       last_result_at = excluded.last_result_at, last_status = excluded.last_status,
 		       last_output = excluded.last_output, last_metrics = excluded.last_metrics,
 		       incident_id = excluded.incident_id, version = check_state.version + 1, updated_at = now()`,
 		r.CheckID, r.TenantID, out.State.Phase, out.State.Status, out.State.Since, out.State, r.Time,
-		r.Status.String(), output, metrics, incidentID)
+		r.Status.String(), output, metrics, incidentID, nullTime(out.State.AvailabilitySince))
 	if err != nil {
 		return "", err
 	}
@@ -293,4 +294,11 @@ func (e *Engine) sweep(ctx context.Context) {
 			e.log.Warn("checks without recent results marked UNKNOWN", "count", n)
 		}
 	}
+}
+
+func nullTime(t time.Time) *time.Time {
+	if t.IsZero() {
+		return nil
+	}
+	return &t
 }

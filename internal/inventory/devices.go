@@ -38,6 +38,7 @@ type Device struct {
 	External       *extref.Ref
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
+	Status         *Status // set by ListDevices and FillStatus
 }
 
 // DeviceInput is the client-writable part of a device. Updates replace it.
@@ -115,34 +116,54 @@ func DeviceByExternal(ctx context.Context, tx pgx.Tx, k extref.Key) (Device, err
 
 // DeviceFilter narrows ListDevices.
 type DeviceFilter struct {
-	Type     *string
-	SiteID   *uuid.UUID
-	ParentID *uuid.UUID
-	Tags     map[string]string // every tag must match
-	External *extref.Key
+	Type         *string
+	SiteID       *uuid.UUID
+	ParentID     *uuid.UUID
+	Tags         map[string]string // every tag must match
+	External     *extref.Key
+	Availability []string // any of these
 }
 
-// ListDevices returns devices ordered by ID.
+// ListDevices returns devices ordered by ID, with their status.
 func ListDevices(ctx context.Context, tx pgx.Tx, f DeviceFilter, p Page) ([]Device, error) {
 	src, typ, id := keyColumns(f.External)
 	tags := f.Tags
 	if tags == nil {
 		tags = map[string]string{}
 	}
-	rows, err := tx.Query(ctx, `SELECT `+deviceCols+` FROM devices
-		 WHERE ($1::text IS NULL OR type = $1)
-		   AND ($2::uuid IS NULL OR site_id = $2)
-		   AND ($3::uuid IS NULL OR parent_id = $3)
-		   AND tags @> $4
-		   AND ($5::text IS NULL OR external_source = $5)
-		   AND ($6::text IS NULL OR external_type = $6)
-		   AND ($7::text IS NULL OR external_id = $7)
-		   AND ($8::uuid IS NULL OR id > $8)
-		 ORDER BY id LIMIT $9`, f.Type, f.SiteID, f.ParentID, tags, src, typ, id, p.After, p.Limit)
+	rows, err := tx.Query(ctx, `SELECT d.id, d.tenant_id, d.name, d.address, d.type, d.tags, d.notes, d.parent_id,
+		       d.site_id, d.physical_peer_id, d.inventory, d.managed_by, d.external_source, d.external_type,
+		       d.external_id, d.created_at, d.updated_at, `+statusCols+`
+		  FROM devices d `+statusJoin+`
+		 WHERE ($1::text IS NULL OR d.type = $1)
+		   AND ($2::uuid IS NULL OR d.site_id = $2)
+		   AND ($3::uuid IS NULL OR d.parent_id = $3)
+		   AND d.tags @> $4
+		   AND ($5::text IS NULL OR d.external_source = $5)
+		   AND ($6::text IS NULL OR d.external_type = $6)
+		   AND ($7::text IS NULL OR d.external_id = $7)
+		   AND ($8::uuid IS NULL OR d.id > $8)
+		   AND ($10::text[] IS NULL OR `+availabilitySQL+` = ANY($10))
+		 ORDER BY d.id LIMIT $9`, f.Type, f.SiteID, f.ParentID, tags, src, typ, id, p.After, p.Limit, f.Availability)
 	if err != nil {
 		return nil, err
 	}
-	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Device, error) { return scanDevice(r) })
+	return pgx.CollectRows(rows, func(r pgx.CollectableRow) (Device, error) {
+		var d Device
+		var st Status
+		var src, typ, ext *string
+		err := r.Scan(append([]any{&d.ID, &d.TenantID, &d.Name, &d.Address, &d.Type, &d.Tags, &d.Notes, &d.ParentID,
+			&d.SiteID, &d.PhysicalPeerID, &d.Inventory, &d.ManagedBy, &src, &typ, &ext, &d.CreatedAt, &d.UpdatedAt},
+			scanStatus(&st)...)...)
+		d.External, d.Status = extref.FromColumns(src, typ, ext), &st
+		return d, err
+	})
+}
+
+// LockDevice reads a device for update, so a read-modify-write (PATCH)
+// cannot lose a concurrent change.
+func LockDevice(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Device, error) {
+	return scanDevice(tx.QueryRow(ctx, `SELECT `+deviceCols+` FROM devices WHERE id = $1 FOR UPDATE`, id))
 }
 
 // checkRefs verifies that referenced devices and the site exist in the

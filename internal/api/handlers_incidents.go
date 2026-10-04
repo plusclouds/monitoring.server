@@ -214,8 +214,10 @@ func (s *Server) ResolveIncident(ctx context.Context, req gen.ResolveIncidentReq
 		if err != nil || !changed || inc.CheckID == nil {
 			return inc, changed, err
 		}
-		reset := engine.State{Phase: engine.PhaseOK, Status: "OK", Since: time.Now().UTC()}
+		now := time.Now().UTC()
+		reset := engine.State{Phase: engine.PhaseOK, Status: "OK", Since: now, AvailabilitySince: now}
 		_, err = tx.Exec(ctx, `UPDATE check_state SET phase = 'OK', status = 'OK', since = now(), machine = $2,
+			availability_since = now(),
 			incident_id = NULL, version = version + 1, updated_at = now() WHERE check_id = $1`, *inc.CheckID, reset)
 		return inc, changed, err
 	})
