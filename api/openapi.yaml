@@ -49,6 +49,8 @@ tags:
     description: Encrypted device credentials; secrets are write-only (F02, ADR-0006)
   - name: incidents
     description: Check state and incidents (F05)
+  - name: notifications
+    description: Webhook endpoints, alert routes and deliveries (F06, ADR-0009)
 
 paths:
   /me:
@@ -1091,6 +1093,292 @@ paths:
               schema: { $ref: "#/components/schemas/IncidentComment" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /webhooks:
+    get:
+      operationId: listWebhooks
+      tags: [notifications]
+      summary: List webhook endpoints
+      responses:
+        "200":
+          description: Endpoints by name (never their secrets or header values)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Webhook" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createWebhook
+      tags: [notifications]
+      summary: Add a webhook endpoint
+      description: Requires the admin role. The response carries the signing secret once (ADR-0009).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookWrite" }
+      responses:
+        "201":
+          description: Created, with the signing secret
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookWithSecret" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+      - $ref: "#/components/parameters/ExternalType"
+    put:
+      operationId: upsertWebhook
+      tags: [notifications]
+      summary: Create or replace a webhook endpoint by its external ID
+      description: "`secret` is set only when the endpoint is created."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookWrite" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookWithSecret" }
+        "201":
+          description: Created, with the signing secret
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookWithSecret" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/{webhook_id}:
+    parameters:
+      - $ref: "#/components/parameters/WebhookID"
+    get:
+      operationId: getWebhook
+      tags: [notifications]
+      summary: One webhook endpoint
+      responses:
+        "200":
+          description: The endpoint
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Webhook" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: updateWebhook
+      tags: [notifications]
+      summary: Replace a webhook endpoint
+      description: Headers that are not sent keep their values; send a header as null to remove it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WebhookWrite" }
+      responses:
+        "200":
+          description: The endpoint
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Webhook" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteWebhook
+      tags: [notifications]
+      summary: Delete a webhook endpoint no route uses
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/{webhook_id}/test:
+    post:
+      operationId: testWebhook
+      tags: [notifications]
+      summary: Send a signed monitoring.webhook.test event now
+      description: Requires the operator role. Returns what the receiver answered.
+      parameters:
+        - $ref: "#/components/parameters/WebhookID"
+      responses:
+        "200":
+          description: The attempt
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookAttempt" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/{webhook_id}/rotate-secret:
+    post:
+      operationId: rotateWebhookSecret
+      tags: [notifications]
+      summary: Replace the signing secret
+      description: |
+        Requires the admin role. Deliveries carry signatures with the old and
+        the new secret until `previous_valid_until`, so receivers can switch
+        without losing events.
+      parameters:
+        - $ref: "#/components/parameters/WebhookID"
+      responses:
+        "200":
+          description: The endpoint with its new secret, shown once
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookWithSecret" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/{webhook_id}/deliveries:
+    get:
+      operationId: listWebhookDeliveries
+      tags: [notifications]
+      summary: The endpoint's delivery log, newest first
+      parameters:
+        - $ref: "#/components/parameters/WebhookID"
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, delivered, failed, cancelled] }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Deliveries
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/WebhookDelivery" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /webhooks/{webhook_id}/deliveries/{delivery_id}/replay:
+    post:
+      operationId: replayWebhookDelivery
+      tags: [notifications]
+      summary: Send a delivery again
+      description: Requires the operator role. The delivery is queued again with a fresh 24-hour retry window.
+      parameters:
+        - $ref: "#/components/parameters/WebhookID"
+        - name: delivery_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "202":
+          description: Queued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WebhookDelivery" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /alert-routes:
+    get:
+      operationId: listAlertRoutes
+      tags: [notifications]
+      summary: List alert routes in evaluation order
+      responses:
+        "200":
+          description: Routes by position
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/AlertRoute" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createAlertRoute
+      tags: [notifications]
+      summary: Add an alert route
+      description: Requires the admin role. Without a position, the route is evaluated last.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AlertRouteWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlertRoute" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /alert-routes/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+      - $ref: "#/components/parameters/ExternalType"
+    put:
+      operationId: upsertAlertRoute
+      tags: [notifications]
+      summary: Create or replace an alert route by its external ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AlertRouteWrite" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlertRoute" }
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlertRoute" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /alert-routes/{route_id}:
+    parameters:
+      - $ref: "#/components/parameters/RouteID"
+    get:
+      operationId: getAlertRoute
+      tags: [notifications]
+      summary: One alert route
+      responses:
+        "200":
+          description: The route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlertRoute" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: updateAlertRoute
+      tags: [notifications]
+      summary: Replace an alert route
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AlertRouteWrite" }
+      responses:
+        "200":
+          description: The route
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlertRoute" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteAlertRoute
+      tags: [notifications]
+      summary: Delete an alert route
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
 components:
   securitySchemes:
     bearer:
@@ -1163,6 +1451,16 @@ components:
       schema: { type: string, format: uuid }
     CheckID:
       name: check_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    WebhookID:
+      name: webhook_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RouteID:
+      name: route_id
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -1702,3 +2000,142 @@ components:
         author_external_id: { type: [string, "null"] }
         body: { type: string }
         created_at: { type: string, format: date-time }
+
+    Webhook:
+      type: object
+      required: [id, name, url, enabled, disabled_reason, timeout_seconds, header_names, previous_valid_until,
+                 managed_by, external, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        url: { type: string }
+        enabled: { type: boolean }
+        disabled_reason: { type: [string, "null"], description: "Set when the engine disabled it, e.g. after 410 Gone" }
+        timeout_seconds: { type: integer }
+        header_names:
+          type: array
+          description: Names of the static extra headers; values are encrypted and never returned.
+          items: { type: string }
+        previous_valid_until: { type: [string, "null"], format: date-time, description: "Rotation overlap end" }
+        managed_by: { type: string }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    WebhookWithSecret:
+      allOf:
+        - $ref: "#/components/schemas/Webhook"
+        - type: object
+          properties:
+            secret: { type: string, description: "Signing secret `whsec_…`. Shown once." }
+
+    WebhookWrite:
+      type: object
+      required: [name, url]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        url: { type: string, maxLength: 2000 }
+        enabled: { type: boolean, default: true }
+        timeout_seconds: { type: integer, minimum: 1, maximum: 30, default: 10 }
+        headers:
+          type: object
+          maxProperties: 20
+          description: Static extra headers, encrypted at rest. null removes one.
+          additionalProperties: { type: [string, "null"], maxLength: 1000 }
+        external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    WebhookAttempt:
+      type: object
+      required: [ok, status_code, response, error]
+      properties:
+        ok: { type: boolean }
+        status_code: { type: [integer, "null"] }
+        response: { type: string, description: "Start of the response body" }
+        error: { type: [string, "null"] }
+
+    WebhookDelivery:
+      type: object
+      required: [id, event_id, event_type, subject, route_id, status, attempts, next_attempt_at, last_attempt_at,
+                 last_status_code, last_error, last_response, delivered_at, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid, description: "Also the webhook-id header" }
+        event_type: { type: string }
+        subject: { type: string }
+        route_id: { type: [string, "null"], format: uuid }
+        status: { type: string, enum: [pending, delivered, failed, cancelled] }
+        attempts: { type: integer }
+        next_attempt_at: { type: string, format: date-time }
+        last_attempt_at: { type: [string, "null"], format: date-time }
+        last_status_code: { type: [integer, "null"] }
+        last_error: { type: [string, "null"] }
+        last_response: { type: [string, "null"] }
+        delivered_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    AlertRouteMatch:
+      type: object
+      description: Every set field must match; an empty match takes everything.
+      properties:
+        severity:
+          type: array
+          items: { type: string, enum: [warning, critical] }
+        device_types:
+          type: array
+          items: { $ref: "#/components/schemas/DeviceType" }
+        site_ids:
+          type: array
+          items: { type: string, format: uuid }
+        tags:
+          type: object
+          additionalProperties: { type: string }
+        event_types:
+          type: array
+          description: "Default: opened, updated, acknowledged and resolved incident events."
+          items:
+            type: string
+            enum: [monitoring.incident.opened, monitoring.incident.updated, monitoring.incident.acknowledged,
+                   monitoring.incident.resolved, monitoring.incident.commented]
+
+    AlertRoute:
+      type: object
+      required: [id, name, position, enabled, match, endpoint_id, continue, labels, managed_by, external,
+                 created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        position: { type: integer, description: "Evaluation order, lowest first" }
+        enabled: { type: boolean }
+        match: { $ref: "#/components/schemas/AlertRouteMatch" }
+        endpoint_id: { type: string, format: uuid }
+        continue: { type: boolean, description: "Keep evaluating later routes after this one matched" }
+        labels:
+          type: object
+          description: Sent as data.route.labels; the receiver decides what they mean (recipient, channel).
+          additionalProperties: { type: string }
+        managed_by: { type: string }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    AlertRouteWrite:
+      type: object
+      required: [name, endpoint_id]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        position: { type: integer, minimum: 1, description: "Default: after every other route" }
+        enabled: { type: boolean, default: true }
+        match: { $ref: "#/components/schemas/AlertRouteMatch" }
+        endpoint_id: { type: string, format: uuid }
+        continue: { type: boolean, default: false }
+        labels:
+          type: object
+          maxProperties: 20
+          additionalProperties: { type: string, maxLength: 200 }
+        external: { $ref: "#/components/schemas/ExternalRefWrite" }

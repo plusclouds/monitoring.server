@@ -60,18 +60,21 @@ func setup(t *testing.T, standalone bool) *env {
 	return &env{t: t, url: ts.URL, platformKey: res.PlatformKey, adminKey: res.AdminKey}
 }
 
-func testKeys(t *testing.T) *crypto.Keyring {
-	t.Helper()
+// sharedKeys is the keyring of every server and pipeline in these tests, so
+// secrets stored through the API can be read by the runner and notifier.
+var sharedKeys = func() *crypto.Keyring {
 	k := make([]byte, crypto.KeySize)
 	if _, err := rand.Read(k); err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	keys, err := crypto.NewKeyring("test", map[string][]byte{"test": k})
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	return keys
-}
+}()
+
+func testKeys(*testing.T) *crypto.Keyring { return sharedKeys }
 
 type resp struct {
 	status int

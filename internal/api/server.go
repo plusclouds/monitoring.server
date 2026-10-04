@@ -30,6 +30,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/store"
 	"github.com/plusclouds/monitoring.server/internal/tenancy"
 	"github.com/plusclouds/monitoring.server/internal/tlsconf"
+	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
 
 // Options configure the API server.
@@ -43,15 +44,18 @@ type Options struct {
 
 // Server implements gen.StrictServerInterface.
 type Server struct {
-	cfg            config.API
-	tls            config.TLSPolicy
-	db             *pgxpool.Pool
-	log            *slog.Logger
-	tenants        *tenancy.Service
-	creds          *credential.Store
-	exec           *execute.Executor
-	identitySource string
-	platformRate   int
+	cfg             config.API
+	tls             config.TLSPolicy
+	db              *pgxpool.Pool
+	log             *slog.Logger
+	tenants         *tenancy.Service
+	creds           *credential.Store
+	exec            *execute.Executor
+	hooks           *webhook.Store
+	sender          *webhook.Sender
+	rotationOverlap time.Duration
+	identitySource  string
+	platformRate    int
 
 	authFailures *prometheus.CounterVec
 	rateLimited  prometheus.Counter
@@ -75,14 +79,17 @@ func New(o Options) (*Server, error) {
 		return nil, err
 	}
 	s := &Server{
-		creds:          creds,
-		exec:           exec,
-		cfg:            o.Config.API,
-		tls:            o.Config.TLS,
-		db:             o.DB,
-		log:            o.Logger,
-		identitySource: o.Config.Platform.IdentitySource,
-		platformRate:   o.Config.API.PlatformRatePerMinute,
+		creds:           creds,
+		exec:            exec,
+		hooks:           &webhook.Store{Keys: o.Keys},
+		sender:          webhook.NewSender(o.Config),
+		rotationOverlap: o.Config.Notifier.SecretRotationOverlap.D(),
+		cfg:             o.Config.API,
+		tls:             o.Config.TLS,
+		db:              o.DB,
+		log:             o.Logger,
+		identitySource:  o.Config.Platform.IdentitySource,
+		platformRate:    o.Config.API.PlatformRatePerMinute,
 		tenants: &tenancy.Service{
 			DB: o.DB, IdentitySource: o.Config.Platform.IdentitySource,
 			Defaults: o.Config.Platform.TenantDefaults, JIT: o.Config.Platform.JIT,

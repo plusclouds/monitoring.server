@@ -155,3 +155,44 @@ func TestOneActiveRunner(t *testing.T) {
 		t.Error("standby did not become active")
 	}
 }
+
+// F04: run-now for a check created a moment ago runs it, even before the
+// change notification's reload.
+func TestRunNowNewCheck(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer srv.Close()
+	_, check := seed(t, srv.URL)
+	if _, err := db.System.Exec(context.Background(), `UPDATE checks SET interval_seconds = 3600 WHERE id = $1`, check); err != nil {
+		t.Fatal(err)
+	}
+	sink := make(chan runner.Result, 10)
+	r := newRunner(t, sink)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- r.Run(ctx) }()
+	defer func() { cancel(); <-done }()
+	for !r.Active() {
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	device := uuid.Must(uuid.NewV7())
+	fresh := uuid.Must(uuid.NewV7())
+	_, err := db.System.Exec(context.Background(), `
+		WITH d AS (INSERT INTO devices (id, tenant_id, name, type, address)
+		           SELECT $1, tenant_id, 'web2', 'web', $3 FROM checks WHERE id = $4 RETURNING id, tenant_id)
+		INSERT INTO checks (id, tenant_id, device_id, name, plugin, interval_seconds)
+		SELECT $2, tenant_id, id, 'home', 'http', 3600 FROM d;
+		`, device, fresh, srv.URL, check)
+	if err == nil {
+		_, err = db.System.Exec(context.Background(), `SELECT pg_notify('run_now', $1)`, fresh.String())
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+	for {
+		res := receive(t, sink, 3*time.Second)
+		if res.CheckID == fresh {
+			return
+		}
+	}
+}

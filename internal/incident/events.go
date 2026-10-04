@@ -56,6 +56,7 @@ type DeviceRef struct {
 	Name     string            `json:"name"`
 	Address  string            `json:"address"`
 	Type     string            `json:"type"`
+	SiteID   *uuid.UUID        `json:"site_id"`
 	Tags     map[string]string `json:"tags"`
 	External *extref.Ref       `json:"external"`
 	Path     []PathItem        `json:"path"` // containers, outermost first
@@ -133,7 +134,7 @@ func device(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {
 			SELECT d.parent_id, up.depth + 1 FROM up JOIN devices d ON d.id = up.id
 			 WHERE d.parent_id IS NOT NULL AND up.depth < 50
 		)
-		SELECT d.id, d.name, d.address, d.type, d.tags, d.external_source, d.external_type, d.external_id
+		SELECT d.id, d.name, d.address, d.type, d.site_id, d.tags, d.external_source, d.external_type, d.external_id
 		  FROM up JOIN devices d ON d.id = up.id ORDER BY up.depth`, *id)
 	if err != nil {
 		return nil, err
@@ -141,7 +142,7 @@ func device(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {
 	refs, err := pgx.CollectRows(rows, func(r pgx.CollectableRow) (DeviceRef, error) {
 		var d DeviceRef
 		var src, typ, ext *string
-		err := r.Scan(&d.ID, &d.Name, &d.Address, &d.Type, &d.Tags, &src, &typ, &ext)
+		err := r.Scan(&d.ID, &d.Name, &d.Address, &d.Type, &d.SiteID, &d.Tags, &src, &typ, &ext)
 		d.External = extref.FromColumns(src, typ, ext)
 		return d, err
 	})

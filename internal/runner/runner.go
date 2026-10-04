@@ -223,9 +223,18 @@ func (r *Runner) session(ctx context.Context) error {
 		case n := <-notes:
 			switch n.Channel {
 			case "run_now":
-				if id, err := uuid.Parse(n.Payload); err == nil {
-					r.runNow(sctx, &wg, id)
+				id, err := uuid.Parse(n.Payload)
+				if err != nil {
+					continue
 				}
+				// A check created a moment ago may arrive before its
+				// config_changed reload: load it first.
+				if !r.has(id) {
+					if err := r.reload(ctx); err != nil {
+						r.log.Error("reload checks", "error", err)
+					}
+				}
+				r.runNow(sctx, &wg, id)
 			default:
 				if debounce == nil {
 					debounce = time.After(200 * time.Millisecond)
@@ -348,6 +357,12 @@ func (r *Runner) schedule(ctx context.Context) {
 		case <-r.wake:
 		}
 	}
+}
+
+func (r *Runner) has(id uuid.UUID) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.entries[id] != nil
 }
 
 // runNow starts a check at once (POST /checks/{id}/run-now), unless it is

@@ -27,6 +27,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
+	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
 
 // ServeOptions is what `monitor serve` resolved from flags and the config.
@@ -41,7 +42,7 @@ type ServeOptions struct {
 
 // implementedRoles grows as milestones land; the others are accepted in the
 // config but not started yet.
-var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine}
+var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine, config.RoleNotifier}
 
 // Serve runs until ctx is cancelled.
 func Serve(ctx context.Context, o ServeOptions) error {
@@ -112,7 +113,7 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	g.Go(func() error { return status.Run(gctx) })
 	has := func(r string) bool { return slices.Contains(o.Roles, r) }
 	var keys *crypto.Keyring
-	if has(config.RoleAPI) || has(config.RoleRunner) {
+	if has(config.RoleAPI) || has(config.RoleRunner) || has(config.RoleNotifier) {
 		if keys, err = crypto.Load(o.Config.Crypto); err != nil {
 			return err
 		}
@@ -146,6 +147,18 @@ func Serve(ctx context.Context, o ServeOptions) error {
 			}
 			g.Go(func() error { return run.Run(gctx) })
 		}
+	}
+	if has(config.RoleNotifier) {
+		exec, err := execute.New(o.Config, &credential.Store{Keys: keys}, log.Logger) // for the deny list
+		if err != nil {
+			return err
+		}
+		n, err := webhook.New(webhook.Options{System: pools.system, Store: &webhook.Store{Keys: keys},
+			Sender: webhook.NewSender(o.Config), Config: o.Config.Notifier, Deny: exec.Deny, Logger: log.Logger, Registry: reg})
+		if err != nil {
+			return err
+		}
+		g.Go(func() error { return n.Run(gctx) })
 	}
 	if has(config.RoleAPI) {
 		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Keys: keys, Logger: log.Logger, Registry: reg})
