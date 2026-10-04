@@ -14,6 +14,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/errs"
 	"github.com/plusclouds/monitoring.server/internal/extref"
+	"github.com/plusclouds/monitoring.server/internal/incident"
 )
 
 // DeviceTypes accepted by the API (F02, ADR-0014).
@@ -279,6 +280,14 @@ func DeleteDevice(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUI
 	}
 	if children > 0 && !confirm {
 		return errs.Conflictf("has-children", "the device contains %d devices, which would be deleted too; repeat with confirm=true", children)
+	}
+	// End the incidents of every check that goes with the device.
+	if err := incident.ResolveForChecks(ctx, tx, `
+		WITH RECURSIVE sub(id) AS (
+			SELECT $1::uuid UNION SELECT d.id FROM devices d JOIN sub ON d.parent_id = sub.id
+		)
+		SELECT c.id FROM checks c JOIN sub ON c.device_id = sub.id`, id); err != nil {
+		return err
 	}
 	if _, err := tx.Exec(ctx, `DELETE FROM devices WHERE id = $1`, id); err != nil {
 		return err

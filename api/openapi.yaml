@@ -47,6 +47,8 @@ tags:
     description: Plugin runs against a device on an interval (F02, F03)
   - name: credentials
     description: Encrypted device credentials; secrets are write-only (F02, ADR-0006)
+  - name: incidents
+    description: Check state and incidents (F05)
 
 paths:
   /me:
@@ -946,6 +948,149 @@ paths:
         "204": { description: Deleted }
         default: { $ref: "#/components/responses/Problem" }
 
+  /checks/{check_id}/state:
+    get:
+      operationId: getCheckState
+      tags: [incidents]
+      summary: The check's current state
+      description: 404 with problem type `no-state` until the check's first result.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      responses:
+        "200":
+          description: State
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckState" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /checks/{check_id}/run-now:
+    post:
+      operationId: runCheckNow
+      tags: [checks]
+      summary: Run the check at once
+      description: |
+        Requires the operator role. The active runner starts the check within
+        about a second; the result goes through the normal pipeline (state,
+        incidents). A check that is already running is not started twice.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      responses:
+        "202": { description: Requested }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /incidents:
+    get:
+      operationId: listIncidents
+      tags: [incidents]
+      summary: List incidents, newest first
+      parameters:
+        - name: status
+          in: query
+          description: "`active` is open or acknowledged."
+          schema: { type: string, enum: [open, acknowledged, resolved, active] }
+        - { name: severity, in: query, schema: { type: string, enum: [warning, critical] } }
+        - { name: device_id, in: query, schema: { type: string, format: uuid } }
+        - { name: check_id, in: query, schema: { type: string, format: uuid } }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Incidents
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Incident" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /incidents/{incident_id}:
+    get:
+      operationId: getIncident
+      tags: [incidents]
+      summary: One incident with its comments
+      parameters:
+        - $ref: "#/components/parameters/IncidentID"
+      responses:
+        "200":
+          description: The incident
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Incident"
+                  - type: object
+                    required: [comments]
+                    properties:
+                      comments:
+                        type: array
+                        items: { $ref: "#/components/schemas/IncidentComment" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /incidents/{incident_id}/ack:
+    post:
+      operationId: acknowledgeIncident
+      tags: [incidents]
+      summary: Acknowledge an incident
+      description: Requires the operator role. Escalation stops; the incident stays open until recovery.
+      parameters:
+        - $ref: "#/components/parameters/IncidentID"
+      responses:
+        "200":
+          description: The incident
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /incidents/{incident_id}/resolve:
+    post:
+      operationId: resolveIncident
+      tags: [incidents]
+      summary: Resolve an incident by hand
+      description: |
+        Requires the operator role. The check's state starts over; if the
+        problem persists, a new incident opens after `failure_count` results.
+      parameters:
+        - $ref: "#/components/parameters/IncidentID"
+      responses:
+        "200":
+          description: The incident
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Incident" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /incidents/{incident_id}/comments:
+    post:
+      operationId: commentIncident
+      tags: [incidents]
+      summary: Add a comment to an incident
+      description: Requires the operator role.
+      parameters:
+        - $ref: "#/components/parameters/IncidentID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, minLength: 1, maxLength: 10000 }
+      responses:
+        "201":
+          description: The comment
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IncidentComment" }
+        default: { $ref: "#/components/responses/Problem" }
+
 components:
   securitySchemes:
     bearer:
@@ -1018,6 +1163,11 @@ components:
       schema: { type: string, format: uuid }
     CheckID:
       name: check_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IncidentID:
+      name: incident_id
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -1495,3 +1645,60 @@ components:
           description: Metric values by name; null when not collected.
           additionalProperties: { type: [number, "null"], format: double }
         time: { type: string, format: date-time }
+
+    CheckState:
+      type: object
+      required: [check_id, phase, status, since, last_result_at, last_status, last_output, last_metrics,
+                 flapping, consecutive_bad, consecutive_good, incident_id, updated_at]
+      properties:
+        check_id: { type: string, format: uuid }
+        phase: { type: string, enum: [OK, PENDING, PROBLEM] }
+        status: { type: string, enum: [OK, WARNING, CRITICAL, UNKNOWN], description: "Effective status: plugin and thresholds" }
+        since: { type: string, format: date-time, description: "When status last changed" }
+        last_result_at: { type: [string, "null"], format: date-time }
+        last_status: { type: [string, "null"], description: "The plugin's own status of the last result" }
+        last_output: { type: [string, "null"] }
+        last_metrics:
+          type: object
+          additionalProperties: { type: number, format: double }
+        flapping: { type: boolean }
+        consecutive_bad: { type: integer }
+        consecutive_good: { type: integer }
+        incident_id: { type: [string, "null"], format: uuid }
+        updated_at: { type: string, format: date-time }
+
+    Incident:
+      type: object
+      required: [id, check_id, device_id, severity, status, summary, last_output, rule_id, rule_name, flapping,
+                 suppressed, opened_at, acknowledged_at, acknowledged_by, acknowledged_by_external_id,
+                 resolved_at, resolved_by, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        check_id: { type: [string, "null"], format: uuid }
+        device_id: { type: [string, "null"], format: uuid }
+        severity: { type: string, enum: [warning, critical] }
+        status: { type: string, enum: [open, acknowledged, resolved] }
+        summary: { type: string }
+        last_output: { type: [string, "null"] }
+        rule_id: { type: [string, "null"], description: "The threshold rule that caused it, if any" }
+        rule_name: { type: [string, "null"] }
+        flapping: { type: boolean }
+        suppressed: { type: boolean }
+        opened_at: { type: string, format: date-time }
+        acknowledged_at: { type: [string, "null"], format: date-time }
+        acknowledged_by: { type: [string, "null"], format: uuid, description: "User ID" }
+        acknowledged_by_external_id: { type: [string, "null"] }
+        resolved_at: { type: [string, "null"], format: date-time }
+        resolved_by: { type: [string, "null"], enum: [recovery, manual, check-deleted, check-disabled, null] }
+        updated_at: { type: string, format: date-time }
+
+    IncidentComment:
+      type: object
+      required: [id, author_kind, author_user_id, author_external_id, body, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        author_kind: { type: string }
+        author_user_id: { type: [string, "null"], format: uuid }
+        author_external_id: { type: [string, "null"] }
+        body: { type: string }
+        created_at: { type: string, format: date-time }

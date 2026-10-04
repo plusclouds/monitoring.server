@@ -32,8 +32,10 @@ func TestNextRunIsOnPhase(t *testing.T) {
 // F04: the phase is stable for a check, so restarts do not move it.
 func TestPhaseIsStable(t *testing.T) {
 	id := uuid.Must(uuid.NewV7())
-	if phase(id, time.Minute) != phase(id, time.Minute) {
-		t.Fatal("phase changed between calls")
+	first := phase(id, time.Minute)
+	copied, _ := uuid.Parse(id.String()) // the same check loaded again
+	if phase(copied, time.Minute) != first {
+		t.Fatal("phase changed between loads")
 	}
 }
 

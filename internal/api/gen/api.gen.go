@@ -56,22 +56,67 @@ func (e AuditEventActorKind) Valid() bool {
 
 // Defines values for CheckRunStatus.
 const (
-	CRITICAL CheckRunStatus = "CRITICAL"
-	OK       CheckRunStatus = "OK"
-	UNKNOWN  CheckRunStatus = "UNKNOWN"
-	WARNING  CheckRunStatus = "WARNING"
+	CheckRunStatusCRITICAL CheckRunStatus = "CRITICAL"
+	CheckRunStatusOK       CheckRunStatus = "OK"
+	CheckRunStatusUNKNOWN  CheckRunStatus = "UNKNOWN"
+	CheckRunStatusWARNING  CheckRunStatus = "WARNING"
 )
 
 // Valid indicates whether the value is a known member of the CheckRunStatus enum.
 func (e CheckRunStatus) Valid() bool {
 	switch e {
-	case CRITICAL:
+	case CheckRunStatusCRITICAL:
 		return true
-	case OK:
+	case CheckRunStatusOK:
 		return true
-	case UNKNOWN:
+	case CheckRunStatusUNKNOWN:
 		return true
-	case WARNING:
+	case CheckRunStatusWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckStatePhase.
+const (
+	CheckStatePhaseOK      CheckStatePhase = "OK"
+	CheckStatePhasePENDING CheckStatePhase = "PENDING"
+	CheckStatePhasePROBLEM CheckStatePhase = "PROBLEM"
+)
+
+// Valid indicates whether the value is a known member of the CheckStatePhase enum.
+func (e CheckStatePhase) Valid() bool {
+	switch e {
+	case CheckStatePhaseOK:
+		return true
+	case CheckStatePhasePENDING:
+		return true
+	case CheckStatePhasePROBLEM:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckStateStatus.
+const (
+	CheckStateStatusCRITICAL CheckStateStatus = "CRITICAL"
+	CheckStateStatusOK       CheckStateStatus = "OK"
+	CheckStateStatusUNKNOWN  CheckStateStatus = "UNKNOWN"
+	CheckStateStatusWARNING  CheckStateStatus = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the CheckStateStatus enum.
+func (e CheckStateStatus) Valid() bool {
+	switch e {
+	case CheckStateStatusCRITICAL:
+		return true
+	case CheckStateStatusOK:
+		return true
+	case CheckStateStatusUNKNOWN:
+		return true
+	case CheckStateStatusWARNING:
 		return true
 	default:
 		return false
@@ -129,6 +174,72 @@ func (e DeviceType) Valid() bool {
 	case Vm:
 		return true
 	case Web:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentResolvedBy.
+const (
+	IncidentResolvedByCheckDeleted  IncidentResolvedBy = "check-deleted"
+	IncidentResolvedByCheckDisabled IncidentResolvedBy = "check-disabled"
+	IncidentResolvedByLessThannil   IncidentResolvedBy = "<nil>"
+	IncidentResolvedByManual        IncidentResolvedBy = "manual"
+	IncidentResolvedByRecovery      IncidentResolvedBy = "recovery"
+)
+
+// Valid indicates whether the value is a known member of the IncidentResolvedBy enum.
+func (e IncidentResolvedBy) Valid() bool {
+	switch e {
+	case IncidentResolvedByCheckDeleted:
+		return true
+	case IncidentResolvedByCheckDisabled:
+		return true
+	case IncidentResolvedByLessThannil:
+		return true
+	case IncidentResolvedByManual:
+		return true
+	case IncidentResolvedByRecovery:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentSeverity.
+const (
+	IncidentSeverityCritical IncidentSeverity = "critical"
+	IncidentSeverityWarning  IncidentSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the IncidentSeverity enum.
+func (e IncidentSeverity) Valid() bool {
+	switch e {
+	case IncidentSeverityCritical:
+		return true
+	case IncidentSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentStatus.
+const (
+	IncidentStatusAcknowledged IncidentStatus = "acknowledged"
+	IncidentStatusOpen         IncidentStatus = "open"
+	IncidentStatusResolved     IncidentStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the IncidentStatus enum.
+func (e IncidentStatus) Valid() bool {
+	switch e {
+	case IncidentStatusAcknowledged:
+		return true
+	case IncidentStatusOpen:
+		return true
+	case IncidentStatusResolved:
 		return true
 	default:
 		return false
@@ -417,6 +528,114 @@ func (e UserPatchStatus) Valid() bool {
 	}
 }
 
+// Defines values for ListIncidentsParamsStatus.
+const (
+	ListIncidentsParamsStatusAcknowledged ListIncidentsParamsStatus = "acknowledged"
+	ListIncidentsParamsStatusActive       ListIncidentsParamsStatus = "active"
+	ListIncidentsParamsStatusOpen         ListIncidentsParamsStatus = "open"
+	ListIncidentsParamsStatusResolved     ListIncidentsParamsStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the ListIncidentsParamsStatus enum.
+func (e ListIncidentsParamsStatus) Valid() bool {
+	switch e {
+	case ListIncidentsParamsStatusAcknowledged:
+		return true
+	case ListIncidentsParamsStatusActive:
+		return true
+	case ListIncidentsParamsStatusOpen:
+		return true
+	case ListIncidentsParamsStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListIncidentsParamsSeverity.
+const (
+	ListIncidentsParamsSeverityCritical ListIncidentsParamsSeverity = "critical"
+	ListIncidentsParamsSeverityWarning  ListIncidentsParamsSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the ListIncidentsParamsSeverity enum.
+func (e ListIncidentsParamsSeverity) Valid() bool {
+	switch e {
+	case ListIncidentsParamsSeverityCritical:
+		return true
+	case ListIncidentsParamsSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetIncident200JSONResponseBodyResolvedBy.
+const (
+	GetIncident200JSONResponseBodyResolvedByCheckDeleted  GetIncident200JSONResponseBodyResolvedBy = "check-deleted"
+	GetIncident200JSONResponseBodyResolvedByCheckDisabled GetIncident200JSONResponseBodyResolvedBy = "check-disabled"
+	GetIncident200JSONResponseBodyResolvedByLessThannil   GetIncident200JSONResponseBodyResolvedBy = "<nil>"
+	GetIncident200JSONResponseBodyResolvedByManual        GetIncident200JSONResponseBodyResolvedBy = "manual"
+	GetIncident200JSONResponseBodyResolvedByRecovery      GetIncident200JSONResponseBodyResolvedBy = "recovery"
+)
+
+// Valid indicates whether the value is a known member of the GetIncident200JSONResponseBodyResolvedBy enum.
+func (e GetIncident200JSONResponseBodyResolvedBy) Valid() bool {
+	switch e {
+	case GetIncident200JSONResponseBodyResolvedByCheckDeleted:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByCheckDisabled:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByLessThannil:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByManual:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByRecovery:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetIncident200JSONResponseBodySeverity.
+const (
+	GetIncident200JSONResponseBodySeverityCritical GetIncident200JSONResponseBodySeverity = "critical"
+	GetIncident200JSONResponseBodySeverityWarning  GetIncident200JSONResponseBodySeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the GetIncident200JSONResponseBodySeverity enum.
+func (e GetIncident200JSONResponseBodySeverity) Valid() bool {
+	switch e {
+	case GetIncident200JSONResponseBodySeverityCritical:
+		return true
+	case GetIncident200JSONResponseBodySeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetIncident200JSONResponseBodyStatus.
+const (
+	GetIncident200JSONResponseBodyStatusAcknowledged GetIncident200JSONResponseBodyStatus = "acknowledged"
+	GetIncident200JSONResponseBodyStatusOpen         GetIncident200JSONResponseBodyStatus = "open"
+	GetIncident200JSONResponseBodyStatusResolved     GetIncident200JSONResponseBodyStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the GetIncident200JSONResponseBodyStatus enum.
+func (e GetIncident200JSONResponseBodyStatus) Valid() bool {
+	switch e {
+	case GetIncident200JSONResponseBodyStatusAcknowledged:
+		return true
+	case GetIncident200JSONResponseBodyStatusOpen:
+		return true
+	case GetIncident200JSONResponseBodyStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
 // APIKey defines model for APIKey.
 type APIKey struct {
 	CreatedAt   time.Time          `json:"created_at"`
@@ -526,6 +745,35 @@ type CheckRun struct {
 
 // CheckRunStatus defines model for CheckRun.Status.
 type CheckRunStatus string
+
+// CheckState defines model for CheckState.
+type CheckState struct {
+	CheckId         openapi_types.UUID  `json:"check_id"`
+	ConsecutiveBad  int                 `json:"consecutive_bad"`
+	ConsecutiveGood int                 `json:"consecutive_good"`
+	Flapping        bool                `json:"flapping"`
+	IncidentId      *openapi_types.UUID `json:"incident_id"`
+	LastMetrics     map[string]float64  `json:"last_metrics"`
+	LastOutput      *string             `json:"last_output"`
+	LastResultAt    *time.Time          `json:"last_result_at"`
+
+	// LastStatus The plugin's own status of the last result
+	LastStatus *string         `json:"last_status"`
+	Phase      CheckStatePhase `json:"phase"`
+
+	// Since When status last changed
+	Since time.Time `json:"since"`
+
+	// Status Effective status: plugin and thresholds
+	Status    CheckStateStatus `json:"status"`
+	UpdatedAt time.Time        `json:"updated_at"`
+}
+
+// CheckStatePhase defines model for CheckState.Phase.
+type CheckStatePhase string
+
+// CheckStateStatus Effective status: plugin and thresholds
+type CheckStateStatus string
 
 // CheckWrite defines model for CheckWrite.
 type CheckWrite struct {
@@ -667,6 +915,51 @@ type ExternalRefWrite struct {
 	Id     string  `json:"id"`
 	Source string  `json:"source"`
 	Type   *string `json:"type,omitempty"`
+}
+
+// Incident defines model for Incident.
+type Incident struct {
+	AcknowledgedAt *time.Time `json:"acknowledged_at"`
+
+	// AcknowledgedBy User ID
+	AcknowledgedBy           *openapi_types.UUID `json:"acknowledged_by"`
+	AcknowledgedByExternalId *string             `json:"acknowledged_by_external_id"`
+	CheckId                  *openapi_types.UUID `json:"check_id"`
+	DeviceId                 *openapi_types.UUID `json:"device_id"`
+	Flapping                 bool                `json:"flapping"`
+	Id                       openapi_types.UUID  `json:"id"`
+	LastOutput               *string             `json:"last_output"`
+	OpenedAt                 time.Time           `json:"opened_at"`
+	ResolvedAt               *time.Time          `json:"resolved_at"`
+	ResolvedBy               *IncidentResolvedBy `json:"resolved_by"`
+
+	// RuleId The threshold rule that caused it, if any
+	RuleId     *string          `json:"rule_id"`
+	RuleName   *string          `json:"rule_name"`
+	Severity   IncidentSeverity `json:"severity"`
+	Status     IncidentStatus   `json:"status"`
+	Summary    string           `json:"summary"`
+	Suppressed bool             `json:"suppressed"`
+	UpdatedAt  time.Time        `json:"updated_at"`
+}
+
+// IncidentResolvedBy defines model for Incident.ResolvedBy.
+type IncidentResolvedBy string
+
+// IncidentSeverity defines model for Incident.Severity.
+type IncidentSeverity string
+
+// IncidentStatus defines model for Incident.Status.
+type IncidentStatus string
+
+// IncidentComment defines model for IncidentComment.
+type IncidentComment struct {
+	AuthorExternalId *string             `json:"author_external_id"`
+	AuthorKind       string              `json:"author_kind"`
+	AuthorUserId     *openapi_types.UUID `json:"author_user_id"`
+	Body             string              `json:"body"`
+	CreatedAt        time.Time           `json:"created_at"`
+	Id               openapi_types.UUID  `json:"id"`
 }
 
 // Me defines model for Me.
@@ -918,6 +1211,9 @@ type FilterExternalSource = string
 // FilterExternalType defines model for FilterExternalType.
 type FilterExternalType = string
 
+// IncidentID defines model for IncidentID.
+type IncidentID = openapi_types.UUID
+
 // KeyID defines model for KeyID.
 type KeyID = openapi_types.UUID
 
@@ -1032,6 +1328,39 @@ type AddDeviceDependencyJSONBody struct {
 	DependsOnId openapi_types.UUID `json:"depends_on_id"`
 }
 
+// ListIncidentsParams defines parameters for ListIncidents.
+type ListIncidentsParams struct {
+	// Status `active` is open or acknowledged.
+	Status   *ListIncidentsParamsStatus   `form:"status,omitempty" json:"status,omitempty"`
+	Severity *ListIncidentsParamsSeverity `form:"severity,omitempty" json:"severity,omitempty"`
+	DeviceId *openapi_types.UUID          `form:"device_id,omitempty" json:"device_id,omitempty"`
+	CheckId  *openapi_types.UUID          `form:"check_id,omitempty" json:"check_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListIncidentsParamsStatus defines parameters for ListIncidents.
+type ListIncidentsParamsStatus string
+
+// ListIncidentsParamsSeverity defines parameters for ListIncidents.
+type ListIncidentsParamsSeverity string
+
+// GetIncident200JSONResponseBodyResolvedBy defines parameters for GetIncident.
+type GetIncident200JSONResponseBodyResolvedBy string
+
+// GetIncident200JSONResponseBodySeverity defines parameters for GetIncident.
+type GetIncident200JSONResponseBodySeverity string
+
+// GetIncident200JSONResponseBodyStatus defines parameters for GetIncident.
+type GetIncident200JSONResponseBodyStatus string
+
+// CommentIncidentJSONBody defines parameters for CommentIncident.
+type CommentIncidentJSONBody struct {
+	Body string `json:"body"`
+}
+
 // ListSitesParams defines parameters for ListSites.
 type ListSitesParams struct {
 	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
@@ -1128,6 +1457,9 @@ type CreateCheckJSONRequestBody = CheckWrite
 // AddDeviceDependencyJSONRequestBody defines body for AddDeviceDependency for application/json ContentType.
 type AddDeviceDependencyJSONRequestBody AddDeviceDependencyJSONBody
 
+// CommentIncidentJSONRequestBody defines body for CommentIncident for application/json ContentType.
+type CommentIncidentJSONRequestBody CommentIncidentJSONBody
+
 // CreateSiteJSONRequestBody defines body for CreateSite for application/json ContentType.
 type CreateSiteJSONRequestBody = SiteWrite
 
@@ -1175,6 +1507,12 @@ type ServerInterface interface {
 	// UpdateCheck Replace a check
 	// (PUT /checks/{check_id})
 	UpdateCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// RunCheckNow Run the check at once
+	// (POST /checks/{check_id}/run-now)
+	RunCheckNow(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// GetCheckState The check's current state
+	// (GET /checks/{check_id}/state)
+	GetCheckState(w http.ResponseWriter, r *http.Request, checkId CheckID)
 	// ListCredentialTypes Credential types and their fields
 	// (GET /credential-types)
 	ListCredentialTypes(w http.ResponseWriter, r *http.Request)
@@ -1241,6 +1579,21 @@ type ServerInterface interface {
 	// TestDevice Run every enabled check of the device once
 	// (POST /devices/{device_id}/test)
 	TestDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// ListIncidents List incidents, newest first
+	// (GET /incidents)
+	ListIncidents(w http.ResponseWriter, r *http.Request, params ListIncidentsParams)
+	// GetIncident One incident with its comments
+	// (GET /incidents/{incident_id})
+	GetIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
+	// AcknowledgeIncident Acknowledge an incident
+	// (POST /incidents/{incident_id}/ack)
+	AcknowledgeIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
+	// CommentIncident Add a comment to an incident
+	// (POST /incidents/{incident_id}/comments)
+	CommentIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
+	// ResolveIncident Resolve an incident by hand
+	// (POST /incidents/{incident_id}/resolve)
+	ResolveIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
 	// GetMe The resolved caller
 	// (GET /me)
 	GetMe(w http.ResponseWriter, r *http.Request)
@@ -1644,6 +1997,58 @@ func (siw *ServerInterfaceWrapper) UpdateCheck(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunCheckNow operation middleware
+func (siw *ServerInterfaceWrapper) RunCheckNow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunCheckNow(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCheckState operation middleware
+func (siw *ServerInterfaceWrapper) GetCheckState(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCheckState(w, r, checkId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2513,6 +2918,208 @@ func (siw *ServerInterfaceWrapper) TestDevice(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// ListIncidents operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIncidentsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "severity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "severity", r.URL.Query(), &params.Severity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "severity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "severity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "device_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "device_id", r.URL.Query(), &params.DeviceId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "device_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "check_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "check_id", r.URL.Query(), &params.CheckId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "check_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIncident operation middleware
+func (siw *ServerInterfaceWrapper) GetIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcknowledgeIncident operation middleware
+func (siw *ServerInterfaceWrapper) AcknowledgeIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcknowledgeIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CommentIncident operation middleware
+func (siw *ServerInterfaceWrapper) CommentIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CommentIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResolveIncident operation middleware
+func (siw *ServerInterfaceWrapper) ResolveIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResolveIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -3349,6 +3956,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/checks/{check_id}", wrapper.DeleteCheck)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks/{check_id}", wrapper.GetCheck)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/checks/{check_id}", wrapper.UpdateCheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks/{check_id}/state", wrapper.GetCheckState)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/checks/{check_id}/run-now", wrapper.RunCheckNow)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/incidents", wrapper.ListIncidents)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/incidents/{incident_id}", wrapper.GetIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/incidents/{incident_id}/ack", wrapper.AcknowledgeIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/incidents/{incident_id}/resolve", wrapper.ResolveIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/incidents/{incident_id}/comments", wrapper.CommentIncident)
 
 	return m
 }
@@ -3650,6 +4264,78 @@ type UpdateCheckdefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response UpdateCheckdefaultApplicationProblemPlusJSONResponse) VisitUpdateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunCheckNowRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type RunCheckNowResponseObject interface {
+	VisitRunCheckNowResponse(w http.ResponseWriter) error
+}
+
+type RunCheckNow202Response struct {
+}
+
+func (response RunCheckNow202Response) VisitRunCheckNowResponse(w http.ResponseWriter) error {
+	w.WriteHeader(202)
+	return nil
+}
+
+type RunCheckNowdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RunCheckNowdefaultApplicationProblemPlusJSONResponse) VisitRunCheckNowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckStateRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type GetCheckStateResponseObject interface {
+	VisitGetCheckStateResponse(w http.ResponseWriter) error
+}
+
+type GetCheckState200JSONResponse CheckState
+
+func (response GetCheckState200JSONResponse) VisitGetCheckStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckStatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCheckStatedefaultApplicationProblemPlusJSONResponse) VisitGetCheckStateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -4568,6 +5254,229 @@ func (response TestDevicedefaultApplicationProblemPlusJSONResponse) VisitTestDev
 	return err
 }
 
+type ListIncidentsRequestObject struct {
+	Params ListIncidentsParams
+}
+
+type ListIncidentsResponseObject interface {
+	VisitListIncidentsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidents200JSONResponse struct {
+	Items      []Incident `json:"items"`
+	NextCursor *string    `json:"next_cursor"`
+}
+
+func (response ListIncidents200JSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListIncidentsdefaultApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+}
+
+type GetIncidentResponseObject interface {
+	VisitGetIncidentResponse(w http.ResponseWriter) error
+}
+
+type GetIncident200JSONResponse struct {
+	AcknowledgedAt *time.Time `json:"acknowledged_at"`
+
+	// AcknowledgedBy User ID
+	AcknowledgedBy           *openapi_types.UUID                       `json:"acknowledged_by"`
+	AcknowledgedByExternalId *string                                   `json:"acknowledged_by_external_id"`
+	CheckId                  *openapi_types.UUID                       `json:"check_id"`
+	Comments                 []IncidentComment                         `json:"comments"`
+	DeviceId                 *openapi_types.UUID                       `json:"device_id"`
+	Flapping                 bool                                      `json:"flapping"`
+	Id                       openapi_types.UUID                        `json:"id"`
+	LastOutput               *string                                   `json:"last_output"`
+	OpenedAt                 time.Time                                 `json:"opened_at"`
+	ResolvedAt               *time.Time                                `json:"resolved_at"`
+	ResolvedBy               *GetIncident200JSONResponseBodyResolvedBy `json:"resolved_by"`
+
+	// RuleId The threshold rule that caused it, if any
+	RuleId     *string                                `json:"rule_id"`
+	RuleName   *string                                `json:"rule_name"`
+	Severity   GetIncident200JSONResponseBodySeverity `json:"severity"`
+	Status     GetIncident200JSONResponseBodyStatus   `json:"status"`
+	Summary    string                                 `json:"summary"`
+	Suppressed bool                                   `json:"suppressed"`
+	UpdatedAt  time.Time                              `json:"updated_at"`
+}
+
+func (response GetIncident200JSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetIncidentdefaultApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcknowledgeIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+}
+
+type AcknowledgeIncidentResponseObject interface {
+	VisitAcknowledgeIncidentResponse(w http.ResponseWriter) error
+}
+
+type AcknowledgeIncident200JSONResponse Incident
+
+func (response AcknowledgeIncident200JSONResponse) VisitAcknowledgeIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcknowledgeIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response AcknowledgeIncidentdefaultApplicationProblemPlusJSONResponse) VisitAcknowledgeIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CommentIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+	Body       *CommentIncidentJSONRequestBody
+}
+
+type CommentIncidentResponseObject interface {
+	VisitCommentIncidentResponse(w http.ResponseWriter) error
+}
+
+type CommentIncident201JSONResponse IncidentComment
+
+func (response CommentIncident201JSONResponse) VisitCommentIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CommentIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CommentIncidentdefaultApplicationProblemPlusJSONResponse) VisitCommentIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+}
+
+type ResolveIncidentResponseObject interface {
+	VisitResolveIncidentResponse(w http.ResponseWriter) error
+}
+
+type ResolveIncident200JSONResponse Incident
+
+func (response ResolveIncident200JSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ResolveIncidentdefaultApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -5342,6 +6251,12 @@ type StrictServerInterface interface {
 	// UpdateCheck Replace a check
 	// (PUT /checks/{check_id})
 	UpdateCheck(ctx context.Context, request UpdateCheckRequestObject) (UpdateCheckResponseObject, error)
+	// RunCheckNow Run the check at once
+	// (POST /checks/{check_id}/run-now)
+	RunCheckNow(ctx context.Context, request RunCheckNowRequestObject) (RunCheckNowResponseObject, error)
+	// GetCheckState The check's current state
+	// (GET /checks/{check_id}/state)
+	GetCheckState(ctx context.Context, request GetCheckStateRequestObject) (GetCheckStateResponseObject, error)
 	// ListCredentialTypes Credential types and their fields
 	// (GET /credential-types)
 	ListCredentialTypes(ctx context.Context, request ListCredentialTypesRequestObject) (ListCredentialTypesResponseObject, error)
@@ -5408,6 +6323,21 @@ type StrictServerInterface interface {
 	// TestDevice Run every enabled check of the device once
 	// (POST /devices/{device_id}/test)
 	TestDevice(ctx context.Context, request TestDeviceRequestObject) (TestDeviceResponseObject, error)
+	// ListIncidents List incidents, newest first
+	// (GET /incidents)
+	ListIncidents(ctx context.Context, request ListIncidentsRequestObject) (ListIncidentsResponseObject, error)
+	// GetIncident One incident with its comments
+	// (GET /incidents/{incident_id})
+	GetIncident(ctx context.Context, request GetIncidentRequestObject) (GetIncidentResponseObject, error)
+	// AcknowledgeIncident Acknowledge an incident
+	// (POST /incidents/{incident_id}/ack)
+	AcknowledgeIncident(ctx context.Context, request AcknowledgeIncidentRequestObject) (AcknowledgeIncidentResponseObject, error)
+	// CommentIncident Add a comment to an incident
+	// (POST /incidents/{incident_id}/comments)
+	CommentIncident(ctx context.Context, request CommentIncidentRequestObject) (CommentIncidentResponseObject, error)
+	// ResolveIncident Resolve an incident by hand
+	// (POST /incidents/{incident_id}/resolve)
+	ResolveIncident(ctx context.Context, request ResolveIncidentRequestObject) (ResolveIncidentResponseObject, error)
 	// GetMe The resolved caller
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -5716,6 +6646,58 @@ func (sh *strictHandler) UpdateCheck(w http.ResponseWriter, r *http.Request, che
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateCheckResponseObject); ok {
 		if err := validResponse.VisitUpdateCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunCheckNow operation middleware
+func (sh *strictHandler) RunCheckNow(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request RunCheckNowRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunCheckNow(ctx, request.(RunCheckNowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunCheckNow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunCheckNowResponseObject); ok {
+		if err := validResponse.VisitRunCheckNowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCheckState operation middleware
+func (sh *strictHandler) GetCheckState(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request GetCheckStateRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCheckState(ctx, request.(GetCheckStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCheckState")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCheckStateResponseObject); ok {
+		if err := validResponse.VisitGetCheckStateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6351,6 +7333,143 @@ func (sh *strictHandler) TestDevice(w http.ResponseWriter, r *http.Request, devi
 	}
 }
 
+// ListIncidents operation middleware
+func (sh *strictHandler) ListIncidents(w http.ResponseWriter, r *http.Request, params ListIncidentsParams) {
+	var request ListIncidentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidents(ctx, request.(ListIncidentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentsResponseObject); ok {
+		if err := validResponse.VisitListIncidentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIncident operation middleware
+func (sh *strictHandler) GetIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request GetIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIncident(ctx, request.(GetIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIncidentResponseObject); ok {
+		if err := validResponse.VisitGetIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcknowledgeIncident operation middleware
+func (sh *strictHandler) AcknowledgeIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request AcknowledgeIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcknowledgeIncident(ctx, request.(AcknowledgeIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcknowledgeIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcknowledgeIncidentResponseObject); ok {
+		if err := validResponse.VisitAcknowledgeIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CommentIncident operation middleware
+func (sh *strictHandler) CommentIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request CommentIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	var body CommentIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CommentIncident(ctx, request.(CommentIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CommentIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CommentIncidentResponseObject); ok {
+		if err := validResponse.VisitCommentIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResolveIncident operation middleware
+func (sh *strictHandler) ResolveIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request ResolveIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResolveIncident(ctx, request.(ResolveIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResolveIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResolveIncidentResponseObject); ok {
+		if err := validResponse.VisitResolveIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -6874,128 +7993,145 @@ func (sh *strictHandler) PatchUser(w http.ResponseWriter, r *http.Request, exter
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"7H3tcts4tuCrYLlTlThDy3KSzsy4Kz88drrX252PtZ3prZtkJJg8ktAmATYA2tGkXHWf5j7YfZJbBwBJ",
-	"UAT1YctOemb+uCyJBHC+P3Bw8CVKRF4IDlyr6OBLVFBJc9AgzaejGSSXJ8f4L+PRQVRQPYviiNMcooMo",
-	"wV9HLI3iSMJvJZOQRgdalhBHKplBTvG9iZA51dFBVJbmST0v8F2lJePT6OYmjo4kpMA1o1n/TPUjW5iu",
-	"lEpIfDYFlUhWaCZwxrcF/a0EkpifyUSKnIw5fNYj+82YiAnRMyCFhCsmSkUKOoVBFNv1/laCnHsLtpP4",
-	"K+uu5BiuWAK9QKfm57sD/OqzBsmXYBfcA6umyunnn4FP9Sw6eDocxlHOePV5f9nEZ6KUCXQxfjZXGnKD",
-	"1GoJ5OSYXEAm+FQRLQbkGCa0zDRhyuI+oxoBfqQIMwyh50SZ0cnjcZGVKslEmarxTh9d7MNRD1TfbQDU",
-	"+bwIgPT24ldINMHXCONt0JQBd0B+YXomSk2YjgklmRCXZUFyqpMZKEL53LzdBwD+Ft2FKD+wTIMM8MTC",
-	"RG2mWMbG7REbYi8dNUCIVSNXGF86bgc/3VF/gnmvKFzC/O4C9zPLme5baWZ+9AdMLY9HB/uGfvQzy8sc",
-	"mdFS035qaMm4hilIM9MZ0/36QzG9Be1xDpxy3TuJNj/fdZobfFkVgiswduedFBcZ5PhvIrgGbtBJiyJj",
-	"CUVR2yvsE3/8VaHcffHm+oOESXQQ/e+9xrDt2V/VXjWumbEtuYecgJTC4tU9j8Mdvjv5Ceb4XyFFAVIz",
-	"u8REAtWQjqhuAZhSDbua5dCFMo7gc8EkqNXvfKheiiNeZln06SaOWLoGJuOIFSOaZeI6Y8ryoIZcBQSh",
-	"fpVKSef4OaNKj0oF6e3WZxkiME8hYcI+d3XlD0wqTQoqdWVaL2Eek4mQREIippz9g/EpMdLSGVSKDFZR",
-	"+xSfubnxGfNDZLBm1uoGqRe4gLvYJ/GnegnCaHhcguWMI/NQlz/uRutbE7GiwkZm4Q7o9DG5CkmGgWmW",
-	"vZ1EBx+Wz2Vfi27iRbRewrzLSeczIJMyy5CBBuRsJq45ETwxRrSr0fzl43DdZSMJDsuU6VdXTvW0F0ET",
-	"O3GAHjTRQgbeKNjI2ZZeIQ4xQgqasqyZKfSMb6mXPnjJuHkCOFqUD1GpQEZxtTYUBOde4ZdpzvhukrEo",
-	"jibMiIn1Xzx0NVDjSBvCtkgIXFuIgehEAyIU/91A1V7AREiw762pOe2cK7HoHtPOG+mKEvxWglo9joLf",
-	"WstiXL94HnXNfOyc1hErlg0YUnM4hUFbxZdxxbptMEJ4N6FfwOwJPmFTD/DmjdtYxCaws2KSpgzXR7N3",
-	"rVlX0q6tD5qIEuOJAiRB/WRNC3ymeZEB+fIxoqWefYwOyMfov//zvz5GN1EADU0Qts4ygNOLDDzCRxdC",
-	"ZEA5/jihLCsljBJRcu094lF6XRvPNcgr9KIhETxVPYOp0UwoPUoqSnaXlFNOp5COLuZBVu436Vk5ZbyH",
-	"/RNxBXK+DExZ8gshLkelXKHa9EyCmoksVS0ruMxynFevnJZorroWEllRlLqLuw/1Er0VlPySi2s+YmqU",
-	"SKZZQrMwKssi3ZD7QxLrx/zOtDpcx5XoBcjfBaphxRYSF5mwQ65FrgkjoE3BthS3mKqlFFo46lU57+g0",
-	"4E3VpF+LB8xAQe+oyedsokvNnO23e9d/WvKA1qwyZWvpslKaGGeUt3VfKsqLzOMjXuYXVp5y0JIl62nQ",
-	"hVE+VMO0nA5fmb42g5MrmpWgyMWcIF9+T/Bpcj0DTrjQJBFZBomGdBBSor16RJS6KPWmKkZpqkvlezJv",
-	"f4ri6JfD0zcnb36M4ujo9OT85Ojw5yiO3r/56c3bX94EvRYjlrcTVi/1uSimbnU1cG2CNsRy8/cy0i+S",
-	"heKKxgC3yfQ3mjEjXYROKeNKu4QZruqRIva1kQuT46D13oolzuln/439YWAuz0zWyQ+bMljDatZvPPOS",
-	"JfurkiVho9lGoUs2HrQwF3mz/PnF8zXmWTS79YInNFMQB2IX8yjRM6qJonOFYqVnIM06rEXABGhZRCEE",
-	"3TLia+RrIYPJAcPxH1+dk72r/T37mAqG4B1L32SyNiPNgj/Q8JhkFv0eYMOQIG/BTcjp5xP74v5w2LUc",
-	"Aa+hhvDZagh73IhF1likbjjYdqQLao5aireVsbKxJb4hOKwRuVfZ2lOYmPC9NlZZZgPrCYMsXapjVnj3",
-	"bwTfVZBI0MSORQTP5kHDs6bFva0bbFehRgp0V5De0BxUldlqr9dI+oxeAaHWruLi18/x9Iae2/FBOW2e",
-	"rMnVBnbByau5ZEN/r2bWKrXfZtgWPgPg2qWN/Ey690L0f8/eviFn5kckw9g+Pv5+gRhUAhlfS6bhLc/m",
-	"46UOjAselXEaeV6Mrp5Fn1Yh1eHTX9zi2pdjp8cT8GVzTYm0I20ghOGcVDuLC1nqvMO4Qq3goAjjSVam",
-	"kA7IGYCRAhzzkSLjFvDLMb6hVdPhXbm2TWtcnV18XkVrUrA3V3IMBfAUeHKXfYIwqnFgNRJ87eBho3yF",
-	"6tmZHdOCjWMyTgTXlPEcuB7HREhCScqUNfvVxqsqkxmhioyzLC3GK3HpR7ht8OrlLEfxzy4nfpcAsRmt",
-	"q1+DwV94SQhJdyk0TSWogH958i4m6BqaCAqx+f70556k2LdgqNdORmGSXMhAXv5vwFMhY5KLFDJUDhJT",
-	"cpSnZMJkfk0lxAQ1rwaOgaXzNYP6oG2iw9yKeWrLpqhsXEhqPlFd8y2kPTtKvVaeC71KJRZUAq9Svgu5",
-	"SCtCIMnjw+PT3eFw//lOFPegNTj2bK7QXxwVADI4xc+MX0JK/vr6CGFHDttogmqfeKONCU2nm/lwHYpW",
-	"qnq5nKKIGe9g2+5NJaW1o2MgqqjtkzT2dtI7xPD5fztekYV5G2kwO9LD58E8qnk5Gg76WkhMKSqQVyCj",
-	"OLrIE0QOzUHSKI6u4SKKo9m8AHnFlJCjQois/Y1j7qscES8sNg210tIMzG3VVZblI+BpIRjX7qNXPBDF",
-	"kcD4OpgUsovvcbk81b46Kr2Lf3ZL96dWVd57+8Pw8lo6a6WWD2mhlS+t1Czes6sUyiImViWevhtuQeds",
-	"6Af6JrUru2k4hqxdsF5ndk3xrEuqWLpqdT3szdIQplfwXAPAJpV0DXRhwt4Z2tcQ3LcXcrS4Dd7sf7sN",
-	"8XobPKQf1tnJDxRWVJNJoOku5iuiOMKlUbcti9vtq6a2tVYrM1v2Kbcrv74/+F6ZVFXHEVzAu1tEXTzj",
-	"4TRMBrO7sJVk1PpFKg3sqyFegM/xgINuRQmQhe59oUAGYpKUqSKj81GfMu/3rm5djtNbh2N3cY5DimlV",
-	"mmVRXqa0nAKiiGoI8mmvJy1BAzc7IUlGVdhPLDnT4brNgCY2Dy+mVsx6u5OFsPKuToK3UXLBsozxabPM",
-	"CvYLqlhiN3l4SiXOU5RqZiT4ivLEbLhOJIQR096EWZqwepxKOtHk6fDpcHf/6U5dfN7ezxks38kx1R1q",
-	"swIyl5IerVdjsCnvVLvKdXBmHOgpKN3jjnlbm2v5vA2fB2DLGV8TLg6QqpGk1yMlkkvQ4T3/nkTsosa0",
-	"8YVjyzavLm7LdWjn7xf2kqYHsgAY8QJrB4WiKb5t8+fpD0fkL8+/+xNxxbfEVqeZgH1RpbTL1lrpApSd",
-	"ZP3aqeDGb5dimulsuRu1cPhA4x4keX96YgqETO1vTGAwHZCZ1oU62NvLBWdayEFzsGCQiLwqPVZ71hTu",
-	"qlKZbFK6Mv6sIk2z1BqcEA1ON3EbQnJztip+6Tc+ZjsvlM45OXtLnu2/eLG7T2hWzOju06Upgt9XGuu2",
-	"e0AIyT8ED3DYyeGbQ4I/E/P7MlRtNbNR0c9bm5/u2EaOArlroxB5PxyDeqzmb62cn+KsBdW4uOgg+vuH",
-	"w93/+PTl6c0fom8jzvaJ7i/8VYm42DtBFXdRZmvuDYUwfF77+qHyj1ETdHlRTFWq++n3n1NWozoSClpe",
-	"c4pGrRcK/WyfXX5EQVwxxQSHtIvTX42PeSGEVlrSIojebkkSTTS7MlreMw8pZKAhDQ6xVR1QFyH5mIwX",
-	"uKdGY0sP+LjYTCu00N1VDHigAdKRpnIKeuTSgYFtkjfuF/J/zs/f2doYZTYNruFiJsSlIjmdEwk0mQ3I",
-	"q7zQc/KSAG5J6RkeGIHPCRSaoLey/5f9P8d4xK64oMmlGSRj/HI3EwnNNtt0x7hfUg2jAuQoZ7zUAZU/",
-	"JC9JyQ1WDfbqopBhqCgkp59HVTohYxNAKo9SOrfKs1NPEqxPxTEsilov9c5nt9/Wedi4ndZN3DSGQG/U",
-	"VcgFvO0VZ9p62OodHpDsctXdFMGmqa51pDyo83uA6ssctI8zrpP9fEA8rG3CqhKrI8FtTrcLqCh8bH4s",
-	"h8NnEMXun5fVf0n9D371Ev/8L/xzAfoagNtaS8XSsOkztQlrVtKaZ0c5DRxXe19gnHAhSty+FJK4yY1S",
-	"qaaPV8+xgD1RRNUKl+LQlKkFsmhNLdla1W4NKW7MWoP7lfYJkpdKE3yJ6BlTBA9luwDpuzyKW37Pd+GE",
-	"5WyuNEhQLKDlX1M5ZZxoQRIplCJGQdtTOyTJgDoXuYvPgNpq6BfaHv0ROEhTGftY7sdEPo3JYDDYscXL",
-	"OVPKzuTJwIvnvZmI7vCHxP5SpWiM4nukSF0Q3BtLrBRqxwcBGrnsiTog4ydjU5jBiX2a2FR2Z6xrKjn+",
-	"ewtOWWBZh4gQu75XIFfnQVcfZXt4j3OJak+ZsuXKn9bywGrXqwamD1M9Ju32aeNbA7GwPFvaWEqm5yYd",
-	"6ZKiQCUENMYhJ4fvTpDvyDgXfGQ1tT1Ua/4H95UtDrNfmaovQ0Tj2duh64VgBsYe0mZ8IrpTvjIFSPYs",
-	"G5ZGU7uEhGbZgJyjtlIFJFXXCFeohPIpSz2rCjGGf9o5+Mh/FMTuRxPjq0xoArYmcFqrDdMLhOnBR/6R",
-	"P3lyWOoZcO32kgdPnpAxfiUk+4f55oD81UBDLNCXMK8g/sh3ySGxWaMaZTTRCltFMK0Inlt1P18zPTPf",
-	"SZGBefPc639h3nxcKkixbgZhfJeV6sjkqHDkHVJ78cqNaFzoj5yQUoFUMX6q56bVrMhyZsjx/9+1vsJu",
-	"JWC7J8dj8lhIHKL59eR4vIPFX7gEHLg1wiGqqIUBXA3M050BDlS1wqCcmH0kwrRdFG33+7DoMEd8JZvO",
-	"7KqxrAcHsWsfkPe2xtqH1wJryOkCGfIrWjV8m+XgKHoKE5CA54WfPLHck4qkzIGbviOGO1JCNRlj8aAo",
-	"gNOCDbDxwNjitPX9nObZ2KJXAk9BVu+mIlHjmFxXILfZyK7klZRCqidPzIr70q3k8bivE8IY0frkyTnL",
-	"QWmaF/5Qz549+wsC/v78aECePMEyOvy5VHXPm4JOGa+WY6LDBLiyPTdMVnrCQKLpPjlvGkDgB9QXZZ5T",
-	"OUd18O5kd2KO9rv8qYnJ+JRxQL5oGHVQp0IPotedRw/fnaBnBFK50GqwPxgao2gRHR1Ez8xXJlE0Mxpq",
-	"jxZs9xJsADUNFWWfWm1tuctkT62AkbHSNIMxyRAtKF6KlNwI2KSqILMOECaD7e/XDfOaw/6udwFNElCK",
-	"SLhicG2AtAlbJvhJaqq1lLbH212ZUd1v6UO3bjWbB9bCMALmc4Khoil34xj9IiVT87GzsN5uOAhzu5vM",
-	"stjs00KXjqfD4ZIOHd3OHHepZaobAtyuWrPb7wPxTx5bzDUV+jveFljfkmoceO1EfAFAApshrSJ6pCpd",
-	"r6oqs4MPTqD03Jb4CbUJr57bVhmonCToUnJITbsDo3QSyrnQ5AKIMn0QzGmwLhfajgwOq/XGy19FOt+I",
-	"pKtJZieqerz4DWJuOuy0fy9zpyHyIw45XNuWI7ZS3TYbUY4TtsAIdvrKOXF+eZf+N3GjuPa+2NqSG8sO",
-	"GdgsU5t2p3AlLhvaLaiQ0EqbR/Zs96OALD8PcSBOlG4BFXak9VBRpkxvrsCRoEa9IQ0hmxi3EIfCuO+H",
-	"4f5Ojyau23wEtHFIZ/p9E5b2mVr6Oktv83LdvGHjN9GFjYIdmZbml8ODaXGroVYwpuvLt8aTtr/W1zVH",
-	"Nds8dHltV5VZ7o1RnYHCY01SbUN7/T8jTC07ZuSJZGLqSa/5zoluk4h2stuVtyP7yFqi5h8V2aBlWXiw",
-	"5nz2prLTdFLovOod1Pz2+HtlhwRTYx5gqCO75SKkjV4u5gQtxnb8oqSif8U/7gufgfa+VMfrl5rBY/P9",
-	"kasoWm3Njt3m290hsSMRSqpypg4wcVgCfgTds94tk7bP5bELvjsG3vJqrCDwm7kkVZdZ5HjXDqK7ciu/",
-	"lXubzCifwoC8zZlGCy8KWzNeHeq0fjFml/UMmCQO3EA49t7saTZU2b4f7HVzWMsL/p2xwikUGU2WSoMR",
-	"7cVDl30e3iGf+8kRSG1Xt4VDoySn8rLy1SuqLxzjDVif1oljFX1FD6K9lC0GtgaymCghtVXexoxtJZpx",
-	"CzbneG1+zUpXfUa8pnz9bJf8K/wD77m1nIR1HPEV+ifYwHbj9xwZN3zr5Hidd35XvnFDwq/vG3vsdE/+",
-	"jDdBk01i0mkmtdMrFRunfc46bQuAJ3JeaJthlqC0kUm7ijozVO12vNjpywJ5BLsnC7jQyuCBk0E+QwZZ",
-	"hG7HLTzTQho76ONzLZW4dzHfrbYLd1m698Xr6Xmz2JZ/tUO1mXLZXPG1VV6f13aSQl4IJN+AvOXEFo/F",
-	"hHfatyArS+tFpIaD3UYh99ul4EPo+SnguMcNhZMz2z/FpH9M1/W2g/iRd3je1tx8mzw/fCCet05vipsF",
-	"JbeoMgLwe5Q6OxIRsuKhlgSitsekrnfBwNpC+aV17cQ6sWibqb5GQNoAbqSGC9dcrFSglpii3mh1CUQP",
-	"xawmWGn5FNsIXhtEObPdpP6XG+3NQlv/bpNeTXnW7Q51O3XXF93+Syu7rfPPaUDPPFK2q4ttbrIyHPLK",
-	"cHtDoWP3zNbCoNB7TWuLu2dY/Y4Zmwy20M3lEuYvDZuPv0eVDlSbfW+FUop6jU6xfCXLbIGiuThlYMqt",
-	"ikykUHWSDCKJTltrq8MZ/6jJ319++uPLwZPgUZPFYEbpuSlfQCCjf0ea25ZrrxVKQK7tr/cU16W18FVC",
-	"XH1zi8jtSJSmIMlrzFrvqYy9qvxxX4RmQb0n5e13PHngyMzBda/+4WGaYtuyCoNdcnr6+J8+Djs0NZLW",
-	"xbA+g0I3w5ybMclT/Oj2+QD3FQc98dO3xZHDB+DIh4iZHkIeQvGSazK8NFYKC8yXepN2jfioZpqlVW9O",
-	"jaa2QN/rgey6ESpiuje5b1XvFXx41k3m4au2+vrtfvpKcZuFJTbo9068NcArLI2tENBjlfqCOE9WH1xq",
-	"zmsIthS4LVHkmwZn9f2LvaqzcjG85oEXc/T7696CNDGHDStdqoXzT7nQbovEk6amU3EoSvvXU6lbZY7T",
-	"BW22iepap3LFgtFXv/Lv4o/l1GlI/UgtKQK5mwhvXkZrD0RjreBV6P6Ej7xuuGOR970ZpTrVaiNQBN1c",
-	"+un353Ha+yOvHX1XWr1GNGCxMQ4lr92GzTdUrbB//9UK244F3HULwjOvfVULYV3BslQCX0tbuEdvz9f/",
-	"VCG7wUft0Wxbx1TW2pyQWPAZN7IGadUemi2pUzG7fSnxn7WHQ4wP13T9HdvjZ2Pyst1PeycmVUPgcLGK",
-	"BefYX8u9Eq7VYDuUb2ES1VwLOXcn2i8YivoU4wCpcaSwCURMUjNrNr8Hjy9oLo7mSQbVnuSv9k4jcpia",
-	"0wHmQA1TGv+v0TBfDKS71DxM0wVi3uXMxWKrrc1axHfasfuvh0sqHtJVrPETuqI3k0DTOSkkKFd5vd3g",
-	"e+nkabqlkxCJkCnRYban3Ma2rmHUrTTW3hf7yRF1xVGSXFxBgDnvYK6CV9m3G/3f/qboNc+tIFT4Op6G",
-	"o0Yya645wAqjbdAR5yCUqAU7ML8V4fQ6wcdx8/CdNN+3Y0S02qrdxx1vgNQXrBUWpI8uLC9oontpUmdV",
-	"TuxzX48cqyr1Fq1FdWfFeo3jU9Z0a1w4dZKiyauaoJgg5lr42ybdzj7da0Aib4ZPvf2671wSW8tNtb6Y",
-	"cKBym6dlbEcCp8sNI16LMkvNOcyyKCQoBSlhE8uaggPBi+0g3YgpNbirT1YHulWTSBfrnpZcETXnyUwK",
-	"LkqVzcljiie0lSYvhkTt2JPstmhQEUmviQRlKubJqf2nKUmwCg8j3FSQpvqAKE11sOTqHJTuy/1+M4Ky",
-	"MjTFmz23x5OYy7Qotv1H7SGj7VXll9z2RGuPXDWpcYwq+JI8WQ7L1N/re00ovw7nC02aJDZdHWLD2YYL",
-	"8Sy0cJLlnOotZawkKJFh9wfcNQPpoWrh0Gp1TeKGhxqOMoZrcZ0iqmwU+kDKdh0ZtxoE95xqeOcm/4oC",
-	"YpewRfGwA5KccjYBpVsHGrQ7MLGtc/qOeJaBXPsJ9BovSpbZTiwe4d3DbbrvfcE13SyTl3fV+cNQMU/b",
-	"W3a1PP1Ost96iyV5EcW2Y05sLqUbNI1sQt1+7tP/q9ggnOqviLmlnaA611qP20clxfSKWqszpmFzp/rf",
-	"5TxbVSJnrinv1z0yYljhfoqKlOOyikvtZ7+gKJTtN2i5n2R/08f5gXP9Z/Wc95vqVxZ3iwivlcI/ScFP",
-	"qELn22Gb4b2zzUPU5tw/y4Yqc5BLl9fldHn6iyvqXaMip2aSr1DzYkCrelV16y0b5djnUoUXf//chr6M",
-	"crZqC35Mj47a1BnB1bZrWUJFJv9KWmGLdDptCWSP9DX3c/Vx7Hl9edZ94cLN0IMNt8LtBMc2Jn5UNZiM",
-	"m56VdVv5nmjZvtAfLb8PN7aUkAiesIwZxJBfxUU4Hj53w691cKI2+HVT/M0bxDQ+wx1Pov+u3PXmormv",
-	"67BX5N5WRsAORx7XzUexaM8/Elb3VkVoWhy90p1srHGw6kppUdSFn9gprUrIPh8+N4dgmP6epFRTrFgq",
-	"SjnFPOxEuxaG9YKnEnVVAZKJtCsi1gD3qaJ7tf1nYqJ308oBsEhbH9Hxg3rj9gYa26C5jUDTt9nD3/ZN",
-	"qX/lwQMb0wcyIEd2y4A2pW+oTGNiW1ijD2yNyEbc8WCnHx6A+Haib4f6DxFi9c9+H0GWbUjQ6KFulHU7",
-	"G/DF/mN27HJzQejy3ONr98ym6s1i62tvjdnVbzHzX6FjS+bc0zCOGFujasfalwrkqN/kh0pvHPpuXdVC",
-	"HVRbL2tBWOwe1P0b6oaTw+VDi3hdujmy4V02t/ILQobGKhavFX7OpDQb8Nf2JBMHSLGY0LNIPebFY4rt",
-	"m5fWncUPbF4qZfF1zEv/7Nsq7rNJZ0N9LRrBEbIqkahudNhMB5UqpG2+Zqp6hXP8Xt0b+zYXpzww77rb",
-	"woNucalAboF9ju0lLTYDbNtJWGYylRzXM5CbMI53i4thiOr+lg+fkHz20hPLKqXMooNo72rfENaNF2rC",
-	"aVM+9pii422MVvGj1+Peae066dPt8fDOwWCutK3zRwZUHM/Z1xkriL2t1NzFgV2865r5pzvNRC3Ab+LQ",
-	"woMtjN3r5qvAeyYmj/2zfgiqu6za9UD0SwawzktIDFl+GD7bWew8rEJomM0VXt9lwh0xNf/i1YTa3NtS",
-	"3ZXyfKfdriM0kqmiZ6q6cgPS2D+GYNCnJdhymdaJhcc/DJ/GJDBTlZAPEQ/hIbLkzSEm2lQUYZV8fUDK",
-	"Dt/Ghztg0x34Vd3Ozg3m9U35vurNY8rQTLBmmccHYPjCn6Z5GW+C+p8BAA==",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

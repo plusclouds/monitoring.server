@@ -135,3 +135,68 @@ func (c *Condition) validate(field string) error {
 	}
 	return nil
 }
+
+// Levels of a rule, in increasing order of severity.
+const (
+	LevelNone     = ""
+	LevelWarning  = "warning"
+	LevelCritical = "critical"
+)
+
+// Rank orders levels: none < warning < critical.
+func Rank(level string) int {
+	switch level {
+	case LevelWarning:
+		return 1
+	case LevelCritical:
+		return 2
+	}
+	return 0
+}
+
+// Level is the level value reaches, given the level the rule is at now.
+// A level that is active stays active until the value crosses back by the
+// hysteresis margin (alert above 90, clear below 85), so values hovering at
+// a threshold do not toggle. NaN keeps the current level: a metric that was
+// not collected says nothing.
+func (r Rule) Level(value float64, current string) string {
+	if math.IsNaN(value) {
+		return current
+	}
+	if r.Critical != nil && r.Critical.holds(value, Rank(current) >= Rank(LevelCritical), r.Hysteresis) {
+		return LevelCritical
+	}
+	if r.Warning != nil && r.Warning.holds(value, Rank(current) >= Rank(LevelWarning), r.Hysteresis) {
+		return LevelWarning
+	}
+	// A critical-only rule whose critical level clears through hysteresis
+	// drops to none; a rule with both levels may drop to warning above.
+	return LevelNone
+}
+
+// holds reports whether the condition is met. When active, the condition
+// is relaxed by h: it must be crossed back by h to stop holding.
+func (c *Condition) holds(v float64, active bool, h float64) bool {
+	if !active {
+		h = 0
+	}
+	switch c.Op {
+	case OpGT:
+		return v > c.Value-h
+	case OpGE:
+		return v >= c.Value-h
+	case OpLT:
+		return v < c.Value+h
+	case OpLE:
+		return v <= c.Value+h
+	case OpEQ:
+		return v == c.Value
+	case OpNE:
+		return v != c.Value
+	case OpBetween:
+		return v >= c.Value-h && v <= *c.ValueMax+h
+	case OpOutside:
+		return v < c.Value+h || v > *c.ValueMax-h
+	}
+	return false // unknown operators never fire; Validate rejects them on save
+}

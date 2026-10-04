@@ -18,6 +18,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/credential"
 	"github.com/plusclouds/monitoring.server/internal/errs"
+	"github.com/plusclouds/monitoring.server/internal/incident"
 	"github.com/plusclouds/monitoring.server/internal/threshold"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
@@ -290,6 +291,12 @@ func UpdateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	if err := setCredentials(ctx, tx, cur.TenantID, id, next.Credentials); err != nil {
 		return Check{}, err
 	}
+	if cur.Enabled && !next.Enabled {
+		// A disabled check never recovers: end its incident now (F05).
+		if err := resolveDisabled(ctx, tx, id); err != nil {
+			return Check{}, err
+		}
+	}
 	out, err := GetCheck(ctx, tx, id)
 	if err != nil {
 		return Check{}, err
@@ -306,10 +313,29 @@ func DeleteCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	if err := writable(cur.ManagedBy); err != nil {
 		return err
 	}
+	if err := incident.ResolveForChecks(ctx, tx, `SELECT $1::uuid`, id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(ctx, `DELETE FROM checks WHERE id = $1`, id); err != nil {
 		return err
 	}
 	return audit.Write(ctx, tx, actor.Event(cur.TenantID, "check.delete", "check", id.String(), cur.snapshot(), nil))
+}
+
+func resolveDisabled(ctx context.Context, tx pgx.Tx, check uuid.UUID) error {
+	var id uuid.UUID
+	err := tx.QueryRow(ctx, `SELECT id FROM incidents WHERE check_id = $1 AND status <> 'resolved'`, check).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, _, err := incident.Resolve(ctx, tx, id, "check-disabled", nil); err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `DELETE FROM check_state WHERE check_id = $1`, check)
+	return err
 }
 
 func setCredentials(ctx context.Context, tx pgx.Tx, tenant, check uuid.UUID, creds map[string]uuid.UUID) error {
