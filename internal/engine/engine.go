@@ -271,7 +271,8 @@ func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uui
 }
 
 // sweep marks checks UNKNOWN when no result arrived for three intervals:
-// a stuck runner or a dead probe must not leave a stale OK (F05).
+// a stuck runner or a dead probe must not leave a stale OK (F05). Checks of
+// suspended tenants do not run on purpose; their state stays as it was.
 func (e *Engine) sweep(ctx context.Context) {
 	t := time.NewTicker(e.o.SweepEvery)
 	defer t.Stop()
@@ -287,8 +288,8 @@ func (e *Engine) sweep(ctx context.Context) {
 			       machine = jsonb_set(s.machine, '{status}', '"UNKNOWN"'),
 			       last_output = 'no result since ' || to_char(s.last_result_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
 			       version = s.version + 1, updated_at = now()
-			  FROM checks c
-			 WHERE c.id = s.check_id AND c.enabled AND s.status <> 'UNKNOWN'
+			  FROM checks c JOIN tenants t ON t.id = c.tenant_id
+			 WHERE c.id = s.check_id AND c.enabled AND s.status <> 'UNKNOWN' AND t.status = 'active'
 			   AND s.last_result_at < now() - make_interval(secs => 3 * c.interval_seconds)`)
 		if err != nil {
 			if ctx.Err() == nil {

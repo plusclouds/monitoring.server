@@ -41,7 +41,11 @@ const (
 	StatusActive    = "active"
 	StatusSuspended = "suspended"
 	StatusDeleted   = "deleted"
+	StatusPurged    = "purged" // data removed after the purge grace; a tombstone for the audit log
 )
+
+// Gone reports whether the tenant was deleted or purged.
+func (t Tenant) Gone() bool { return t.Status == StatusDeleted || t.Status == StatusPurged }
 
 type Tenant struct {
 	ID             uuid.UUID

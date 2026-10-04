@@ -30,6 +30,10 @@ type Match struct {
 	SiteIDs     []uuid.UUID       `json:"site_ids,omitempty"`
 	Tags        map[string]string `json:"tags,omitempty"`
 	EventTypes  []string          `json:"event_types,omitempty"`
+	// Per-alarm routing (v0.3.1): a customer points one check or one device
+	// at its own webhook.
+	CheckIDs  []uuid.UUID `json:"check_ids,omitempty"`
+	DeviceIDs []uuid.UUID `json:"device_ids,omitempty"`
 }
 
 // Route sends matching events to an endpoint. Routes are evaluated by
@@ -78,6 +82,9 @@ func (in *RouteInput) validate(ctx context.Context, tx pgx.Tx) error {
 		if !slices.Contains(knownEvents, t) {
 			return errs.Invalidf("match.event_types", "%q is not one of %v", t, knownEvents)
 		}
+	}
+	if len(in.Match.CheckIDs) > 100 || len(in.Match.DeviceIDs) > 100 {
+		return errs.Invalidf("match", "at most 100 check_ids and 100 device_ids")
 	}
 	if len(in.Labels) > 20 {
 		return errs.Invalidf("labels", "at most 20 labels")
@@ -239,6 +246,12 @@ func (r Route) Matches(e *incident.Envelope, severity string) bool {
 		return false
 	}
 	if len(m.SiteIDs) > 0 && (d == nil || d.SiteID == nil || !slices.Contains(m.SiteIDs, *d.SiteID)) {
+		return false
+	}
+	if len(m.DeviceIDs) > 0 && (d == nil || !slices.Contains(m.DeviceIDs, d.ID)) {
+		return false
+	}
+	if c := e.Data.Check; len(m.CheckIDs) > 0 && (c == nil || !slices.Contains(m.CheckIDs, c.ID)) {
 		return false
 	}
 	for k, v := range m.Tags {

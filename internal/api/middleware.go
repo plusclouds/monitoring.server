@@ -201,7 +201,7 @@ func (s *Server) resolve(ctx context.Context, r *http.Request) (*Principal, erro
 
 	if !p.Platform {
 		t, err := tenancy.ByID(ctx, s.db, *k.TenantID)
-		if err != nil || t.Status == tenancy.StatusDeleted {
+		if err != nil || t.Gone() {
 			return nil, s.failAuth(ctx, "tenant-deleted", prefix)
 		}
 		p.Tenant = &t
@@ -243,7 +243,7 @@ func (s *Server) resolvePlatformTenant(ctx context.Context, r *http.Request, p *
 	if err != nil {
 		return err
 	}
-	if t.Status == tenancy.StatusDeleted {
+	if t.Gone() {
 		return errNotFound
 	}
 	p.Tenant = &t

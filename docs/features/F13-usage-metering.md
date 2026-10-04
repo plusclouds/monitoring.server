@@ -4,7 +4,7 @@
 
 ## Summary
 
-Customers are billed per check on each device: a device with a ping check and an HTTP check is two billable units. The engine measures how long each check was active and exposes that as usage records. PlusClouds turns usage into prices and invoices; the engine never knows prices.
+Customers are billed for checks only. Each check counts with the **weight** of its plugin type: a device with a ping check (weight 1) and an HTTP check (weight 2) is 3 weighted units per hour. The engine measures how long each check was active and returns usage per device as check-hours times weights. PlusClouds turns weighted units into prices and invoices; the engine never knows prices.
 
 Usage is per tenant (a PlusClouds account). Users are not billed; the audit log still shows who created each check.
 
@@ -12,21 +12,18 @@ Usage is per tenant (a PlusClouds account). Users are not billed; the audit log 
 
 A **check-hour** is one check, enabled on a device, for one hour (or part of it).
 
-- Metered per check, with the device, plugin type and billing class attached, so an invoice can list "sw-core-1: icmp, snmp.system, snmp.interfaces".
-- The price per check-hour depends on the plugin's **billing class**, not on each plugin, so adding a plugin never needs a price change in PlusClouds.
-- The interval is recorded but does not change the unit. If faster intervals should cost more, PlusClouds prices by the recorded interval band (see open questions).
+- Metered per check, with the device and plugin type attached, so an invoice can list "sw-core-1: icmp, snmp.system, snmp.interfaces".
+- The interval is recorded but does not change the unit.
 
-### Billing classes
+### Weights (decided 2026-10-04)
 
-Declared in the plugin manifest ([F03](F03-plugin-sdk.md)) as `BillingClass`:
+Only checks are billed, and each counts by its plugin's weight. There are no tiers or classes.
 
-| Class | Plugins (MVP) | Why |
-| --- | --- | --- |
-| `basic` | `icmp`, `tcp`, `udp`, `dns`, `tls`, `whois` | One cheap request per run |
-| `standard` | `http`, `snmp.system`, `snmp.get`, `snmp.ups`, `snmp.pdu`, `snmp.sensor` | More work per run |
-| `push` | `push.http`, `push.mqtt`, `push.otlp` | Devices that send data themselves: IoT sensors, gateways, LLM applications. Often many per customer and cheap to run, so priced separately from polled checks |
-| `advanced` | `snmp.interfaces`, `redfish.health`, `ipmi.sensors`, `rtsp.stream`, `xapi.pool`, `xapi.rrd` | Collectors, table walks, stream reads, BMC and hypervisor sessions |
-| `free` | `mqtt.connection` | Added automatically as a companion of a push check; not billed separately |
+- Every plugin declares a default weight in its manifest (`BillingWeight`, replacing `BillingClass`), for example `icmp` 1, `http` 2, `snmp.interfaces` 5. Defaults are confirmed with PlusClouds pricing before F13 ships.
+- The platform overrides a plugin's weight with `PUT /v1/usage/weights/{plugin}`; every check of that plugin, in every tenant, uses it. There is no per-check or per-tenant weight.
+- A weight change applies from the hour it is made. The weight in force is recorded on every usage line, so an invoice for a past period is reproduced exactly.
+- Companion checks that exist only to support another check (`mqtt.connection` next to a push check) have weight 0.
+- **Usage returned:** per device, `weighted_units = Σ over its checks (check_hours × weight)`, with the per-check lines (check-hours, weight, units) underneath for the invoice.
 
 ### What counts
 
@@ -39,34 +36,29 @@ Declared in the plugin manifest ([F03](F03-plugin-sdk.md)) as `BillingClass`:
 | `run-now`, device test, credential test | No |
 | Tenant suspended | No check-hours (checks stop); storage is out of scope for this unit |
 | Tenant soft-deleted | No, from the moment of deletion |
-| Auto-registered sensor (F12) or LLM application (F14) | Yes, as `push` check-hours of its push check, from registration; not as a discovered object. Messages dropped over the device limit are not billed |
+| Auto-registered sensor (F12) or LLM application (F14) | Yes, as its push check, from registration. Messages dropped over the device limit are not billed |
 | Checks of the platform tenant (self-monitoring) | No |
 
-### Second unit: the discovered-object-hour
+### Discovered devices are not billed
 
-A collector is one check, but it can watch hundreds of devices. Billing it as one check would make 5 VMs and 500 VMs cost the same, and VMs are what a cloud provider cares about most. So child **devices** created by a collector (VMs, pool hosts) are billed as a second unit, the **discovered-object-hour**, priced low per unit.
-
-- Counts: child devices with `managed_by` set to a collector ([ADR-0014](../adr/0014-device-model-containment-dependencies-sites.md)), from the hour they appear until the hour they are removed. Recorded with the same period mechanism as checks, keyed by device.
-- Does not count: **objects** inside a device (interfaces, fans, PSUs, disks, GPUs, storage repositories). They are parts of a device that is already billed.
-- A check a user adds on a discovered device (a ping or HTTP check on a VM) is billed as a normal check in its class, on top.
-- A discovered device that the user promotes to a managed device (clears `managed_by`) stops being a discovered object and is billed by its checks only.
+Devices a collector creates (VMs, pool hosts) are not billed on their own; only checks are. A collector counts as one check with its plugin's weight, so its weight should reflect how much it watches. A check a user adds on a discovered device (a ping on a VM) is billed like any other check.
 
 ### Example: a cloud provider with 5 hypervisors, iDRAC and 50 VMs
 
-Built-in templates "Dell iDRAC" and "XCP-ng pool" create:
+With example weights `icmp` 1, `redfish.health` 3, `xapi.rrd` 5, `xapi.pool` 5, `http` 2:
 
-| Device | Count | Checks | Billed as |
+| Device | Count | Checks | Weighted units per hour |
 | --- | --- | --- | --- |
-| iDRAC | 5 | `icmp`, `redfish.health` | 5 `basic` + 5 `advanced` check-hours per hour |
-| Hypervisor host | 5 | `icmp`, `xapi.rrd` | 5 `basic` + 5 `advanced` check-hours per hour |
-| Pool | 1 | `xapi.pool` | 1 `advanced` check-hour per hour |
-| VM | 50 | none required; metrics come from `xapi.rrd` | 50 discovered-object-hours per hour |
+| iDRAC | 5 | `icmp`, `redfish.health` | 5 × (1 + 3) = 20 |
+| Hypervisor host | 5 | `icmp`, `xapi.rrd` | 5 × (1 + 5) = 30 |
+| Pool | 1 | `xapi.pool` | 5 |
+| VM | 50 | none; metrics come from `xapi.rrd` | 0 |
 
-Monthly usage (730 hours): 7,300 `basic` and 8,030 `advanced` check-hours, and 36,500 discovered-object-hours. Adding an HTTP check to 10 of the VMs adds 7,300 `standard` check-hours.
+Monthly (730 hours): 40,150 weighted units. Adding an HTTP check to 10 of the VMs adds 10 × 2 × 730 = 14,600.
 
 ### Packages
 
-The engine meters only these raw units. PlusClouds may sell packages on top ("physical server": BMC plus host checks; "per VM") by mapping a package to units, so customers see a simple offer and the invoice stays traceable to the meter.
+The engine meters only weighted check units. PlusClouds may sell packages on top ("physical server", "per VM") by mapping a package to units, so customers see a simple offer and the invoice stays traceable to the meter.
 
 ## Behavior
 
@@ -74,9 +66,9 @@ The engine meters only these raw units. PlusClouds may sell packages on top ("ph
 
 Sampling cannot see a check that exists for ten minutes between two samples, so active time is recorded from events instead:
 
-- `check_billing_periods (id, tenant_id, check_id, device_id, plugin, billing_class, interval_seconds, runs_on, started_at, ended_at)`.
+- `check_billing_periods (id, tenant_id, check_id, device_id, plugin, weight, interval_seconds, runs_on, started_at, ended_at)`.
 - A period **starts** when a check is created enabled, enabled, or its tenant is reactivated. It **ends** when the check is disabled or deleted, its device is deleted, or its tenant is suspended or deleted.
-- A change of a recorded attribute (interval, probe) ends the current period and starts a new one, so each period has one set of attributes.
+- A change of a recorded attribute (interval, probe, the plugin's weight) ends the current period and starts a new one, so each period has one set of attributes.
 - Periods are written in the **same transaction** as the change that causes them, like audit events. A check can never be active without an open period.
 - A consistency job (hourly, in the `maintenance` role) compares enabled checks with open periods and repairs and reports any mismatch as a self-monitoring alert ([F11](F11-self-monitoring.md)).
 
@@ -86,14 +78,14 @@ This works the same whether a check came from the API, a template, a tenant conf
 
 The `maintenance` role closes each UTC day one hour after midnight and writes one row per check per day:
 
-`usage_check_days (tenant_id, day, check_id, device_id, device_name, plugin, billing_class, interval_seconds, runs_on, active_seconds, check_hours, executions)`
+`usage_check_days (tenant_id, day, check_id, device_id, device_name, plugin, weight, interval_seconds, runs_on, active_seconds, check_hours, weighted_units, executions)`
 
-- `check_hours` = active hours, each started hour counted once (a check active 10:15–10:40 is 1 check-hour).
+- `check_hours` = active hours, each started hour counted once (a check active 10:15–10:40 is 1 check-hour). `weighted_units` = `check_hours × weight`.
 - `executions` comes from the runner's counters and is informational only; it is not the billing unit.
 - `device_name` is copied at close so an invoice stays readable after a device is renamed or deleted.
 - A closed day is **never rewritten**. Late corrections are written as separate adjustment rows (`kind: adjustment`, with a reason), so an invoice that was already issued can always be reproduced.
 
-A second table holds totals per tenant, day and billing class for fast invoice summaries.
+A second table holds weighted units per tenant, device and day for fast invoice summaries.
 
 ### Retention
 
@@ -103,10 +95,11 @@ Usage tables are not part of metric retention. They are kept for a platform-leve
 
 | Endpoint | Caller | Returns |
 | --- | --- | --- |
-| `GET /v1/usage/summary?from=&to=&group_by=day,billing_class,plugin` | tenant (any role), platform | Check-hours per group |
-| `GET /v1/usage/checks?from=&to=&device_id=&plugin=` | tenant (any role), platform | Per-check daily lines, cursor-paginated |
-| `GET /v1/usage/tenants?from=&to=` | platform only | Summary per tenant, with tenant external IDs, for billing runs |
-| `GET /v1/usage/current` | tenant, platform | Checks currently active by billing class (running estimate, not billable) |
+| `GET /v1/usage/devices?from=&to=` | tenant (any role), platform | Per device: `weighted_units`, with its checks' lines (plugin, check-hours, weight, units), per day |
+| `GET /v1/usage/tenants?from=&to=` | platform only | Weighted units per tenant, with tenant external IDs, for billing runs |
+| `GET /v1/usage/current` | tenant, platform | Weighted units per hour of the checks active now (running estimate, not billable) |
+| `GET /v1/usage/weights` | any | Weight per plugin |
+| `PUT /v1/usage/weights/{plugin}` | platform only | Set a plugin's weight from the current hour; audited |
 
 - `from` and `to` are whole UTC days. Responses mark each day `closed: true|false`; billing uses closed days only.
 - leo4 runs its billing job by pulling closed days. Pulling the same period twice returns the same data, so a failed job is simply rerun.
@@ -118,8 +111,9 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 ## Acceptance criteria
 
 - A check created at 10:15 and deleted at 10:40 produces 1 check-hour for that day.
-- A device with `icmp` and `http` checks, enabled all day, produces 48 check-hours: 24 `basic` and 24 `standard`.
-- An XCP-ng pool whose collector discovers 50 VMs produces 50 discovered-object-hours per hour; a VM migrated between hosts is not counted twice; its interfaces and disks produce none.
+- A device with `icmp` (weight 1) and `http` (weight 2) checks, enabled all day, produces 48 check-hours and 72 weighted units.
+- An XCP-ng pool whose collector discovers 50 VMs is billed as its collector check only.
+- Changing a plugin's weight at 14:20 bills that day's checks of the plugin with the old weight until 14:00 and the new one from 14:00 on; reading an earlier closed day returns the old weight.
 - Disabling a check stops its check-hours from the next hour; re-enabling starts a new period.
 - Suspending a tenant ends every open period in the same transaction.
 - Rerunning the day close for a closed day changes nothing.
@@ -128,14 +122,15 @@ A server that is not hosted by PlusClouds can only be billed if it reports. A se
 
 ## Open questions
 
-- **Billing class assignments:** confirm the table above with PlusClouds pricing.
+- **What billing needs from the API:** PlusClouds' billing team is confirming how usage reaches billing (pull of closed days as above, or a push).
 - **LLM units** ([F14](F14-llm-monitoring.md)): confirm spans per 1,000, content GB-days and judge evaluations as separate units.
 
 ## Decided
 
-- **Auto-registered devices** (MQTT sensors, LLM applications) are billed through their own push check in the `push` class, never as discovered objects. Discovered-object-hours are only for collector-created devices, which have no check of their own; counting auto-registered devices as both would bill them twice.
+- **Checks only, weighted** (2026-10-04): no tiers or classes and no discovered-object unit. Each plugin has a platform-set weight; usage per device is check-hours × weights.
+- **Auto-registered devices** (MQTT sensors, LLM applications) are billed through their own push check.
 
 - **Unit length:** hourly. A check active for any part of an hour is billed for that hour.
 - **Interval:** no surcharge for short intervals at first. `interval_seconds` is recorded on every line, so interval bands can be priced later without engine changes.
 - **Storage:** included in the check price. Revisit when usage data shows storage per tenant varying widely.
-- **Collectors:** one check each, plus discovered devices as discovered-object-hours (above).
+- **Collectors:** one check each, with their plugin's weight; discovered devices are not billed.

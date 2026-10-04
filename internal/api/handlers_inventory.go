@@ -103,7 +103,7 @@ func (s *Server) ListSites(ctx context.Context, req gen.ListSitesRequestObject) 
 }
 
 func (s *Server) CreateSite(ctx context.Context, req gen.CreateSiteRequestObject) (gen.CreateSiteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (s *Server) CreateSite(ctx context.Context, req gen.CreateSiteRequestObject
 }
 
 func (s *Server) UpsertSite(ctx context.Context, req gen.UpsertSiteRequestObject) (gen.UpsertSiteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s *Server) GetSite(ctx context.Context, req gen.GetSiteRequestObject) (gen
 }
 
 func (s *Server) UpdateSite(ctx context.Context, req gen.UpdateSiteRequestObject) (gen.UpdateSiteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (s *Server) UpdateSite(ctx context.Context, req gen.UpdateSiteRequestObject
 }
 
 func (s *Server) DeleteSite(ctx context.Context, req gen.DeleteSiteRequestObject) (gen.DeleteSiteResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (s *Server) ListDeviceChildren(ctx context.Context, req gen.ListDeviceChild
 }
 
 func (s *Server) CreateDevice(ctx context.Context, req gen.CreateDeviceRequestObject) (gen.CreateDeviceResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +304,7 @@ func (s *Server) CreateDevice(ctx context.Context, req gen.CreateDeviceRequestOb
 }
 
 func (s *Server) UpsertDevice(ctx context.Context, req gen.UpsertDeviceRequestObject) (gen.UpsertDeviceResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func (s *Server) GetDevice(ctx context.Context, req gen.GetDeviceRequestObject) 
 }
 
 func (s *Server) UpdateDevice(ctx context.Context, req gen.UpdateDeviceRequestObject) (gen.UpdateDeviceResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func (s *Server) UpdateDevice(ctx context.Context, req gen.UpdateDeviceRequestOb
 }
 
 func (s *Server) DeleteDevice(ctx context.Context, req gen.DeleteDeviceRequestObject) (gen.DeleteDeviceResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +436,7 @@ func (s *Server) ListDeviceDependents(ctx context.Context, req gen.ListDeviceDep
 }
 
 func (s *Server) AddDeviceDependency(ctx context.Context, req gen.AddDeviceDependencyRequestObject) (gen.AddDeviceDependencyResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -464,7 +464,7 @@ func (s *Server) AddDeviceDependency(ctx context.Context, req gen.AddDeviceDepen
 }
 
 func (s *Server) RemoveDeviceDependency(ctx context.Context, req gen.RemoveDeviceDependencyRequestObject) (gen.RemoveDeviceDependencyResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}

@@ -107,7 +107,7 @@ func (s *Server) patchDevice(ctx context.Context, t *tenancy.Tenant, p *Principa
 }
 
 func (s *Server) PatchDevice(ctx context.Context, req gen.PatchDeviceRequestObject) (gen.PatchDeviceResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *Server) PatchDevice(ctx context.Context, req gen.PatchDeviceRequestObje
 }
 
 func (s *Server) PatchDeviceByExternalID(ctx context.Context, req gen.PatchDeviceByExternalIDRequestObject) (gen.PatchDeviceByExternalIDResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func checkWrite(c inventory.Check) (gen.CheckWrite, error) {
 }
 
 func (s *Server) PatchCheck(ctx context.Context, req gen.PatchCheckRequestObject) (gen.PatchCheckResponseObject, error) {
-	p, t, err := tenantScope(ctx, roleAdmin, true)
+	p, t, err := tenantScope(ctx, roleConfig, true)
 	if err != nil {
 		return nil, err
 	}
@@ -186,4 +186,64 @@ func (s *Server) PatchCheck(ctx context.Context, req gen.PatchCheckRequestObject
 		return nil, err
 	}
 	return gen.PatchCheck200JSONResponse(toAPICheck(c)), nil
+}
+
+// siteWrite is a site's client-writable fields in their write form.
+func siteWrite(x inventory.Site) gen.SiteWrite {
+	w := gen.SiteWrite{Name: x.Name, Country: x.Country, Timezone: x.Timezone, Address: x.Address}
+	if r := x.External; r != nil {
+		w.External = &gen.ExternalRefWrite{Source: r.Source, Type: r.Type, Id: r.ID}
+	}
+	return w
+}
+
+// patchSite locks the site, applies the patch and saves it like a PUT.
+func (s *Server) patchSite(ctx context.Context, t *tenancy.Tenant, p *Principal,
+	find func(pgx.Tx) (inventory.Site, error), patch map[string]any) (gen.Site, error) {
+	var out inventory.Site
+	err := s.tx(ctx, t, func(tx pgx.Tx) error {
+		cur, err := find(tx)
+		if err != nil {
+			return err
+		}
+		if cur, err = inventory.LockSite(ctx, tx, cur.ID); err != nil {
+			return err
+		}
+		w, err := patched(siteWrite(cur), patch)
+		if err != nil {
+			return err
+		}
+		out, err = inventory.UpdateSite(ctx, tx, p.Actor, cur.ID, siteInput(w))
+		return err
+	})
+	return toAPISite(out), err
+}
+
+func (s *Server) PatchSite(ctx context.Context, req gen.PatchSiteRequestObject) (gen.PatchSiteResponseObject, error) {
+	p, t, err := tenantScope(ctx, roleConfig, true)
+	if err != nil {
+		return nil, err
+	}
+	out, err := s.patchSite(ctx, t, p, func(tx pgx.Tx) (inventory.Site, error) {
+		return inventory.GetSite(ctx, tx, req.SiteId)
+	}, patchBody(req.JSONBody, req.ApplicationMergePatchPlusJSONBody))
+	if err != nil {
+		return nil, err
+	}
+	return gen.PatchSite200JSONResponse(out), nil
+}
+
+func (s *Server) PatchSiteByExternalID(ctx context.Context, req gen.PatchSiteByExternalIDRequestObject) (gen.PatchSiteByExternalIDResponseObject, error) {
+	p, t, err := tenantScope(ctx, roleConfig, true)
+	if err != nil {
+		return nil, err
+	}
+	k := s.key(req.Params.Source, req.Params.Type, req.ExternalId)
+	out, err := s.patchSite(ctx, t, p, func(tx pgx.Tx) (inventory.Site, error) {
+		return inventory.SiteByExternal(ctx, tx, k)
+	}, patchBody(req.JSONBody, req.ApplicationMergePatchPlusJSONBody))
+	if err != nil {
+		return nil, err
+	}
+	return gen.PatchSiteByExternalID200JSONResponse(out), nil
 }

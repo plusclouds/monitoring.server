@@ -38,8 +38,8 @@ Users are global (one row per PlusClouds user) and join tenants through `tenant_
 | Role | Can |
 | --- | --- |
 | `read-only` | Read everything in the tenant except secrets; read metrics and incidents; subscribe to events |
-| `operator` | Everything above, plus acknowledge/resolve/comment incidents, create maintenance windows, run checks now, test devices |
-| `admin` | Everything above, plus manage devices, checks, credentials, templates, routes, webhooks, retention, tenant API keys |
+| `operator` | Everything above, plus acknowledge/resolve/comment incidents, create maintenance windows, run checks now, test devices, and manage sites, devices, checks, credentials, templates, routes and webhooks (v0.3.1: PlusClouds customers are at most operators) |
+| `admin` | Everything above, plus tenant API keys, members and the audit log |
 | platform | Provision tenants, users and memberships; act on any tenant as a named user |
 
 ### Resolving the caller
