@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -17,6 +18,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/store"
+	"github.com/plusclouds/monitoring.server/internal/usage"
 )
 
 // dsn resolves one of the database DSNs, requiring it to be set.
@@ -95,7 +97,7 @@ func newMigrate() *cobra.Command {
 
 func newAdmin() *cobra.Command {
 	cmd := &cobra.Command{Use: "admin", Short: "Administrative commands that run outside the API"}
-	cmd.AddCommand(newBootstrap(), newVerifyAudit(), newGenToken(), newRetention())
+	cmd.AddCommand(newBootstrap(), newVerifyAudit(), newGenToken(), newRetention(), newUsageRecompute())
 	return cmd
 }
 
@@ -295,6 +297,52 @@ The platform key can do the same through PUT /v1/metrics/retention-classes/{name
 			}
 		}
 		return nil
+	}
+	return cmd
+}
+
+func newUsageRecompute() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "usage-recompute",
+		Short: "Write a corrected revision of closed usage hours (F13)",
+		Long: `Recomputes every closed hour in [--from, --to) from the recorded periods and weights and
+stores it as a new revision with the reason. Billing sees the higher revision as a correction.
+Closed hours are never rewritten in place.`,
+		Example: "  monitor admin usage-recompute --from 2026-10-04T10:00:00Z --to 2026-10-04T12:00:00Z --reason \"period repair\"",
+		Args:    cobra.NoArgs,
+	}
+	path := configFlag(cmd, defaultConfigPath)
+	from := cmd.Flags().String("from", "", "first hour (RFC 3339, whole UTC hour)")
+	to := cmd.Flags().String("to", "", "end of the last hour, exclusive")
+	reason := cmd.Flags().String("reason", "", "why the hours are corrected (required)")
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		f, err := time.Parse(time.RFC3339, *from)
+		if err != nil {
+			return fmt.Errorf("--from: %w", err)
+		}
+		t, err := time.Parse(time.RFC3339, *to)
+		if err != nil {
+			return fmt.Errorf("--to: %w", err)
+		}
+		c, err := config.Load(*path, nil)
+		if err != nil {
+			return err
+		}
+		db, err := openSystem(cmd.Context(), c)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		hours, err := usage.Recompute(cmd.Context(), db, f, t, *reason)
+		if err != nil {
+			return err
+		}
+		if err := admin.RecordCLI(cmd.Context(), db, "usage.recompute", map[string]any{
+			"from": *from, "to": *to, "reason": *reason, "hours": len(hours)}); err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "%d hours recomputed\n", len(hours))
+		return err
 	}
 	return cmd
 }

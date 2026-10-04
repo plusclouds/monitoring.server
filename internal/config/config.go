@@ -39,6 +39,7 @@ type Config struct {
 	Ingest         Ingest         `yaml:"ingest"`
 	TenantConfig   TenantConfig   `yaml:"tenant_config"`
 	Platform       Platform       `yaml:"platform"`
+	Usage          Usage          `yaml:"usage"`
 	SelfMonitoring SelfMonitoring `yaml:"self_monitoring"`
 }
 
@@ -280,13 +281,20 @@ type TenantConfig struct {
 }
 
 type Platform struct {
-	IdentitySource     string       `yaml:"identity_source"`
-	JIT                JIT          `yaml:"jit"`
-	TenantDefaults     TenantLimits `yaml:"tenant_defaults"`
-	TenantPurgeGrace   Duration     `yaml:"tenant_purge_grace"`
-	AuditRetention     Duration     `yaml:"audit_retention"`
-	UsageRetention     Duration     `yaml:"usage_retention"`
-	UsageDayCloseDelay Duration     `yaml:"usage_day_close_delay"`
+	IdentitySource   string       `yaml:"identity_source"`
+	JIT              JIT          `yaml:"jit"`
+	TenantDefaults   TenantLimits `yaml:"tenant_defaults"`
+	TenantPurgeGrace Duration     `yaml:"tenant_purge_grace"`
+	AuditRetention   Duration     `yaml:"audit_retention"`
+	UsageRetention   Duration     `yaml:"usage_retention"`
+	UsageCloseDelay  Duration     `yaml:"usage_close_delay"`
+}
+
+// Usage configures metering (F13): the billing weight of each plugin type.
+// The maintenance node records changes, effective from the next full hour.
+type Usage struct {
+	Weights       map[string]float64 `yaml:"weights"`
+	DefaultWeight float64            `yaml:"default_weight"`
 }
 
 type JIT struct {
