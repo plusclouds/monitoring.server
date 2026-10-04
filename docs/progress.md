@@ -11,11 +11,11 @@ This page records which milestones are done and what comes next. The milestone d
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, `http` and `icmp` plugins | **Done** | Merged in PR #2; released as `v0.1.0-m1` to `v0.1.3-m1` |
 | M2 — first loop | F02, F04, F05, F06 (single node) | **Done** | Merged in PRs #3 and #4; released as `v0.2.0-m2`, client fixes in `v0.2.1`. Deferred items below |
 | M3 — metrics | F07, Grafana data source and first dashboards | **Done** | Merged in PR #6; released as `v0.3.0-m3`, client decisions in `v0.3.1`. Deferred items below |
-| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Not started | Next milestone. Grouping comes first (decided 2026-10-04) so an outage does not send one notification per host |
+| M3.5 — usage metering | F13: check periods, hourly close, `GET /v1/usage/tenants` for PlusClouds billing (pull only) | Not started | Next. Short milestone before M4 while PlusClouds tests M1–M3. Weighted check-seconds per tenant and closed hour, weights from the config file (agreed 2026-10-04); counting rules await PlusClouds' confirmation |
+| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Not started | After M3.5. Grouping comes first (decided 2026-10-04) so an outage does not send one notification per host |
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
-| Unassigned | F13 usage metering (MVP scope) | Not started | Only checks are billed: weighted check-seconds per tenant and closed hour, weights from the config file, pulled by billing through `GET /v1/usage/tenants` (agreed 2026-10-04). Milestone to be assigned |
 
 ## Done
 
@@ -116,5 +116,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.3.1` and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: alert grouping, repeat notifications and dependency suppression first, then the F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.
-3. F13 (usage metering, pull API for PlusClouds billing): assign a milestone.
+2. M3.5: F13 usage metering and `GET /v1/usage/tenants` for PlusClouds billing.
+3. M4: alert grouping, repeat notifications and dependency suppression first, then the F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.

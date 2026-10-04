@@ -1,6 +1,6 @@
 # F13: Usage metering
 
-**Status:** Draft, shape agreed with PlusClouds billing on 2026-10-04 (counting rules await their confirmation) · **Phase:** MVP (metering and usage API); later (push emitter, usage from customer-run servers) · **Related:** [F01](F01-tenancy-auth-audit.md), [F03](F03-plugin-sdk.md), [F04](F04-scheduler-and-runner.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
+**Status:** Draft, shape agreed with PlusClouds billing on 2026-10-04 (counting rules await their confirmation) · **Phase:** MVP (metering and usage API); phase 3 (usage from customer-run servers) · **Related:** [F01](F01-tenancy-auth-audit.md), [F03](F03-plugin-sdk.md), [F04](F04-scheduler-and-runner.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
 
 ## Summary
 
@@ -133,15 +133,9 @@ This is the contract billing depends on.
 | `GET /v1/usage/current` | tenant, platform | Weighted checks billable right now (a running estimate, not billable) |
 | `GET /v1/usage/weights` | any | Weight in force per plugin, and the default weight |
 
-## Later: push emitter
+## No push emitter
 
-If billing ever wants push, the same items can be sent per closed hour as a CloudEvents `monitoring.usage.hourly` event to one platform-level URL in the server config:
-
-- signed with Standard Webhooks;
-- the event ID derived from the installation, hour and revision;
-- delivered in order, at least once, with a replay by range.
-
-The emitter waits until billing asks for it; the pull API does not depend on it.
+PlusClouds billing confirmed pull (2026-10-04): it reads `GET /v1/usage/tenants` every hour and re-reads earlier hours to catch up. No push emitter is built.
 
 ## Customer-run servers (phase 3)
 
@@ -166,7 +160,7 @@ A server that PlusClouds does not host can be billed only if it reports. One con
 - **Checks only, weighted by plugin** (2026-10-04). There are no tiers, classes or discovered-object units. Weights come from the server config file. Billing receives weighted check-seconds plus the breakdown and never needs the weights.
 - **Device seconds** are reported for information and are not billed.
 - **Hourly, time-weighted seconds.**
-- **Pull first.** The usage API is the contract; the push emitter is later and optional.
+- **Pull only** (confirmed by PlusClouds billing): the usage API is the contract; no push emitter.
 - **Interval:** there is no surcharge for short intervals; `interval_seconds` is recorded per period.
 - **Storage** is included in the check price.
 

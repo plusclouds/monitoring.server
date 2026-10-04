@@ -58,6 +58,7 @@ Current status of each milestone: [implementation progress](../progress.md).
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, HTTP and ping plugins | Create a tenant and key; `GET /v1/plugins` lists two plugins |
 | M2 — first loop | F02, F04, F05, F06 (single node) | Add a device with a ping and HTTP check; stop the target; a signed `monitoring.incident.opened` webhook arrives in n8n |
 | M3 — metrics | F07, Grafana data source and first dashboards | Interface and latency graphs in Grafana; retention changed via API drops partitions |
+| M3.5 — usage metering | F13: check periods, hourly close, usage API pulled by PlusClouds billing | `GET /v1/usage/tenants` returns weighted check-seconds per account for each closed hour |
 | M4 — alert noise and targets | F06 grouping (`group_by`, `group_wait`) and `repeat_interval`, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | A switch failure sends one grouped notification and suppresses the incidents behind it; our datacenter's switches, servers, cameras and XCP-ng pool are monitored |
 | M5 — push and probes | F08, F09 (basic), F11 | MQTT sensors report; one remote site runs a probe; the dead man's switch fires when the core stops |
 | M6 — FixLean shadow | F12 steps 0–2 | Engine in shadow mode against the current collector's broker produces the same threshold events |
