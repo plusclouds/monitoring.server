@@ -6,6 +6,10 @@
 #   docker compose -f deploy/docker-compose.yml run --rm monitor admin bootstrap   # prints the platform key once
 #   open http://127.0.0.1:8443/docs
 #
+# Grafana with the starter dashboards (F07), on http://127.0.0.1:3000
+# (admin / admin):
+#   docker compose -f deploy/docker-compose.yml --profile grafana up -d --wait
+#
 # The database is on a private network only and is not published, so it
 # never collides with other PostgreSQL servers on the host. To run the engine
 # from source on the host instead, publish it on 127.0.0.1:55432 with the
@@ -54,6 +58,32 @@ services:
       - "127.0.0.1:8443:8443"
     restart: unless-stopped
     stop_grace_period: 40s   # node.shutdown_grace is 30s
+
+  grafana:
+    image: grafana/grafana-oss:13.0.2
+    profiles: [grafana]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Development only: the password from deploy/postgres/init-roles.sql.
+      MONITOR_GRAFANA_DB_HOST: postgres:5432
+      MONITOR_GRAFANA_DB_SSLMODE: disable
+      MONITOR_GRAFANA_PASSWORD: change-me-grafana
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards/monitor:ro
+    networks: [backend, frontend]
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
 
 networks:
   backend:

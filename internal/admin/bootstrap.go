@@ -14,6 +14,8 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/auth"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/errs"
+	"github.com/plusclouds/monitoring.server/internal/metrics"
 )
 
 // ErrAlreadyBootstrapped is returned when bootstrap ran before.
@@ -166,4 +168,43 @@ func RecordCLI(ctx context.Context, db *pgxpool.Pool, action string, after any) 
 			Action: action, ObjectType: "installation", After: after,
 		})
 	})
+}
+
+// SetRetention changes a metrics retention class from the command line
+// (F07): standalone installs have no platform key for the API. Only the
+// levels in set change; a value of 0 clears a level.
+func SetRetention(ctx context.Context, db *pgxpool.Pool, class string, set map[string]int) (metrics.Class, error) {
+	host, _ := os.Hostname()
+	var out metrics.Class
+	err := pgx.BeginFunc(ctx, db, func(tx pgx.Tx) error {
+		var platform uuid.UUID
+		if err := tx.QueryRow(ctx, `SELECT id FROM tenants WHERE is_platform`).Scan(&platform); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return errors.New("not bootstrapped: run `monitor admin bootstrap` first")
+			}
+			return err
+		}
+		cur, err := metrics.GetClass(ctx, tx, class)
+		if err != nil && !errors.Is(err, errs.ErrNotFound) {
+			return err
+		}
+		keep := cur.Keep
+		for level, days := range set {
+			var v *int
+			if days > 0 {
+				v = &days
+			}
+			switch level {
+			case metrics.LevelRaw:
+				keep.Raw = v
+			case metrics.Level5m:
+				keep.FiveMinute = v
+			case metrics.Level1h:
+				keep.Hourly = v
+			}
+		}
+		out, _, err = metrics.PutClass(ctx, tx, audit.Actor{Kind: audit.ActorAdminCLI, Detail: host}, platform, class, keep)
+		return err
+	})
+	return out, err
 }

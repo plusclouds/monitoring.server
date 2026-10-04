@@ -31,6 +31,9 @@ type Options struct {
 	// SweepEvery is how often checks without recent results are marked
 	// UNKNOWN (F05: no result for 3 intervals).
 	SweepEvery time.Duration
+	// Metrics receives every result for the metrics store (F07); nil
+	// discards metrics. It must not block.
+	Metrics interface{ Add(runner.Result) }
 }
 
 // Engine consumes results and maintains state and incidents.
@@ -106,6 +109,9 @@ func (e *Engine) Run(ctx context.Context) error {
 }
 
 func (e *Engine) handle(ctx context.Context, r runner.Result) {
+	if e.o.Metrics != nil {
+		e.o.Metrics.Add(r) // late results too: they are metrics only
+	}
 	start := time.Now()
 	outcome, err := e.Apply(ctx, r)
 	if err != nil {

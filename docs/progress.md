@@ -10,7 +10,7 @@ This page records which milestones are done and what comes next. The milestone d
 | --- | --- | --- | --- |
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, `http` and `icmp` plugins | **Done** | Merged in PR #2; released as `v0.1.0-m1` to `v0.1.3-m1` |
 | M2 — first loop | F02, F04, F05, F06 (single node) | **Done** | Merged in PRs #3 and #4; released as `v0.2.0-m2`, client fixes in `v0.2.1`. Deferred items below |
-| M3 — metrics | F07, Grafana data source and first dashboards | Not started | Next milestone |
+| M3 — metrics | F07, Grafana data source and first dashboards | **Done (not merged yet)** | On a feature branch; deferred items below |
 | M4 — targets | F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | Not started | |
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
@@ -55,6 +55,33 @@ This page records which milestones are done and what comes next. The milestone d
 
 Migration `00007` adds `check_state.availability_since`.
 
+### M3 — metrics (F07)
+
+| Area | What exists |
+| --- | --- |
+| Storage | Raw samples are stored grouped: one row per result and retention class, with a `float8[]` of values (NaN means not collected). Rollups are narrow: one row per series and bucket, with `min`, `max`, `sum` and `count`. Both are list-partitioned by retention class, then range-partitioned: raw and 5-minute rollups by day, hourly rollups by month. Migration `00008` |
+| Write path | The engine hands every result, late results included, to a non-blocking writer. The writer batches rows and writes them with `COPY` (5,000 rows or 1 s). Group and series IDs are cached. A row with no partition creates the partition and is retried. When the database fails, rows are kept for up to `max_buffered`; older ones are dropped and counted in `metrics_dropped_total` |
+| Layouts and classes | A plugin layout change (name, unit or kind) starts a new group with a new `layout_version`, so old rows are never reinterpreted. Each metric goes to its plugin's retention class if the tenant's `metric_classes` allows it; otherwise to `standard`; otherwise to the tenant's first class |
+| Maintenance role | One active node (advisory lock). Jobs:<br>• create partitions ahead<br>• 5-minute rollups every minute<br>• hourly rollups every 10 minutes, from the 5-minute rollups<br>• retention every hour<br>Rollups use watermarks and resume after downtime in 6-hour chunks. Each run recomputes one bucket before the watermark. Retention drops whole partitions through `SECURITY DEFINER` functions. Self-metrics: errors, partitions created and dropped, rollup lag |
+| Retention | Classes `high-frequency`, `standard` and `capacity`, with no built-in durations. Set through `PUT /v1/metrics/retention-classes/{name}` (platform key) or `monitor admin retention` (standalone installs). New classes, such as `standard-1y`, are created the same way |
+| Query API | `GET /v1/metrics/series` and `GET /v1/metrics/query`. The query picks raw, 5-minute or hourly data from `step`, and moves to a coarser level when retention no longer covers `from`. Recent buckets the rollups have not reached are filled from the finer level. Series are merged across layout changes. At most 10,000 points per series and 200 series per request |
+| Grafana | Views `metrics_raw`, `metrics_5m`, `metrics_1h`, `metric_series_v`, `devices_v`, `check_states_v` and `incidents_v`, readable by the optional read-only role `monitor_grafana` (platform operator only; it sees every tenant). `deploy/grafana` holds the provisioning and two dashboards, *Device overview* and *Website checks*. The development compose has a `grafana` profile |
+
+Verified with integration tests (`TestMetricsStoreAndQuery`, `TestRetention`, and `TestM2Demo`, which now also checks the stored metrics) and by hand in the Docker stack: live HTTP check, API query, 5-minute rollup, every dashboard query through Grafana 13.0.2, and the `admin retention` command.
+
+### Deferred from M3
+
+| Item | Spec | Why it waits |
+| --- | --- | --- |
+| TimescaleDB and ClickHouse backends | ADR-0003 | `metrics.backend: timescale` is refused at start; `auto` uses plain PostgreSQL |
+| Load test: 7,000 values/s for 24 h, disk growth against the estimate | F07, ADR-0003 | Planned for Gate 1, along with the 10,000-device run |
+| Recomputing rollups for data more than one bucket late | ADR-0003 | Only probe buffers (M5) produce such data |
+| Removing metric groups of deleted checks | F07 | Their samples expire with retention; the group and series rows stay |
+| Per-check choice of retention class | F07 | Classes come from the plugin and the tenant's allowed classes |
+| Tenant-facing Grafana | F07 | Customers graph through the API; the Grafana views show every tenant |
+| Dashboards for interfaces, server hardware and XCP-ng | F07 | Need the M4 plugins |
+| Removing retention classes | F07 | Not needed yet; a class with no policy keeps its data |
+
 ### Deferred from M2
 
 | Item | Spec | Why it waits |
@@ -76,5 +103,6 @@ Migration `00007` adds `check_state.availability_since`.
 
 ## Next steps
 
-1. M3: F07 metrics store (grouped raw samples, rollups, retention by partition), Grafana views and first dashboards. The engine already has each result's metrics in hand.
-2. Assign F13 (usage metering) to a milestone; check-hours can be counted from runner results.
+1. Review and merge M3, then set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
+2. M4: F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.
+3. Assign F13 (usage metering) to a milestone; check-hours can be counted from runner results.

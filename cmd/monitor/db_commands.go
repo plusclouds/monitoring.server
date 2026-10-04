@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/auth"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/store"
 )
 
@@ -93,7 +95,7 @@ func newMigrate() *cobra.Command {
 
 func newAdmin() *cobra.Command {
 	cmd := &cobra.Command{Use: "admin", Short: "Administrative commands that run outside the API"}
-	cmd.AddCommand(newBootstrap(), newVerifyAudit(), newGenToken())
+	cmd.AddCommand(newBootstrap(), newVerifyAudit(), newGenToken(), newRetention())
 	return cmd
 }
 
@@ -222,4 +224,77 @@ func newGenToken() *cobra.Command {
 			return err
 		},
 	}
+}
+
+func newRetention() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "retention [CLASS]",
+		Short: "Show metric retention classes, or change one (F07)",
+		Long: `Without flags, lists every retention class and how long each level is kept.
+With a class and flags, creates the class if needed and changes only the given levels;
+0 keeps a level until a policy is set. The next maintenance run applies the change.
+The platform key can do the same through PUT /v1/metrics/retention-classes/{name}.`,
+		Example: "  monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730",
+		Args:    cobra.MaximumNArgs(1),
+	}
+	path := configFlag(cmd, defaultConfigPath)
+	levels := map[string]*int{
+		metrics.LevelRaw: cmd.Flags().Int("raw-days", 0, "days raw samples are kept"),
+		metrics.Level5m:  cmd.Flags().Int("rollup-5m-days", 0, "days 5-minute rollups are kept"),
+		metrics.Level1h:  cmd.Flags().Int("rollup-1h-days", 0, "days hourly rollups are kept"),
+	}
+	flagOf := map[string]string{metrics.LevelRaw: "raw-days", metrics.Level5m: "rollup-5m-days", metrics.Level1h: "rollup-1h-days"}
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		set := map[string]int{}
+		for level, v := range levels {
+			if cmd.Flags().Changed(flagOf[level]) {
+				set[level] = *v
+			}
+		}
+		if len(set) > 0 && len(args) == 0 {
+			return errors.New("name the class to change")
+		}
+		c, err := config.Load(*path, nil)
+		if err != nil {
+			return err
+		}
+		db, err := openSystem(cmd.Context(), c)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		if len(set) > 0 {
+			if _, err := admin.SetRetention(cmd.Context(), db, args[0], set); err != nil {
+				return err
+			}
+		}
+		var list []metrics.Class
+		if err := pgx.BeginFunc(cmd.Context(), db, func(tx pgx.Tx) error {
+			list, err = metrics.ListClasses(cmd.Context(), tx)
+			return err
+		}); err != nil {
+			return err
+		}
+		days := func(d *int) string {
+			if d == nil {
+				return "forever"
+			}
+			return fmt.Sprintf("%dd", *d)
+		}
+		out := cmd.OutOrStdout()
+		if _, err := fmt.Fprintf(out, "%-20s %-8s %-8s %-8s\n", "CLASS", "RAW", "5M", "1H"); err != nil {
+			return err
+		}
+		for _, x := range list {
+			if len(args) == 1 && x.Name != args[0] {
+				continue
+			}
+			if _, err := fmt.Fprintf(out, "%-20s %-8s %-8s %-8s\n", x.Name, days(x.Keep.Raw), days(x.Keep.FiveMinute),
+				days(x.Keep.Hourly)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	return cmd
 }

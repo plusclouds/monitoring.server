@@ -57,6 +57,8 @@ services:
       MONITOR_OWNER_PASSWORD: ${MONITOR_OWNER_PASSWORD:?set MONITOR_OWNER_PASSWORD in .env}
       MONITOR_APP_PASSWORD: ${MONITOR_APP_PASSWORD:?set MONITOR_APP_PASSWORD in .env}
       MONITOR_SYSTEM_PASSWORD: ${MONITOR_SYSTEM_PASSWORD:?set MONITOR_SYSTEM_PASSWORD in .env}
+      # Optional: set it to let a Grafana log in to the read-only views (F07).
+      MONITOR_GRAFANA_PASSWORD: ${MONITOR_GRAFANA_PASSWORD:-}
     configs:
       - source: monitor-db-init
         target: /monitor-db-init.sh
@@ -145,16 +147,25 @@ configs:
   #   monitor_owner   owns the schema; used only to run migrations
   #   monitor_app     subject to row-level security; used by the api role
   #   monitor_system  BYPASSRLS; used by background roles and admin commands
+  #   monitor_grafana read-only on the Grafana views; can log in only when
+  #                   MONITOR_GRAFANA_PASSWORD is set
   monitor-db-init:
     content: |
       set -eu
       psql -v ON_ERROR_STOP=1 -q --dbname postgres \
         -v owner_pw="$$MONITOR_OWNER_PASSWORD" \
         -v app_pw="$$MONITOR_APP_PASSWORD" \
-        -v system_pw="$$MONITOR_SYSTEM_PASSWORD" <<'SQL'
+        -v system_pw="$$MONITOR_SYSTEM_PASSWORD" \
+        -v grafana_pw="$${MONITOR_GRAFANA_PASSWORD:-}" <<'SQL'
       SELECT format('CREATE ROLE %I LOGIN', r) FROM unnest(ARRAY['monitor_owner', 'monitor_app', 'monitor_system']) AS r
        WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = r) \gexec
+      SELECT 'CREATE ROLE monitor_grafana NOLOGIN'
+       WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'monitor_grafana') \gexec
       ALTER ROLE monitor_system BYPASSRLS;
+      ALTER ROLE monitor_grafana SET statement_timeout = '30s';
+      ALTER ROLE monitor_grafana SET default_transaction_read_only = on;
+      SELECT format('ALTER ROLE monitor_grafana LOGIN PASSWORD %L', :'grafana_pw') WHERE :'grafana_pw' <> '' \gexec
+      SELECT 'ALTER ROLE monitor_grafana NOLOGIN' WHERE :'grafana_pw' = '' \gexec
       SELECT format('ALTER ROLE monitor_owner PASSWORD %L', :'owner_pw') \gexec
       SELECT format('ALTER ROLE monitor_app PASSWORD %L', :'app_pw') \gexec
       SELECT format('ALTER ROLE monitor_system PASSWORD %L', :'system_pw') \gexec
@@ -162,7 +173,13 @@ configs:
        WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'monitor') \gexec
       \connect monitor
       REVOKE CREATE ON SCHEMA public FROM PUBLIC;
-      GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system;
+      GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system, monitor_grafana;
+      -- The views exist once the engine has migrated; on a first start the
+      -- migration grants them itself.
+      SELECT format('GRANT SELECT ON %I TO monitor_grafana', v)
+        FROM unnest(ARRAY['metric_series_v', 'metrics_raw', 'metrics_5m', 'metrics_1h', 'devices_v',
+                          'check_states_v', 'incidents_v']) AS v
+       WHERE to_regclass(v) IS NOT NULL \gexec
       SQL
       echo "monitor database roles and database are in place"
 
