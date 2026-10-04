@@ -1,0 +1,137 @@
+// Package threshold holds metric threshold rules (F05). Rules are stored on
+// checks and evaluated by the engine, never by plugins, so every plugin gets
+// the same behavior.
+package threshold
+
+import (
+	"fmt"
+	"math"
+	"slices"
+	"time"
+
+	"github.com/plusclouds/monitoring.server/internal/errs"
+)
+
+// Operators. between and outside use Value and ValueMax.
+const (
+	OpGT      = ">"
+	OpGE      = ">="
+	OpLT      = "<"
+	OpLE      = "<="
+	OpEQ      = "=="
+	OpNE      = "!="
+	OpBetween = "between"
+	OpOutside = "outside"
+)
+
+var ops = []string{OpGT, OpGE, OpLT, OpLE, OpEQ, OpNE, OpBetween, OpOutside}
+
+// Condition is one level of a rule.
+type Condition struct {
+	Op       string   `json:"op"`
+	Value    float64  `json:"value"`
+	ValueMax *float64 `json:"value_max,omitempty"`
+}
+
+// Rule is a threshold on one metric. It has a warning level, a critical
+// level, or both.
+type Rule struct {
+	ID         string     `json:"id"`
+	Name       string     `json:"name,omitempty"`
+	Metric     string     `json:"metric"`
+	Object     string     `json:"object,omitempty"` // collectors: "*" or an object key
+	Warning    *Condition `json:"warning,omitempty"`
+	Critical   *Condition `json:"critical,omitempty"`
+	For        Duration   `json:"for,omitempty"`
+	Hysteresis float64    `json:"hysteresis,omitempty"`
+}
+
+// Duration is a time.Duration written as "5m" in JSON.
+type Duration time.Duration
+
+func (d Duration) D() time.Duration { return time.Duration(d) }
+
+func (d Duration) MarshalText() ([]byte, error) { return []byte(time.Duration(d).String()), nil }
+
+func (d *Duration) UnmarshalText(b []byte) error {
+	v, err := time.ParseDuration(string(b))
+	if err != nil {
+		return fmt.Errorf("%q is not a duration such as 30s or 5m", b)
+	}
+	*d = Duration(v)
+	return nil
+}
+
+// Validate checks rules against the metric names the plugin reports and
+// fills in missing rule IDs ("r1", "r2", ...). Unknown operators are rejected
+// when the rule is saved (F05).
+func Validate(rules []Rule, metrics []string) ([]Rule, error) {
+	out := make([]Rule, len(rules))
+	ids := map[string]bool{}
+	for i, r := range rules {
+		field := fmt.Sprintf("thresholds[%d]", i)
+		if !slices.Contains(metrics, r.Metric) {
+			return nil, errs.Invalidf(field+".metric", "%q is not a metric of this check; known: %v", r.Metric, metrics)
+		}
+		if r.Warning == nil && r.Critical == nil {
+			return nil, errs.Invalidf(field, "needs a warning or a critical condition")
+		}
+		for level, c := range map[string]*Condition{"warning": r.Warning, "critical": r.Critical} {
+			if c == nil {
+				continue
+			}
+			if err := c.validate(field + "." + level); err != nil {
+				return nil, err
+			}
+		}
+		if r.For < 0 || r.For.D() > 24*time.Hour {
+			return nil, errs.Invalidf(field+".for", "must be between 0 and 24h")
+		}
+		if r.Hysteresis < 0 || math.IsNaN(r.Hysteresis) || math.IsInf(r.Hysteresis, 0) {
+			return nil, errs.Invalidf(field+".hysteresis", "must be a non-negative number")
+		}
+		if len(r.Name) > 200 {
+			return nil, errs.Invalidf(field+".name", "must be at most 200 characters")
+		}
+		if r.ID == "" {
+			for n := i + 1; ; n++ {
+				if id := fmt.Sprintf("r%d", n); !ids[id] && !hasID(rules, id) {
+					r.ID = id
+					break
+				}
+			}
+		}
+		if len(r.ID) > 64 {
+			return nil, errs.Invalidf(field+".id", "must be at most 64 characters")
+		}
+		if ids[r.ID] {
+			return nil, errs.Invalidf(field+".id", "%q is used twice", r.ID)
+		}
+		ids[r.ID] = true
+		out[i] = r
+	}
+	return out, nil
+}
+
+func hasID(rules []Rule, id string) bool {
+	return slices.ContainsFunc(rules, func(r Rule) bool { return r.ID == id })
+}
+
+func (c *Condition) validate(field string) error {
+	if !slices.Contains(ops, c.Op) {
+		return errs.Invalidf(field+".op", "%q is not one of %v", c.Op, ops)
+	}
+	if math.IsNaN(c.Value) || math.IsInf(c.Value, 0) {
+		return errs.Invalidf(field+".value", "must be a finite number")
+	}
+	ranged := c.Op == OpBetween || c.Op == OpOutside
+	switch {
+	case ranged && c.ValueMax == nil:
+		return errs.Invalidf(field+".value_max", "is required for %s", c.Op)
+	case ranged && !(*c.ValueMax > c.Value):
+		return errs.Invalidf(field+".value_max", "must be greater than value")
+	case !ranged && c.ValueMax != nil:
+		return errs.Invalidf(field+".value_max", "is only used by between and outside")
+	}
+	return nil
+}

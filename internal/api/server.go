@@ -24,6 +24,9 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/api/gen"
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/credential"
+	"github.com/plusclouds/monitoring.server/internal/crypto"
+	"github.com/plusclouds/monitoring.server/internal/execute"
 	"github.com/plusclouds/monitoring.server/internal/store"
 	"github.com/plusclouds/monitoring.server/internal/tenancy"
 	"github.com/plusclouds/monitoring.server/internal/tlsconf"
@@ -33,6 +36,7 @@ import (
 type Options struct {
 	Config   config.Config
 	DB       *pgxpool.Pool // the app role, subject to RLS
+	Keys     *crypto.Keyring
 	Logger   *slog.Logger
 	Registry prometheus.Registerer
 }
@@ -44,6 +48,8 @@ type Server struct {
 	db             *pgxpool.Pool
 	log            *slog.Logger
 	tenants        *tenancy.Service
+	creds          *credential.Store
+	exec           *execute.Executor
 	identitySource string
 	platformRate   int
 
@@ -60,7 +66,17 @@ var _ gen.StrictServerInterface = (*Server)(nil)
 
 // New builds the server and registers its metrics.
 func New(o Options) (*Server, error) {
+	if o.Keys == nil {
+		return nil, errors.New("api: the credential keyring is required")
+	}
+	creds := &credential.Store{Keys: o.Keys}
+	exec, err := execute.New(o.Config, creds, o.Logger)
+	if err != nil {
+		return nil, err
+	}
 	s := &Server{
+		creds:          creds,
+		exec:           exec,
 		cfg:            o.Config.API,
 		tls:            o.Config.TLS,
 		db:             o.DB,

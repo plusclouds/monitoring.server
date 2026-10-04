@@ -39,6 +39,14 @@ tags:
     description: The tenant's audit log
   - name: plugins
     description: Check, collector and ingester types this engine supports (F03)
+  - name: sites
+    description: Physical or logical locations (ADR-0014)
+  - name: devices
+    description: What is monitored, its containment tree and dependencies (F02, ADR-0014)
+  - name: checks
+    description: Plugin runs against a device on an interval (F02, F03)
+  - name: credentials
+    description: Encrypted device credentials; secrets are write-only (F02, ADR-0006)
 
 paths:
   /me:
@@ -344,6 +352,600 @@ paths:
               schema: { $ref: "#/components/schemas/User" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /credential-types:
+    get:
+      operationId: listCredentialTypes
+      tags: [credentials]
+      summary: Credential types and their fields
+      description: Any authenticated key. `fields_schema` marks secret fields `writeOnly`.
+      responses:
+        "200":
+          description: Types, sorted by name
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CredentialType" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /credentials:
+    get:
+      operationId: listCredentials
+      tags: [credentials]
+      summary: List credentials (never their secrets)
+      parameters:
+        - { name: type, in: query, schema: { type: string } }
+        - $ref: "#/components/parameters/FilterExternalSource"
+        - $ref: "#/components/parameters/FilterExternalType"
+        - $ref: "#/components/parameters/FilterExternalID"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Credentials ordered by ID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Credential" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createCredential
+      tags: [credentials]
+      summary: Store a credential
+      description: Requires the admin role. Secret fields are encrypted at rest and never returned (ADR-0006).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Credential" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /credentials/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+      - $ref: "#/components/parameters/ExternalType"
+    put:
+      operationId: upsertCredential
+      tags: [credentials]
+      summary: Create or replace a credential by its external ID
+      description: |
+        Idempotent. On update, non-secret fields are replaced and secret
+        fields that are not sent keep their value. The type cannot change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialWrite" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Credential" }
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Credential" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /credentials/{credential_id}:
+    parameters:
+      - $ref: "#/components/parameters/CredentialID"
+    get:
+      operationId: getCredential
+      tags: [credentials]
+      summary: One credential (never its secrets)
+      responses:
+        "200":
+          description: The credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Credential" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: updateCredential
+      tags: [credentials]
+      summary: Replace a credential's name and fields
+      description: Secret fields that are not sent keep their value. The type cannot change.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CredentialWrite" }
+      responses:
+        "200":
+          description: The credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Credential" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteCredential
+      tags: [credentials]
+      summary: Delete a credential that no check uses
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List sites
+      parameters:
+        - $ref: "#/components/parameters/FilterExternalSource"
+        - $ref: "#/components/parameters/FilterExternalType"
+        - $ref: "#/components/parameters/FilterExternalID"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Sites ordered by ID
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, next_cursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Site" }
+                  next_cursor: { type: [string, "null"] }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createSite
+      tags: [sites]
+      summary: Add a site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SiteWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /sites/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+      - $ref: "#/components/parameters/ExternalType"
+    put:
+      operationId: upsertSite
+      tags: [sites]
+      summary: Create or replace a site by its external ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SiteWrite" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /sites/{site_id}:
+    parameters:
+      - $ref: "#/components/parameters/SiteID"
+    get:
+      operationId: getSite
+      tags: [sites]
+      summary: One site
+      responses:
+        "200":
+          description: The site
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: updateSite
+      tags: [sites]
+      summary: Replace a site
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SiteWrite" }
+      responses:
+        "200":
+          description: The site
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Site" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteSite
+      tags: [sites]
+      summary: Delete a site without devices
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices:
+    get:
+      operationId: listDevices
+      tags: [devices]
+      summary: List devices
+      parameters:
+        - { name: type, in: query, schema: { type: string } }
+        - { name: site_id, in: query, schema: { type: string, format: uuid } }
+        - { name: parent_id, in: query, schema: { type: string, format: uuid } }
+        - name: tag
+          in: query
+          description: "`key=value`; repeat for several tags, all must match."
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { type: string, pattern: "^[^=]+=.*$" }
+        - $ref: "#/components/parameters/FilterExternalSource"
+        - $ref: "#/components/parameters/FilterExternalType"
+        - $ref: "#/components/parameters/FilterExternalID"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Devices ordered by ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevicePage" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createDevice
+      tags: [devices]
+      summary: Add a device
+      description: Requires the admin role. Counts against the tenant's `max_devices`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/by-external-id/{external_id}:
+    parameters:
+      - $ref: "#/components/parameters/ExternalID"
+      - $ref: "#/components/parameters/ExternalSource"
+      - $ref: "#/components/parameters/ExternalType"
+    put:
+      operationId: upsertDevice
+      tags: [devices]
+      summary: Create or replace a device by its external ID
+      description: Idempotent. A call that changes nothing writes no audit event.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceWrite" }
+      responses:
+        "200":
+          description: Updated or unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}:
+    parameters:
+      - $ref: "#/components/parameters/DeviceID"
+    get:
+      operationId: getDevice
+      tags: [devices]
+      summary: One device
+      responses:
+        "200":
+          description: The device
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: updateDevice
+      tags: [devices]
+      summary: Replace a device
+      description: Devices discovered by a collector accept changes to tags, notes and external IDs only.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DeviceWrite" }
+      responses:
+        "200":
+          description: The device
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Device" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteDevice
+      tags: [devices]
+      summary: Delete a device, its checks and the devices it contains
+      parameters:
+        - name: confirm
+          in: query
+          description: Required when the device contains other devices.
+          schema: { type: boolean, default: false }
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/children:
+    get:
+      operationId: listDeviceChildren
+      tags: [devices]
+      summary: Devices this device contains
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Child devices ordered by ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DevicePage" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/dependencies:
+    parameters:
+      - $ref: "#/components/parameters/DeviceID"
+    get:
+      operationId: listDeviceDependencies
+      tags: [devices]
+      summary: What this device needs to work, directly
+      description: Stored dependencies plus its container (`source` = `containment`), ADR-0014.
+      responses:
+        "200":
+          description: Direct dependencies
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DependencyList" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: addDeviceDependency
+      tags: [devices]
+      summary: Record that this device needs another one
+      description: Cycles are rejected. Adding an existing dependency changes nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [depends_on_id]
+              properties:
+                depends_on_id: { type: string, format: uuid }
+      responses:
+        "201":
+          description: Added
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dependency" }
+        "200":
+          description: Already present
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Dependency" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/dependencies/{depends_on_id}:
+    delete:
+      operationId: removeDeviceDependency
+      tags: [devices]
+      summary: Remove a stored dependency
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+        - name: depends_on_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Removed, or was not present }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/dependents:
+    get:
+      operationId: listDeviceDependents
+      tags: [devices]
+      summary: Devices that need this device, directly
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+      responses:
+        "200":
+          description: Direct dependents
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DependencyList" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/impact:
+    get:
+      operationId: getDeviceImpact
+      tags: [devices]
+      summary: Every device that would be suppressed if this one failed
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+      responses:
+        "200":
+          description: Dependent devices, nearest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [device, distance]
+                      properties:
+                        device: { $ref: "#/components/schemas/Device" }
+                        distance: { type: integer, description: "Edges between the two devices" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/test:
+    post:
+      operationId: testDevice
+      tags: [devices]
+      summary: Run every enabled check of the device once
+      description: |
+        Requires the operator role. Runs synchronously (at most 60 s) and
+        returns raw results. Results are not stored and do not change state.
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+      responses:
+        "200":
+          description: One result per enabled check
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CheckRun" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/checks:
+    parameters:
+      - $ref: "#/components/parameters/DeviceID"
+    get:
+      operationId: listDeviceChecks
+      tags: [checks]
+      summary: The device's checks
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Checks ordered by ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckPage" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createCheck
+      tags: [checks]
+      summary: Add a check to the device
+      description: |
+        Requires the admin role. The config is validated against the
+        plugin's schema; the interval must respect the plugin's and the
+        tenant's minimum. Counts against the tenant's `max_checks`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckWrite" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Check" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /checks:
+    get:
+      operationId: listChecks
+      tags: [checks]
+      summary: List checks
+      parameters:
+        - { name: device_id, in: query, schema: { type: string, format: uuid } }
+        - { name: plugin, in: query, schema: { type: string } }
+        - { name: enabled, in: query, schema: { type: boolean } }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Checks ordered by ID
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckPage" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /checks/{check_id}:
+    parameters:
+      - $ref: "#/components/parameters/CheckID"
+    get:
+      operationId: getCheck
+      tags: [checks]
+      summary: One check
+      responses:
+        "200":
+          description: The check
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Check" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: updateCheck
+      tags: [checks]
+      summary: Replace a check
+      description: The plugin cannot change. Omitted optional fields return to their defaults.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckWrite" }
+      responses:
+        "200":
+          description: The check
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Check" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteCheck
+      tags: [checks]
+      summary: Delete a check
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
 components:
   securitySchemes:
     bearer:
@@ -381,6 +983,44 @@ components:
       in: query
       description: System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
       schema: { type: string, minLength: 1, maxLength: 50 }
+
+    ExternalType:
+      name: type
+      in: query
+      description: Object type in the external system. Without it, a lookup matches any type.
+      schema: { type: string, minLength: 1, maxLength: 200 }
+    FilterExternalSource:
+      name: external_source
+      in: query
+      schema: { type: string }
+    FilterExternalType:
+      name: external_type
+      in: query
+      schema: { type: string }
+    FilterExternalID:
+      name: external_id
+      in: query
+      schema: { type: string }
+    CredentialID:
+      name: credential_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    SiteID:
+      name: site_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DeviceID:
+      name: device_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CheckID:
+      name: check_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
 
   responses:
     Problem:
@@ -600,3 +1240,258 @@ components:
         after: {}
         request_id: { type: [string, "null"] }
         source_ip: { type: [string, "null"] }
+
+    ExternalRefWrite:
+      type: object
+      required: [source, id]
+      properties:
+        source: { type: string, minLength: 1, maxLength: 50 }
+        type: { type: [string, "null"], maxLength: 200 }
+        id: { type: string, minLength: 1, maxLength: 200 }
+
+    CredentialType:
+      type: object
+      required: [name, description, fields_schema]
+      properties:
+        name: { type: string, examples: [snmp_v3] }
+        description: { type: string }
+        fields_schema:
+          type: object
+          description: JSON Schema of `fields`; secret fields are `writeOnly`.
+
+    Credential:
+      type: object
+      required: [id, name, type, fields, secrets_set, managed_by, external, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        type: { type: string }
+        fields:
+          type: object
+          description: Non-secret fields only.
+          additionalProperties: { type: string }
+        secrets_set:
+          type: array
+          description: Names of the secret fields that have a value.
+          items: { type: string }
+        managed_by: { type: string }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CredentialWrite:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        type: { type: string, description: "One of GET /v1/credential-types" }
+        fields:
+          type: object
+          description: Field values, secret ones included. See the type's `fields_schema`.
+          additionalProperties: { type: [string, "null"] }
+        external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    Site:
+      type: object
+      required: [id, name, country, timezone, address, managed_by, external, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        country: { type: [string, "null"], description: ISO 3166-1 alpha-2 }
+        timezone: { type: [string, "null"], description: IANA time zone }
+        address: { type: [string, "null"] }
+        managed_by: { type: string }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    SiteWrite:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        country: { type: string, pattern: "^[A-Z]{2}$", examples: [TR] }
+        timezone: { type: string, examples: [Europe/Istanbul] }
+        address: { type: string, maxLength: 1000 }
+        external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    DeviceType:
+      type: string
+      enum: [network, server, bmc, camera, web, hypervisor_pool, hypervisor_host, vm, iot, ups, pdu,
+             sensor, llm_endpoint, llm_application, other]
+
+    Device:
+      type: object
+      required: [id, name, address, type, tags, notes, parent_id, site_id, physical_peer_id, inventory,
+                 managed_by, external, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        address: { type: string, description: "IP, host name or URL" }
+        type: { $ref: "#/components/schemas/DeviceType" }
+        tags:
+          type: object
+          additionalProperties: { type: string }
+        notes: { type: [string, "null"] }
+        parent_id: { type: [string, "null"], format: uuid, description: "Container (ADR-0014)" }
+        site_id: { type: [string, "null"], format: uuid }
+        physical_peer_id: { type: [string, "null"], format: uuid, description: "Linked BMC or host" }
+        inventory:
+          type: object
+          description: Vendor, model, serial and firmware, written by plugins.
+        managed_by: { type: string, description: "`api`, `file`, or the collector that discovered it" }
+        external:
+          oneOf:
+            - $ref: "#/components/schemas/ExternalRef"
+            - type: "null"
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    DeviceWrite:
+      type: object
+      required: [name, type]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        address: { type: string, maxLength: 2000 }
+        type: { $ref: "#/components/schemas/DeviceType" }
+        tags:
+          type: object
+          maxProperties: 50
+          additionalProperties: { type: string, maxLength: 200 }
+        notes: { type: string, maxLength: 10000 }
+        parent_id: { type: string, format: uuid }
+        site_id: { type: string, format: uuid }
+        physical_peer_id: { type: string, format: uuid }
+        external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    DevicePage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Device" }
+        next_cursor: { type: [string, "null"] }
+
+    Dependency:
+      type: object
+      required: [device_id, depends_on_id, source]
+      properties:
+        device_id: { type: string, format: uuid }
+        depends_on_id: { type: string, format: uuid }
+        source: { type: string, description: "`api`, `containment`, or a discovery source such as `lldp`" }
+        created_at: { type: [string, "null"], format: date-time }
+
+    DependencyList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Dependency" }
+
+    ThresholdCondition:
+      type: object
+      required: [op, value]
+      properties:
+        op: { type: string, enum: [">", ">=", "<", "<=", "==", "!=", between, outside] }
+        value: { type: number, format: double }
+        value_max: { type: number, format: double, description: "Upper bound for between and outside" }
+
+    ThresholdRule:
+      type: object
+      required: [metric]
+      properties:
+        id: { type: string, maxLength: 64, description: "Generated (r1, r2, ...) when missing" }
+        name: { type: string, maxLength: 200 }
+        metric: { type: string, description: "A metric of the check's plugin" }
+        object: { type: string, description: "Collectors: `*` or an object key" }
+        warning: { $ref: "#/components/schemas/ThresholdCondition" }
+        critical: { $ref: "#/components/schemas/ThresholdCondition" }
+        for: { type: string, description: "Condition must hold this long, e.g. 5m", examples: [5m] }
+        hysteresis: { type: number, format: double, minimum: 0, description: "Margin to cross back before clearing" }
+
+    Check:
+      type: object
+      required: [id, device_id, name, plugin, config, interval_seconds, timeout_seconds, enabled, thresholds,
+                 failure_count, recovery_count, is_host_check, unknown_is_critical, runbook_url, credentials,
+                 managed_by, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        device_id: { type: string, format: uuid }
+        name: { type: string }
+        plugin: { type: string }
+        config: { type: object }
+        interval_seconds: { type: integer }
+        timeout_seconds: { type: [integer, "null"] }
+        enabled: { type: boolean }
+        thresholds:
+          type: array
+          items: { $ref: "#/components/schemas/ThresholdRule" }
+        failure_count: { type: integer }
+        recovery_count: { type: integer }
+        is_host_check: { type: boolean }
+        unknown_is_critical: { type: boolean }
+        runbook_url: { type: [string, "null"] }
+        credentials:
+          type: object
+          description: "Credential ID per role, for example {\"auth\": \"…\"}"
+          additionalProperties: { type: string, format: uuid }
+        managed_by: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CheckWrite:
+      type: object
+      required: [name, plugin]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        plugin: { type: string, description: "One of GET /v1/plugins" }
+        config: { type: object, description: "Validated against the plugin's config_schema" }
+        interval_seconds: { type: integer, minimum: 1, maximum: 86400, description: "Default: the plugin's" }
+        timeout_seconds: { type: integer, minimum: 1, maximum: 300 }
+        enabled: { type: boolean, default: true }
+        thresholds:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/ThresholdRule" }
+        failure_count: { type: integer, minimum: 1, maximum: 100, default: 3 }
+        recovery_count: { type: integer, minimum: 1, maximum: 100, default: 1 }
+        is_host_check: { type: boolean, default: false, description: "The check that says whether the device is up" }
+        unknown_is_critical: { type: boolean, default: false }
+        runbook_url: { type: string, format: uri, maxLength: 2000 }
+        credentials:
+          type: object
+          maxProperties: 10
+          additionalProperties: { type: string, format: uuid }
+
+    CheckPage:
+      type: object
+      required: [items, next_cursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Check" }
+        next_cursor: { type: [string, "null"] }
+
+    CheckRun:
+      type: object
+      required: [check_id, name, plugin, status, output, duration_ms, metrics, time]
+      properties:
+        check_id: { type: string, format: uuid }
+        name: { type: string }
+        plugin: { type: string }
+        status: { type: string, enum: [OK, WARNING, CRITICAL, UNKNOWN] }
+        output: { type: string }
+        duration_ms: { type: number, format: double }
+        metrics:
+          type: object
+          description: Metric values by name; null when not collected.
+          additionalProperties: { type: [number, "null"], format: double }
+        time: { type: string, format: date-time }

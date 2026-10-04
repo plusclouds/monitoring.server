@@ -54,6 +54,87 @@ func (e AuditEventActorKind) Valid() bool {
 	}
 }
 
+// Defines values for CheckRunStatus.
+const (
+	CRITICAL CheckRunStatus = "CRITICAL"
+	OK       CheckRunStatus = "OK"
+	UNKNOWN  CheckRunStatus = "UNKNOWN"
+	WARNING  CheckRunStatus = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the CheckRunStatus enum.
+func (e CheckRunStatus) Valid() bool {
+	switch e {
+	case CRITICAL:
+		return true
+	case OK:
+		return true
+	case UNKNOWN:
+		return true
+	case WARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceType.
+const (
+	Bmc            DeviceType = "bmc"
+	Camera         DeviceType = "camera"
+	HypervisorHost DeviceType = "hypervisor_host"
+	HypervisorPool DeviceType = "hypervisor_pool"
+	Iot            DeviceType = "iot"
+	LlmApplication DeviceType = "llm_application"
+	LlmEndpoint    DeviceType = "llm_endpoint"
+	Network        DeviceType = "network"
+	Other          DeviceType = "other"
+	Pdu            DeviceType = "pdu"
+	Sensor         DeviceType = "sensor"
+	Server         DeviceType = "server"
+	Ups            DeviceType = "ups"
+	Vm             DeviceType = "vm"
+	Web            DeviceType = "web"
+)
+
+// Valid indicates whether the value is a known member of the DeviceType enum.
+func (e DeviceType) Valid() bool {
+	switch e {
+	case Bmc:
+		return true
+	case Camera:
+		return true
+	case HypervisorHost:
+		return true
+	case HypervisorPool:
+		return true
+	case Iot:
+		return true
+	case LlmApplication:
+		return true
+	case LlmEndpoint:
+		return true
+	case Network:
+		return true
+	case Other:
+		return true
+	case Pdu:
+		return true
+	case Sensor:
+		return true
+	case Server:
+		return true
+	case Ups:
+		return true
+	case Vm:
+		return true
+	case Web:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MeActorKind.
 const (
 	MeActorKindApiKey   MeActorKind = "api_key"
@@ -146,19 +227,19 @@ func (e PluginBillingClass) Valid() bool {
 
 // Defines values for PluginKind.
 const (
-	Check     PluginKind = "check"
-	Collector PluginKind = "collector"
-	Ingester  PluginKind = "ingester"
+	PluginKindCheck     PluginKind = "check"
+	PluginKindCollector PluginKind = "collector"
+	PluginKindIngester  PluginKind = "ingester"
 )
 
 // Valid indicates whether the value is a known member of the PluginKind enum.
 func (e PluginKind) Valid() bool {
 	switch e {
-	case Check:
+	case PluginKindCheck:
 		return true
-	case Collector:
+	case PluginKindCollector:
 		return true
-	case Ingester:
+	case PluginKindIngester:
 		return true
 	default:
 		return false
@@ -264,6 +345,42 @@ func (e TenantPatchStatus) Valid() bool {
 	}
 }
 
+// Defines values for ThresholdConditionOp.
+const (
+	Between          ThresholdConditionOp = "between"
+	Empty            ThresholdConditionOp = "!="
+	EqualEqual       ThresholdConditionOp = "=="
+	GreaterThan      ThresholdConditionOp = ">"
+	GreaterThanEqual ThresholdConditionOp = ">="
+	LessThan         ThresholdConditionOp = "<"
+	LessThanEqual    ThresholdConditionOp = "<="
+	Outside          ThresholdConditionOp = "outside"
+)
+
+// Valid indicates whether the value is a known member of the ThresholdConditionOp enum.
+func (e ThresholdConditionOp) Valid() bool {
+	switch e {
+	case Between:
+		return true
+	case Empty:
+		return true
+	case EqualEqual:
+		return true
+	case GreaterThan:
+		return true
+	case GreaterThanEqual:
+		return true
+	case LessThan:
+		return true
+	case LessThanEqual:
+		return true
+	case Outside:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UserStatus.
 const (
 	UserStatusActive   UserStatus = "active"
@@ -363,8 +480,190 @@ type AuditEvent struct {
 // AuditEventActorKind defines model for AuditEvent.Actor.Kind.
 type AuditEventActorKind string
 
+// Check defines model for Check.
+type Check struct {
+	Config    map[string]interface{} `json:"config"`
+	CreatedAt time.Time              `json:"created_at"`
+
+	// Credentials Credential ID per role, for example {"auth": "…"}
+	Credentials       map[string]openapi_types.UUID `json:"credentials"`
+	DeviceId          openapi_types.UUID            `json:"device_id"`
+	Enabled           bool                          `json:"enabled"`
+	FailureCount      int                           `json:"failure_count"`
+	Id                openapi_types.UUID            `json:"id"`
+	IntervalSeconds   int                           `json:"interval_seconds"`
+	IsHostCheck       bool                          `json:"is_host_check"`
+	ManagedBy         string                        `json:"managed_by"`
+	Name              string                        `json:"name"`
+	Plugin            string                        `json:"plugin"`
+	RecoveryCount     int                           `json:"recovery_count"`
+	RunbookUrl        *string                       `json:"runbook_url"`
+	Thresholds        []ThresholdRule               `json:"thresholds"`
+	TimeoutSeconds    *int                          `json:"timeout_seconds"`
+	UnknownIsCritical bool                          `json:"unknown_is_critical"`
+	UpdatedAt         time.Time                     `json:"updated_at"`
+}
+
+// CheckPage defines model for CheckPage.
+type CheckPage struct {
+	Items      []Check `json:"items"`
+	NextCursor *string `json:"next_cursor"`
+}
+
+// CheckRun defines model for CheckRun.
+type CheckRun struct {
+	CheckId    openapi_types.UUID `json:"check_id"`
+	DurationMs float64            `json:"duration_ms"`
+
+	// Metrics Metric values by name; null when not collected.
+	Metrics map[string]*float64 `json:"metrics"`
+	Name    string              `json:"name"`
+	Output  string              `json:"output"`
+	Plugin  string              `json:"plugin"`
+	Status  CheckRunStatus      `json:"status"`
+	Time    time.Time           `json:"time"`
+}
+
+// CheckRunStatus defines model for CheckRun.Status.
+type CheckRunStatus string
+
+// CheckWrite defines model for CheckWrite.
+type CheckWrite struct {
+	// Config Validated against the plugin's config_schema
+	Config       *map[string]interface{}        `json:"config,omitempty"`
+	Credentials  *map[string]openapi_types.UUID `json:"credentials,omitempty"`
+	Enabled      *bool                          `json:"enabled,omitempty"`
+	FailureCount *int                           `json:"failure_count,omitempty"`
+
+	// IntervalSeconds Default: the plugin's
+	IntervalSeconds *int `json:"interval_seconds,omitempty"`
+
+	// IsHostCheck The check that says whether the device is up
+	IsHostCheck *bool  `json:"is_host_check,omitempty"`
+	Name        string `json:"name"`
+
+	// Plugin One of GET /v1/plugins
+	Plugin            string           `json:"plugin"`
+	RecoveryCount     *int             `json:"recovery_count,omitempty"`
+	RunbookUrl        *string          `json:"runbook_url,omitempty"`
+	Thresholds        *[]ThresholdRule `json:"thresholds,omitempty"`
+	TimeoutSeconds    *int             `json:"timeout_seconds,omitempty"`
+	UnknownIsCritical *bool            `json:"unknown_is_critical,omitempty"`
+}
+
+// Credential defines model for Credential.
+type Credential struct {
+	CreatedAt time.Time    `json:"created_at"`
+	External  *ExternalRef `json:"external"`
+
+	// Fields Non-secret fields only.
+	Fields    map[string]string  `json:"fields"`
+	Id        openapi_types.UUID `json:"id"`
+	ManagedBy string             `json:"managed_by"`
+	Name      string             `json:"name"`
+
+	// SecretsSet Names of the secret fields that have a value.
+	SecretsSet []string  `json:"secrets_set"`
+	Type       string    `json:"type"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// CredentialType defines model for CredentialType.
+type CredentialType struct {
+	Description string `json:"description"`
+
+	// FieldsSchema JSON Schema of `fields`; secret fields are `writeOnly`.
+	FieldsSchema map[string]interface{} `json:"fields_schema"`
+
+	// Name Examples: snmp_v3
+	Name string `json:"name"`
+}
+
+// CredentialWrite defines model for CredentialWrite.
+type CredentialWrite struct {
+	External *ExternalRefWrite `json:"external,omitempty"`
+
+	// Fields Field values, secret ones included. See the type's `fields_schema`.
+	Fields *map[string]*string `json:"fields,omitempty"`
+	Name   string              `json:"name"`
+
+	// Type One of GET /v1/credential-types
+	Type string `json:"type"`
+}
+
+// Dependency defines model for Dependency.
+type Dependency struct {
+	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	DependsOnId openapi_types.UUID `json:"depends_on_id"`
+	DeviceId    openapi_types.UUID `json:"device_id"`
+
+	// Source `api`, `containment`, or a discovery source such as `lldp`
+	Source string `json:"source"`
+}
+
+// DependencyList defines model for DependencyList.
+type DependencyList struct {
+	Items []Dependency `json:"items"`
+}
+
+// Device defines model for Device.
+type Device struct {
+	// Address IP, host name or URL
+	Address   string             `json:"address"`
+	CreatedAt time.Time          `json:"created_at"`
+	External  *ExternalRef       `json:"external"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Inventory Vendor, model, serial and firmware, written by plugins.
+	Inventory map[string]interface{} `json:"inventory"`
+
+	// ManagedBy `api`, `file`, or the collector that discovered it
+	ManagedBy string  `json:"managed_by"`
+	Name      string  `json:"name"`
+	Notes     *string `json:"notes"`
+
+	// ParentId Container (ADR-0014)
+	ParentId *openapi_types.UUID `json:"parent_id"`
+
+	// PhysicalPeerId Linked BMC or host
+	PhysicalPeerId *openapi_types.UUID `json:"physical_peer_id"`
+	SiteId         *openapi_types.UUID `json:"site_id"`
+	Tags           map[string]string   `json:"tags"`
+	Type           DeviceType          `json:"type"`
+	UpdatedAt      time.Time           `json:"updated_at"`
+}
+
+// DevicePage defines model for DevicePage.
+type DevicePage struct {
+	Items      []Device `json:"items"`
+	NextCursor *string  `json:"next_cursor"`
+}
+
+// DeviceType defines model for DeviceType.
+type DeviceType string
+
+// DeviceWrite defines model for DeviceWrite.
+type DeviceWrite struct {
+	Address        *string             `json:"address,omitempty"`
+	External       *ExternalRefWrite   `json:"external,omitempty"`
+	Name           string              `json:"name"`
+	Notes          *string             `json:"notes,omitempty"`
+	ParentId       *openapi_types.UUID `json:"parent_id,omitempty"`
+	PhysicalPeerId *openapi_types.UUID `json:"physical_peer_id,omitempty"`
+	SiteId         *openapi_types.UUID `json:"site_id,omitempty"`
+	Tags           *map[string]string  `json:"tags,omitempty"`
+	Type           DeviceType          `json:"type"`
+}
+
 // ExternalRef defines model for ExternalRef.
 type ExternalRef struct {
+	Id     string  `json:"id"`
+	Source string  `json:"source"`
+	Type   *string `json:"type,omitempty"`
+}
+
+// ExternalRefWrite defines model for ExternalRefWrite.
+type ExternalRefWrite struct {
 	Id     string  `json:"id"`
 	Source string  `json:"source"`
 	Type   *string `json:"type,omitempty"`
@@ -447,6 +746,36 @@ type Problem struct {
 // Role defines model for Role.
 type Role string
 
+// Site defines model for Site.
+type Site struct {
+	Address *string `json:"address"`
+
+	// Country ISO 3166-1 alpha-2
+	Country   *string            `json:"country"`
+	CreatedAt time.Time          `json:"created_at"`
+	External  *ExternalRef       `json:"external"`
+	Id        openapi_types.UUID `json:"id"`
+	ManagedBy string             `json:"managed_by"`
+	Name      string             `json:"name"`
+
+	// Timezone IANA time zone
+	Timezone  *string   `json:"timezone"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// SiteWrite defines model for SiteWrite.
+type SiteWrite struct {
+	Address *string `json:"address,omitempty"`
+
+	// Country Examples: TR
+	Country  *string           `json:"country,omitempty"`
+	External *ExternalRefWrite `json:"external,omitempty"`
+	Name     string            `json:"name"`
+
+	// Timezone Examples: Europe/Istanbul
+	Timezone *string `json:"timezone,omitempty"`
+}
+
 // Tenant defines model for Tenant.
 type Tenant struct {
 	ConfigSource TenantConfigSource `json:"config_source"`
@@ -503,6 +832,42 @@ type TenantUpsert struct {
 	Name   string        `json:"name"`
 }
 
+// ThresholdCondition defines model for ThresholdCondition.
+type ThresholdCondition struct {
+	Op    ThresholdConditionOp `json:"op"`
+	Value float64              `json:"value"`
+
+	// ValueMax Upper bound for between and outside
+	ValueMax *float64 `json:"value_max,omitempty"`
+}
+
+// ThresholdConditionOp defines model for ThresholdCondition.Op.
+type ThresholdConditionOp string
+
+// ThresholdRule defines model for ThresholdRule.
+type ThresholdRule struct {
+	Critical *ThresholdCondition `json:"critical,omitempty"`
+
+	// For Condition must hold this long, e.g. 5m
+	//
+	// Examples: 5m
+	For *string `json:"for,omitempty"`
+
+	// Hysteresis Margin to cross back before clearing
+	Hysteresis *float64 `json:"hysteresis,omitempty"`
+
+	// Id Generated (r1, r2, ...) when missing
+	Id *string `json:"id,omitempty"`
+
+	// Metric A metric of the check's plugin
+	Metric string  `json:"metric"`
+	Name   *string `json:"name,omitempty"`
+
+	// Object Collectors: `*` or an object key
+	Object  *string             `json:"object,omitempty"`
+	Warning *ThresholdCondition `json:"warning,omitempty"`
+}
+
 // User defines model for User.
 type User struct {
 	DisplayName *string            `json:"display_name,omitempty"`
@@ -523,8 +888,17 @@ type UserPatch struct {
 // UserPatchStatus defines model for UserPatch.Status.
 type UserPatchStatus string
 
+// CheckID defines model for CheckID.
+type CheckID = openapi_types.UUID
+
+// CredentialID defines model for CredentialID.
+type CredentialID = openapi_types.UUID
+
 // Cursor defines model for Cursor.
 type Cursor = string
+
+// DeviceID defines model for DeviceID.
+type DeviceID = openapi_types.UUID
 
 // ExternalID defines model for ExternalID.
 type ExternalID = string
@@ -532,11 +906,26 @@ type ExternalID = string
 // ExternalSource defines model for ExternalSource.
 type ExternalSource = string
 
+// ExternalType defines model for ExternalType.
+type ExternalType = string
+
+// FilterExternalID defines model for FilterExternalID.
+type FilterExternalID = string
+
+// FilterExternalSource defines model for FilterExternalSource.
+type FilterExternalSource = string
+
+// FilterExternalType defines model for FilterExternalType.
+type FilterExternalType = string
+
 // KeyID defines model for KeyID.
 type KeyID = openapi_types.UUID
 
 // Limit defines model for Limit.
 type Limit = int
+
+// SiteID defines model for SiteID.
+type SiteID = openapi_types.UUID
 
 // TenantID defines model for TenantID.
 type TenantID = openapi_types.UUID
@@ -558,6 +947,109 @@ type ListAuditEventsParams struct {
 	// Cursor Opaque cursor from `next_cursor` of the previous page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListChecksParams defines parameters for ListChecks.
+type ListChecksParams struct {
+	DeviceId *openapi_types.UUID `form:"device_id,omitempty" json:"device_id,omitempty"`
+	Plugin   *string             `form:"plugin,omitempty" json:"plugin,omitempty"`
+	Enabled  *bool               `form:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCredentialsParams defines parameters for ListCredentials.
+type ListCredentialsParams struct {
+	Type           *string               `form:"type,omitempty" json:"type,omitempty"`
+	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
+	ExternalType   *FilterExternalType   `form:"external_type,omitempty" json:"external_type,omitempty"`
+	ExternalId     *FilterExternalID     `form:"external_id,omitempty" json:"external_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UpsertCredentialParams defines parameters for UpsertCredential.
+type UpsertCredentialParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
+}
+
+// ListDevicesParams defines parameters for ListDevices.
+type ListDevicesParams struct {
+	Type     *string             `form:"type,omitempty" json:"type,omitempty"`
+	SiteId   *openapi_types.UUID `form:"site_id,omitempty" json:"site_id,omitempty"`
+	ParentId *openapi_types.UUID `form:"parent_id,omitempty" json:"parent_id,omitempty"`
+
+	// Tag `key=value`; repeat for several tags, all must match.
+	Tag            *[]string             `form:"tag,omitempty" json:"tag,omitempty"`
+	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
+	ExternalType   *FilterExternalType   `form:"external_type,omitempty" json:"external_type,omitempty"`
+	ExternalId     *FilterExternalID     `form:"external_id,omitempty" json:"external_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UpsertDeviceParams defines parameters for UpsertDevice.
+type UpsertDeviceParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
+}
+
+// DeleteDeviceParams defines parameters for DeleteDevice.
+type DeleteDeviceParams struct {
+	// Confirm Required when the device contains other devices.
+	Confirm *bool `form:"confirm,omitempty" json:"confirm,omitempty"`
+}
+
+// ListDeviceChecksParams defines parameters for ListDeviceChecks.
+type ListDeviceChecksParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListDeviceChildrenParams defines parameters for ListDeviceChildren.
+type ListDeviceChildrenParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// AddDeviceDependencyJSONBody defines parameters for AddDeviceDependency.
+type AddDeviceDependencyJSONBody struct {
+	DependsOnId openapi_types.UUID `json:"depends_on_id"`
+}
+
+// ListSitesParams defines parameters for ListSites.
+type ListSitesParams struct {
+	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
+	ExternalType   *FilterExternalType   `form:"external_type,omitempty" json:"external_type,omitempty"`
+	ExternalId     *FilterExternalID     `form:"external_id,omitempty" json:"external_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UpsertSiteParams defines parameters for UpsertSite.
+type UpsertSiteParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
 }
 
 // ListTenantsParams defines parameters for ListTenants.
@@ -609,6 +1101,42 @@ type PatchUserParams struct {
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = APIKeyCreate
 
+// UpdateCheckJSONRequestBody defines body for UpdateCheck for application/json ContentType.
+type UpdateCheckJSONRequestBody = CheckWrite
+
+// CreateCredentialJSONRequestBody defines body for CreateCredential for application/json ContentType.
+type CreateCredentialJSONRequestBody = CredentialWrite
+
+// UpsertCredentialJSONRequestBody defines body for UpsertCredential for application/json ContentType.
+type UpsertCredentialJSONRequestBody = CredentialWrite
+
+// UpdateCredentialJSONRequestBody defines body for UpdateCredential for application/json ContentType.
+type UpdateCredentialJSONRequestBody = CredentialWrite
+
+// CreateDeviceJSONRequestBody defines body for CreateDevice for application/json ContentType.
+type CreateDeviceJSONRequestBody = DeviceWrite
+
+// UpsertDeviceJSONRequestBody defines body for UpsertDevice for application/json ContentType.
+type UpsertDeviceJSONRequestBody = DeviceWrite
+
+// UpdateDeviceJSONRequestBody defines body for UpdateDevice for application/json ContentType.
+type UpdateDeviceJSONRequestBody = DeviceWrite
+
+// CreateCheckJSONRequestBody defines body for CreateCheck for application/json ContentType.
+type CreateCheckJSONRequestBody = CheckWrite
+
+// AddDeviceDependencyJSONRequestBody defines body for AddDeviceDependency for application/json ContentType.
+type AddDeviceDependencyJSONRequestBody AddDeviceDependencyJSONBody
+
+// CreateSiteJSONRequestBody defines body for CreateSite for application/json ContentType.
+type CreateSiteJSONRequestBody = SiteWrite
+
+// UpsertSiteJSONRequestBody defines body for UpsertSite for application/json ContentType.
+type UpsertSiteJSONRequestBody = SiteWrite
+
+// UpdateSiteJSONRequestBody defines body for UpdateSite for application/json ContentType.
+type UpdateSiteJSONRequestBody = SiteWrite
+
 // PatchTenantJSONRequestBody defines body for PatchTenant for application/json ContentType.
 type PatchTenantJSONRequestBody = TenantPatch
 
@@ -635,6 +1163,84 @@ type ServerInterface interface {
 	// ListAuditEvents Query the tenant's audit log
 	// (GET /audit)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// ListChecks List checks
+	// (GET /checks)
+	ListChecks(w http.ResponseWriter, r *http.Request, params ListChecksParams)
+	// DeleteCheck Delete a check
+	// (DELETE /checks/{check_id})
+	DeleteCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// GetCheck One check
+	// (GET /checks/{check_id})
+	GetCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// UpdateCheck Replace a check
+	// (PUT /checks/{check_id})
+	UpdateCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// ListCredentialTypes Credential types and their fields
+	// (GET /credential-types)
+	ListCredentialTypes(w http.ResponseWriter, r *http.Request)
+	// ListCredentials List credentials (never their secrets)
+	// (GET /credentials)
+	ListCredentials(w http.ResponseWriter, r *http.Request, params ListCredentialsParams)
+	// CreateCredential Store a credential
+	// (POST /credentials)
+	CreateCredential(w http.ResponseWriter, r *http.Request)
+	// UpsertCredential Create or replace a credential by its external ID
+	// (PUT /credentials/by-external-id/{external_id})
+	UpsertCredential(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertCredentialParams)
+	// DeleteCredential Delete a credential that no check uses
+	// (DELETE /credentials/{credential_id})
+	DeleteCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID)
+	// GetCredential One credential (never its secrets)
+	// (GET /credentials/{credential_id})
+	GetCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID)
+	// UpdateCredential Replace a credential's name and fields
+	// (PUT /credentials/{credential_id})
+	UpdateCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID)
+	// ListDevices List devices
+	// (GET /devices)
+	ListDevices(w http.ResponseWriter, r *http.Request, params ListDevicesParams)
+	// CreateDevice Add a device
+	// (POST /devices)
+	CreateDevice(w http.ResponseWriter, r *http.Request)
+	// UpsertDevice Create or replace a device by its external ID
+	// (PUT /devices/by-external-id/{external_id})
+	UpsertDevice(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertDeviceParams)
+	// DeleteDevice Delete a device, its checks and the devices it contains
+	// (DELETE /devices/{device_id})
+	DeleteDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params DeleteDeviceParams)
+	// GetDevice One device
+	// (GET /devices/{device_id})
+	GetDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// UpdateDevice Replace a device
+	// (PUT /devices/{device_id})
+	UpdateDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// ListDeviceChecks The device's checks
+	// (GET /devices/{device_id}/checks)
+	ListDeviceChecks(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChecksParams)
+	// CreateCheck Add a check to the device
+	// (POST /devices/{device_id}/checks)
+	CreateCheck(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// ListDeviceChildren Devices this device contains
+	// (GET /devices/{device_id}/children)
+	ListDeviceChildren(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChildrenParams)
+	// ListDeviceDependencies What this device needs to work, directly
+	// (GET /devices/{device_id}/dependencies)
+	ListDeviceDependencies(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// AddDeviceDependency Record that this device needs another one
+	// (POST /devices/{device_id}/dependencies)
+	AddDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// RemoveDeviceDependency Remove a stored dependency
+	// (DELETE /devices/{device_id}/dependencies/{depends_on_id})
+	RemoveDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID, dependsOnId openapi_types.UUID)
+	// ListDeviceDependents Devices that need this device, directly
+	// (GET /devices/{device_id}/dependents)
+	ListDeviceDependents(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// GetDeviceImpact Every device that would be suppressed if this one failed
+	// (GET /devices/{device_id}/impact)
+	GetDeviceImpact(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// TestDevice Run every enabled check of the device once
+	// (POST /devices/{device_id}/test)
+	TestDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
 	// GetMe The resolved caller
 	// (GET /me)
 	GetMe(w http.ResponseWriter, r *http.Request)
@@ -644,6 +1250,24 @@ type ServerInterface interface {
 	// GetPlugin One plugin's manifest
 	// (GET /plugins/{type})
 	GetPlugin(w http.ResponseWriter, r *http.Request, pType string)
+	// ListSites List sites
+	// (GET /sites)
+	ListSites(w http.ResponseWriter, r *http.Request, params ListSitesParams)
+	// CreateSite Add a site
+	// (POST /sites)
+	CreateSite(w http.ResponseWriter, r *http.Request)
+	// UpsertSite Create or replace a site by its external ID
+	// (PUT /sites/by-external-id/{external_id})
+	UpsertSite(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertSiteParams)
+	// DeleteSite Delete a site without devices
+	// (DELETE /sites/{site_id})
+	DeleteSite(w http.ResponseWriter, r *http.Request, siteId SiteID)
+	// GetSite One site
+	// (GET /sites/{site_id})
+	GetSite(w http.ResponseWriter, r *http.Request, siteId SiteID)
+	// UpdateSite Replace a site
+	// (PUT /sites/{site_id})
+	UpdateSite(w http.ResponseWriter, r *http.Request, siteId SiteID)
 	// GetTenant The caller's tenant, with its limits
 	// (GET /tenant)
 	GetTenant(w http.ResponseWriter, r *http.Request)
@@ -866,6 +1490,1029 @@ func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListChecks operation middleware
+func (siw *ServerInterfaceWrapper) ListChecks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListChecksParams
+
+	// ------------- Optional query parameter "device_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "device_id", r.URL.Query(), &params.DeviceId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "device_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "plugin" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "plugin", r.URL.Query(), &params.Plugin, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "plugin"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plugin", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "enabled" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "enabled", r.URL.Query(), &params.Enabled, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "enabled"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "enabled", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChecks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCheck operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCheck operation middleware
+func (siw *ServerInterfaceWrapper) GetCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCheck operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCredentialTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListCredentialTypes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCredentialTypes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCredentials operation middleware
+func (siw *ServerInterfaceWrapper) ListCredentials(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCredentialsParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_source", r.URL.Query(), &params.ExternalSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_type", r.URL.Query(), &params.ExternalType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_id", r.URL.Query(), &params.ExternalId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCredentials(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCredential operation middleware
+func (siw *ServerInterfaceWrapper) CreateCredential(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCredential(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertCredential operation middleware
+func (siw *ServerInterfaceWrapper) UpsertCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertCredentialParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertCredential(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCredential operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "credential_id" -------------
+	var credentialId CredentialID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credential_id", r.PathValue("credential_id"), &credentialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credential_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCredential(w, r, credentialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCredential operation middleware
+func (siw *ServerInterfaceWrapper) GetCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "credential_id" -------------
+	var credentialId CredentialID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credential_id", r.PathValue("credential_id"), &credentialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credential_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCredential(w, r, credentialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCredential operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "credential_id" -------------
+	var credentialId CredentialID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credential_id", r.PathValue("credential_id"), &credentialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credential_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCredential(w, r, credentialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDevices operation middleware
+func (siw *ServerInterfaceWrapper) ListDevices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDevicesParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "site_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "site_id", r.URL.Query(), &params.SiteId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "site_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "parent_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "parent_id", r.URL.Query(), &params.ParentId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "parent_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parent_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "tag" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "tag", r.URL.Query(), &params.Tag, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "tag"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_source", r.URL.Query(), &params.ExternalSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_type", r.URL.Query(), &params.ExternalType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_id", r.URL.Query(), &params.ExternalId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDevices(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDevice operation middleware
+func (siw *ServerInterfaceWrapper) CreateDevice(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDevice(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertDevice operation middleware
+func (siw *ServerInterfaceWrapper) UpsertDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertDeviceParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertDevice(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteDevice operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteDeviceParams
+
+	// ------------- Optional query parameter "confirm" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "confirm", r.URL.Query(), &params.Confirm, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "confirm"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "confirm", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDevice(w, r, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDevice operation middleware
+func (siw *ServerInterfaceWrapper) GetDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDevice(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDevice operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDevice(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceChecks operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceChecks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeviceChecksParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceChecks(w, r, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCheck operation middleware
+func (siw *ServerInterfaceWrapper) CreateCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCheck(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceChildren operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceChildren(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeviceChildrenParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceChildren(w, r, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceDependencies operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceDependencies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceDependencies(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddDeviceDependency operation middleware
+func (siw *ServerInterfaceWrapper) AddDeviceDependency(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDeviceDependency(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveDeviceDependency operation middleware
+func (siw *ServerInterfaceWrapper) RemoveDeviceDependency(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "depends_on_id" -------------
+	var dependsOnId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "depends_on_id", r.PathValue("depends_on_id"), &dependsOnId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "depends_on_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveDeviceDependency(w, r, deviceId, dependsOnId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceDependents operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceDependents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceDependents(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDeviceImpact operation middleware
+func (siw *ServerInterfaceWrapper) GetDeviceImpact(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDeviceImpact(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestDevice operation middleware
+func (siw *ServerInterfaceWrapper) TestDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestDevice(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -911,6 +2558,238 @@ func (siw *ServerInterfaceWrapper) GetPlugin(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPlugin(w, r, pType)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSites operation middleware
+func (siw *ServerInterfaceWrapper) ListSites(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSitesParams
+
+	// ------------- Optional query parameter "external_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_source", r.URL.Query(), &params.ExternalSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_type", r.URL.Query(), &params.ExternalType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_id", r.URL.Query(), &params.ExternalId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSites(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSite operation middleware
+func (siw *ServerInterfaceWrapper) CreateSite(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSite(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertSite operation middleware
+func (siw *ServerInterfaceWrapper) UpsertSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertSiteParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertSite(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSite operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "site_id" -------------
+	var siteId SiteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "site_id", r.PathValue("site_id"), &siteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSite(w, r, siteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSite operation middleware
+func (siw *ServerInterfaceWrapper) GetSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "site_id" -------------
+	var siteId SiteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "site_id", r.PathValue("site_id"), &siteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSite(w, r, siteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSite operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "site_id" -------------
+	var siteId SiteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "site_id", r.PathValue("site_id"), &siteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSite(w, r, siteId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1438,6 +3317,38 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/tenants/{tenant_id}/members/by-external-id/{user_external_id}", wrapper.RemoveMember)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/tenants/{tenant_id}/members/by-external-id/{user_external_id}", wrapper.UpsertMember)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/users/by-external-id/{external_id}", wrapper.PatchUser)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/credential-types", wrapper.ListCredentialTypes)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/credentials", wrapper.ListCredentials)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/credentials", wrapper.CreateCredential)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/credentials/by-external-id/{external_id}", wrapper.UpsertCredential)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/credentials/{credential_id}", wrapper.DeleteCredential)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/credentials/{credential_id}", wrapper.GetCredential)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/credentials/{credential_id}", wrapper.UpdateCredential)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/sites", wrapper.ListSites)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/sites", wrapper.CreateSite)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/sites/by-external-id/{external_id}", wrapper.UpsertSite)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/sites/{site_id}", wrapper.DeleteSite)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/sites/{site_id}", wrapper.GetSite)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/sites/{site_id}", wrapper.UpdateSite)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices", wrapper.ListDevices)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices", wrapper.CreateDevice)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/devices/by-external-id/{external_id}", wrapper.UpsertDevice)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/devices/{device_id}", wrapper.DeleteDevice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}", wrapper.GetDevice)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/devices/{device_id}", wrapper.UpdateDevice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/children", wrapper.ListDeviceChildren)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/dependencies", wrapper.ListDeviceDependencies)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices/{device_id}/dependencies", wrapper.AddDeviceDependency)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/devices/{device_id}/dependencies/{depends_on_id}", wrapper.RemoveDeviceDependency)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/dependents", wrapper.ListDeviceDependents)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/impact", wrapper.GetDeviceImpact)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices/{device_id}/test", wrapper.TestDevice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/checks", wrapper.ListDeviceChecks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices/{device_id}/checks", wrapper.CreateCheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks", wrapper.ListChecks)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/checks/{check_id}", wrapper.DeleteCheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks/{check_id}", wrapper.GetCheck)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/checks/{check_id}", wrapper.UpdateCheck)
 
 	return m
 }
@@ -1599,6 +3510,1064 @@ func (response ListAuditEventsdefaultApplicationProblemPlusJSONResponse) VisitLi
 	return err
 }
 
+type ListChecksRequestObject struct {
+	Params ListChecksParams
+}
+
+type ListChecksResponseObject interface {
+	VisitListChecksResponse(w http.ResponseWriter) error
+}
+
+type ListChecks200JSONResponse CheckPage
+
+func (response ListChecks200JSONResponse) VisitListChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChecksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListChecksdefaultApplicationProblemPlusJSONResponse) VisitListChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCheckRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type DeleteCheckResponseObject interface {
+	VisitDeleteCheckResponse(w http.ResponseWriter) error
+}
+
+type DeleteCheck204Response struct {
+}
+
+func (response DeleteCheck204Response) VisitDeleteCheckResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteCheckdefaultApplicationProblemPlusJSONResponse) VisitDeleteCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type GetCheckResponseObject interface {
+	VisitGetCheckResponse(w http.ResponseWriter) error
+}
+
+type GetCheck200JSONResponse Check
+
+func (response GetCheck200JSONResponse) VisitGetCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCheckdefaultApplicationProblemPlusJSONResponse) VisitGetCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCheckRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+	Body    *UpdateCheckJSONRequestBody
+}
+
+type UpdateCheckResponseObject interface {
+	VisitUpdateCheckResponse(w http.ResponseWriter) error
+}
+
+type UpdateCheck200JSONResponse Check
+
+func (response UpdateCheck200JSONResponse) VisitUpdateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateCheckdefaultApplicationProblemPlusJSONResponse) VisitUpdateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialTypesRequestObject struct {
+}
+
+type ListCredentialTypesResponseObject interface {
+	VisitListCredentialTypesResponse(w http.ResponseWriter) error
+}
+
+type ListCredentialTypes200JSONResponse struct {
+	Items []CredentialType `json:"items"`
+}
+
+func (response ListCredentialTypes200JSONResponse) VisitListCredentialTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialTypesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListCredentialTypesdefaultApplicationProblemPlusJSONResponse) VisitListCredentialTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialsRequestObject struct {
+	Params ListCredentialsParams
+}
+
+type ListCredentialsResponseObject interface {
+	VisitListCredentialsResponse(w http.ResponseWriter) error
+}
+
+type ListCredentials200JSONResponse struct {
+	Items      []Credential `json:"items"`
+	NextCursor *string      `json:"next_cursor"`
+}
+
+func (response ListCredentials200JSONResponse) VisitListCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListCredentialsdefaultApplicationProblemPlusJSONResponse) VisitListCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCredentialRequestObject struct {
+	Body *CreateCredentialJSONRequestBody
+}
+
+type CreateCredentialResponseObject interface {
+	VisitCreateCredentialResponse(w http.ResponseWriter) error
+}
+
+type CreateCredential201JSONResponse Credential
+
+func (response CreateCredential201JSONResponse) VisitCreateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateCredentialdefaultApplicationProblemPlusJSONResponse) VisitCreateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertCredentialRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertCredentialParams
+	Body       *UpsertCredentialJSONRequestBody
+}
+
+type UpsertCredentialResponseObject interface {
+	VisitUpsertCredentialResponse(w http.ResponseWriter) error
+}
+
+type UpsertCredential200JSONResponse Credential
+
+func (response UpsertCredential200JSONResponse) VisitUpsertCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertCredential201JSONResponse Credential
+
+func (response UpsertCredential201JSONResponse) VisitUpsertCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertCredentialdefaultApplicationProblemPlusJSONResponse) VisitUpsertCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCredentialRequestObject struct {
+	CredentialId CredentialID `json:"credential_id"`
+}
+
+type DeleteCredentialResponseObject interface {
+	VisitDeleteCredentialResponse(w http.ResponseWriter) error
+}
+
+type DeleteCredential204Response struct {
+}
+
+func (response DeleteCredential204Response) VisitDeleteCredentialResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteCredentialdefaultApplicationProblemPlusJSONResponse) VisitDeleteCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCredentialRequestObject struct {
+	CredentialId CredentialID `json:"credential_id"`
+}
+
+type GetCredentialResponseObject interface {
+	VisitGetCredentialResponse(w http.ResponseWriter) error
+}
+
+type GetCredential200JSONResponse Credential
+
+func (response GetCredential200JSONResponse) VisitGetCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCredentialdefaultApplicationProblemPlusJSONResponse) VisitGetCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCredentialRequestObject struct {
+	CredentialId CredentialID `json:"credential_id"`
+	Body         *UpdateCredentialJSONRequestBody
+}
+
+type UpdateCredentialResponseObject interface {
+	VisitUpdateCredentialResponse(w http.ResponseWriter) error
+}
+
+type UpdateCredential200JSONResponse Credential
+
+func (response UpdateCredential200JSONResponse) VisitUpdateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateCredentialdefaultApplicationProblemPlusJSONResponse) VisitUpdateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDevicesRequestObject struct {
+	Params ListDevicesParams
+}
+
+type ListDevicesResponseObject interface {
+	VisitListDevicesResponse(w http.ResponseWriter) error
+}
+
+type ListDevices200JSONResponse DevicePage
+
+func (response ListDevices200JSONResponse) VisitListDevicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDevicesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDevicesdefaultApplicationProblemPlusJSONResponse) VisitListDevicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDeviceRequestObject struct {
+	Body *CreateDeviceJSONRequestBody
+}
+
+type CreateDeviceResponseObject interface {
+	VisitCreateDeviceResponse(w http.ResponseWriter) error
+}
+
+type CreateDevice201JSONResponse Device
+
+func (response CreateDevice201JSONResponse) VisitCreateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateDevicedefaultApplicationProblemPlusJSONResponse) VisitCreateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertDeviceRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertDeviceParams
+	Body       *UpsertDeviceJSONRequestBody
+}
+
+type UpsertDeviceResponseObject interface {
+	VisitUpsertDeviceResponse(w http.ResponseWriter) error
+}
+
+type UpsertDevice200JSONResponse Device
+
+func (response UpsertDevice200JSONResponse) VisitUpsertDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertDevice201JSONResponse Device
+
+func (response UpsertDevice201JSONResponse) VisitUpsertDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertDevicedefaultApplicationProblemPlusJSONResponse) VisitUpsertDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Params   DeleteDeviceParams
+}
+
+type DeleteDeviceResponseObject interface {
+	VisitDeleteDeviceResponse(w http.ResponseWriter) error
+}
+
+type DeleteDevice204Response struct {
+}
+
+func (response DeleteDevice204Response) VisitDeleteDeviceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteDevicedefaultApplicationProblemPlusJSONResponse) VisitDeleteDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type GetDeviceResponseObject interface {
+	VisitGetDeviceResponse(w http.ResponseWriter) error
+}
+
+type GetDevice200JSONResponse Device
+
+func (response GetDevice200JSONResponse) VisitGetDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetDevicedefaultApplicationProblemPlusJSONResponse) VisitGetDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Body     *UpdateDeviceJSONRequestBody
+}
+
+type UpdateDeviceResponseObject interface {
+	VisitUpdateDeviceResponse(w http.ResponseWriter) error
+}
+
+type UpdateDevice200JSONResponse Device
+
+func (response UpdateDevice200JSONResponse) VisitUpdateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateDevicedefaultApplicationProblemPlusJSONResponse) VisitUpdateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChecksRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Params   ListDeviceChecksParams
+}
+
+type ListDeviceChecksResponseObject interface {
+	VisitListDeviceChecksResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceChecks200JSONResponse CheckPage
+
+func (response ListDeviceChecks200JSONResponse) VisitListDeviceChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChecksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceChecksdefaultApplicationProblemPlusJSONResponse) VisitListDeviceChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Body     *CreateCheckJSONRequestBody
+}
+
+type CreateCheckResponseObject interface {
+	VisitCreateCheckResponse(w http.ResponseWriter) error
+}
+
+type CreateCheck201JSONResponse Check
+
+func (response CreateCheck201JSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateCheckdefaultApplicationProblemPlusJSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChildrenRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Params   ListDeviceChildrenParams
+}
+
+type ListDeviceChildrenResponseObject interface {
+	VisitListDeviceChildrenResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceChildren200JSONResponse DevicePage
+
+func (response ListDeviceChildren200JSONResponse) VisitListDeviceChildrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChildrendefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceChildrendefaultApplicationProblemPlusJSONResponse) VisitListDeviceChildrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependenciesRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type ListDeviceDependenciesResponseObject interface {
+	VisitListDeviceDependenciesResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceDependencies200JSONResponse DependencyList
+
+func (response ListDeviceDependencies200JSONResponse) VisitListDeviceDependenciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependenciesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceDependenciesdefaultApplicationProblemPlusJSONResponse) VisitListDeviceDependenciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDeviceDependencyRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Body     *AddDeviceDependencyJSONRequestBody
+}
+
+type AddDeviceDependencyResponseObject interface {
+	VisitAddDeviceDependencyResponse(w http.ResponseWriter) error
+}
+
+type AddDeviceDependency200JSONResponse Dependency
+
+func (response AddDeviceDependency200JSONResponse) VisitAddDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDeviceDependency201JSONResponse Dependency
+
+func (response AddDeviceDependency201JSONResponse) VisitAddDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDeviceDependencydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response AddDeviceDependencydefaultApplicationProblemPlusJSONResponse) VisitAddDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveDeviceDependencyRequestObject struct {
+	DeviceId    DeviceID           `json:"device_id"`
+	DependsOnId openapi_types.UUID `json:"depends_on_id"`
+}
+
+type RemoveDeviceDependencyResponseObject interface {
+	VisitRemoveDeviceDependencyResponse(w http.ResponseWriter) error
+}
+
+type RemoveDeviceDependency204Response struct {
+}
+
+func (response RemoveDeviceDependency204Response) VisitRemoveDeviceDependencyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveDeviceDependencydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RemoveDeviceDependencydefaultApplicationProblemPlusJSONResponse) VisitRemoveDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependentsRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type ListDeviceDependentsResponseObject interface {
+	VisitListDeviceDependentsResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceDependents200JSONResponse DependencyList
+
+func (response ListDeviceDependents200JSONResponse) VisitListDeviceDependentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceDependentsdefaultApplicationProblemPlusJSONResponse) VisitListDeviceDependentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDeviceImpactRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type GetDeviceImpactResponseObject interface {
+	VisitGetDeviceImpactResponse(w http.ResponseWriter) error
+}
+
+type GetDeviceImpact200JSONResponse struct {
+	Items []struct {
+		Device Device `json:"device"`
+
+		// Distance Edges between the two devices
+		Distance int `json:"distance"`
+	} `json:"items"`
+}
+
+func (response GetDeviceImpact200JSONResponse) VisitGetDeviceImpactResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDeviceImpactdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetDeviceImpactdefaultApplicationProblemPlusJSONResponse) VisitGetDeviceImpactResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type TestDeviceResponseObject interface {
+	VisitTestDeviceResponse(w http.ResponseWriter) error
+}
+
+type TestDevice200JSONResponse struct {
+	Items []CheckRun `json:"items"`
+}
+
+func (response TestDevice200JSONResponse) VisitTestDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response TestDevicedefaultApplicationProblemPlusJSONResponse) VisitTestDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -1705,6 +4674,254 @@ type GetPlugindefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetPlugindefaultApplicationProblemPlusJSONResponse) VisitGetPluginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSitesRequestObject struct {
+	Params ListSitesParams
+}
+
+type ListSitesResponseObject interface {
+	VisitListSitesResponse(w http.ResponseWriter) error
+}
+
+type ListSites200JSONResponse struct {
+	Items      []Site  `json:"items"`
+	NextCursor *string `json:"next_cursor"`
+}
+
+func (response ListSites200JSONResponse) VisitListSitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSitesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListSitesdefaultApplicationProblemPlusJSONResponse) VisitListSitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSiteRequestObject struct {
+	Body *CreateSiteJSONRequestBody
+}
+
+type CreateSiteResponseObject interface {
+	VisitCreateSiteResponse(w http.ResponseWriter) error
+}
+
+type CreateSite201JSONResponse Site
+
+func (response CreateSite201JSONResponse) VisitCreateSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateSitedefaultApplicationProblemPlusJSONResponse) VisitCreateSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertSiteRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertSiteParams
+	Body       *UpsertSiteJSONRequestBody
+}
+
+type UpsertSiteResponseObject interface {
+	VisitUpsertSiteResponse(w http.ResponseWriter) error
+}
+
+type UpsertSite200JSONResponse Site
+
+func (response UpsertSite200JSONResponse) VisitUpsertSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertSite201JSONResponse Site
+
+func (response UpsertSite201JSONResponse) VisitUpsertSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertSitedefaultApplicationProblemPlusJSONResponse) VisitUpsertSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSiteRequestObject struct {
+	SiteId SiteID `json:"site_id"`
+}
+
+type DeleteSiteResponseObject interface {
+	VisitDeleteSiteResponse(w http.ResponseWriter) error
+}
+
+type DeleteSite204Response struct {
+}
+
+func (response DeleteSite204Response) VisitDeleteSiteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteSitedefaultApplicationProblemPlusJSONResponse) VisitDeleteSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSiteRequestObject struct {
+	SiteId SiteID `json:"site_id"`
+}
+
+type GetSiteResponseObject interface {
+	VisitGetSiteResponse(w http.ResponseWriter) error
+}
+
+type GetSite200JSONResponse Site
+
+func (response GetSite200JSONResponse) VisitGetSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetSitedefaultApplicationProblemPlusJSONResponse) VisitGetSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSiteRequestObject struct {
+	SiteId SiteID `json:"site_id"`
+	Body   *UpdateSiteJSONRequestBody
+}
+
+type UpdateSiteResponseObject interface {
+	VisitUpdateSiteResponse(w http.ResponseWriter) error
+}
+
+type UpdateSite200JSONResponse Site
+
+func (response UpdateSite200JSONResponse) VisitUpdateSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateSitedefaultApplicationProblemPlusJSONResponse) VisitUpdateSiteResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2113,6 +5330,84 @@ type StrictServerInterface interface {
 	// ListAuditEvents Query the tenant's audit log
 	// (GET /audit)
 	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
+	// ListChecks List checks
+	// (GET /checks)
+	ListChecks(ctx context.Context, request ListChecksRequestObject) (ListChecksResponseObject, error)
+	// DeleteCheck Delete a check
+	// (DELETE /checks/{check_id})
+	DeleteCheck(ctx context.Context, request DeleteCheckRequestObject) (DeleteCheckResponseObject, error)
+	// GetCheck One check
+	// (GET /checks/{check_id})
+	GetCheck(ctx context.Context, request GetCheckRequestObject) (GetCheckResponseObject, error)
+	// UpdateCheck Replace a check
+	// (PUT /checks/{check_id})
+	UpdateCheck(ctx context.Context, request UpdateCheckRequestObject) (UpdateCheckResponseObject, error)
+	// ListCredentialTypes Credential types and their fields
+	// (GET /credential-types)
+	ListCredentialTypes(ctx context.Context, request ListCredentialTypesRequestObject) (ListCredentialTypesResponseObject, error)
+	// ListCredentials List credentials (never their secrets)
+	// (GET /credentials)
+	ListCredentials(ctx context.Context, request ListCredentialsRequestObject) (ListCredentialsResponseObject, error)
+	// CreateCredential Store a credential
+	// (POST /credentials)
+	CreateCredential(ctx context.Context, request CreateCredentialRequestObject) (CreateCredentialResponseObject, error)
+	// UpsertCredential Create or replace a credential by its external ID
+	// (PUT /credentials/by-external-id/{external_id})
+	UpsertCredential(ctx context.Context, request UpsertCredentialRequestObject) (UpsertCredentialResponseObject, error)
+	// DeleteCredential Delete a credential that no check uses
+	// (DELETE /credentials/{credential_id})
+	DeleteCredential(ctx context.Context, request DeleteCredentialRequestObject) (DeleteCredentialResponseObject, error)
+	// GetCredential One credential (never its secrets)
+	// (GET /credentials/{credential_id})
+	GetCredential(ctx context.Context, request GetCredentialRequestObject) (GetCredentialResponseObject, error)
+	// UpdateCredential Replace a credential's name and fields
+	// (PUT /credentials/{credential_id})
+	UpdateCredential(ctx context.Context, request UpdateCredentialRequestObject) (UpdateCredentialResponseObject, error)
+	// ListDevices List devices
+	// (GET /devices)
+	ListDevices(ctx context.Context, request ListDevicesRequestObject) (ListDevicesResponseObject, error)
+	// CreateDevice Add a device
+	// (POST /devices)
+	CreateDevice(ctx context.Context, request CreateDeviceRequestObject) (CreateDeviceResponseObject, error)
+	// UpsertDevice Create or replace a device by its external ID
+	// (PUT /devices/by-external-id/{external_id})
+	UpsertDevice(ctx context.Context, request UpsertDeviceRequestObject) (UpsertDeviceResponseObject, error)
+	// DeleteDevice Delete a device, its checks and the devices it contains
+	// (DELETE /devices/{device_id})
+	DeleteDevice(ctx context.Context, request DeleteDeviceRequestObject) (DeleteDeviceResponseObject, error)
+	// GetDevice One device
+	// (GET /devices/{device_id})
+	GetDevice(ctx context.Context, request GetDeviceRequestObject) (GetDeviceResponseObject, error)
+	// UpdateDevice Replace a device
+	// (PUT /devices/{device_id})
+	UpdateDevice(ctx context.Context, request UpdateDeviceRequestObject) (UpdateDeviceResponseObject, error)
+	// ListDeviceChecks The device's checks
+	// (GET /devices/{device_id}/checks)
+	ListDeviceChecks(ctx context.Context, request ListDeviceChecksRequestObject) (ListDeviceChecksResponseObject, error)
+	// CreateCheck Add a check to the device
+	// (POST /devices/{device_id}/checks)
+	CreateCheck(ctx context.Context, request CreateCheckRequestObject) (CreateCheckResponseObject, error)
+	// ListDeviceChildren Devices this device contains
+	// (GET /devices/{device_id}/children)
+	ListDeviceChildren(ctx context.Context, request ListDeviceChildrenRequestObject) (ListDeviceChildrenResponseObject, error)
+	// ListDeviceDependencies What this device needs to work, directly
+	// (GET /devices/{device_id}/dependencies)
+	ListDeviceDependencies(ctx context.Context, request ListDeviceDependenciesRequestObject) (ListDeviceDependenciesResponseObject, error)
+	// AddDeviceDependency Record that this device needs another one
+	// (POST /devices/{device_id}/dependencies)
+	AddDeviceDependency(ctx context.Context, request AddDeviceDependencyRequestObject) (AddDeviceDependencyResponseObject, error)
+	// RemoveDeviceDependency Remove a stored dependency
+	// (DELETE /devices/{device_id}/dependencies/{depends_on_id})
+	RemoveDeviceDependency(ctx context.Context, request RemoveDeviceDependencyRequestObject) (RemoveDeviceDependencyResponseObject, error)
+	// ListDeviceDependents Devices that need this device, directly
+	// (GET /devices/{device_id}/dependents)
+	ListDeviceDependents(ctx context.Context, request ListDeviceDependentsRequestObject) (ListDeviceDependentsResponseObject, error)
+	// GetDeviceImpact Every device that would be suppressed if this one failed
+	// (GET /devices/{device_id}/impact)
+	GetDeviceImpact(ctx context.Context, request GetDeviceImpactRequestObject) (GetDeviceImpactResponseObject, error)
+	// TestDevice Run every enabled check of the device once
+	// (POST /devices/{device_id}/test)
+	TestDevice(ctx context.Context, request TestDeviceRequestObject) (TestDeviceResponseObject, error)
 	// GetMe The resolved caller
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -2122,6 +5417,24 @@ type StrictServerInterface interface {
 	// GetPlugin One plugin's manifest
 	// (GET /plugins/{type})
 	GetPlugin(ctx context.Context, request GetPluginRequestObject) (GetPluginResponseObject, error)
+	// ListSites List sites
+	// (GET /sites)
+	ListSites(ctx context.Context, request ListSitesRequestObject) (ListSitesResponseObject, error)
+	// CreateSite Add a site
+	// (POST /sites)
+	CreateSite(ctx context.Context, request CreateSiteRequestObject) (CreateSiteResponseObject, error)
+	// UpsertSite Create or replace a site by its external ID
+	// (PUT /sites/by-external-id/{external_id})
+	UpsertSite(ctx context.Context, request UpsertSiteRequestObject) (UpsertSiteResponseObject, error)
+	// DeleteSite Delete a site without devices
+	// (DELETE /sites/{site_id})
+	DeleteSite(ctx context.Context, request DeleteSiteRequestObject) (DeleteSiteResponseObject, error)
+	// GetSite One site
+	// (GET /sites/{site_id})
+	GetSite(ctx context.Context, request GetSiteRequestObject) (GetSiteResponseObject, error)
+	// UpdateSite Replace a site
+	// (PUT /sites/{site_id})
+	UpdateSite(ctx context.Context, request UpdateSiteRequestObject) (UpdateSiteResponseObject, error)
 	// GetTenant The caller's tenant, with its limits
 	// (GET /tenant)
 	GetTenant(ctx context.Context, request GetTenantRequestObject) (GetTenantResponseObject, error)
@@ -2299,6 +5612,745 @@ func (sh *strictHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// ListChecks operation middleware
+func (sh *strictHandler) ListChecks(w http.ResponseWriter, r *http.Request, params ListChecksParams) {
+	var request ListChecksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChecks(ctx, request.(ListChecksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChecks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChecksResponseObject); ok {
+		if err := validResponse.VisitListChecksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCheck operation middleware
+func (sh *strictHandler) DeleteCheck(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request DeleteCheckRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCheck(ctx, request.(DeleteCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCheckResponseObject); ok {
+		if err := validResponse.VisitDeleteCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCheck operation middleware
+func (sh *strictHandler) GetCheck(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request GetCheckRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCheck(ctx, request.(GetCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCheckResponseObject); ok {
+		if err := validResponse.VisitGetCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCheck operation middleware
+func (sh *strictHandler) UpdateCheck(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request UpdateCheckRequestObject
+
+	request.CheckId = checkId
+
+	var body UpdateCheckJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCheck(ctx, request.(UpdateCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCheckResponseObject); ok {
+		if err := validResponse.VisitUpdateCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCredentialTypes operation middleware
+func (sh *strictHandler) ListCredentialTypes(w http.ResponseWriter, r *http.Request) {
+	var request ListCredentialTypesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCredentialTypes(ctx, request.(ListCredentialTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCredentialTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCredentialTypesResponseObject); ok {
+		if err := validResponse.VisitListCredentialTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCredentials operation middleware
+func (sh *strictHandler) ListCredentials(w http.ResponseWriter, r *http.Request, params ListCredentialsParams) {
+	var request ListCredentialsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCredentials(ctx, request.(ListCredentialsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCredentials")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCredentialsResponseObject); ok {
+		if err := validResponse.VisitListCredentialsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCredential operation middleware
+func (sh *strictHandler) CreateCredential(w http.ResponseWriter, r *http.Request) {
+	var request CreateCredentialRequestObject
+
+	var body CreateCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCredential(ctx, request.(CreateCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCredentialResponseObject); ok {
+		if err := validResponse.VisitCreateCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertCredential operation middleware
+func (sh *strictHandler) UpsertCredential(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertCredentialParams) {
+	var request UpsertCredentialRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertCredential(ctx, request.(UpsertCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertCredentialResponseObject); ok {
+		if err := validResponse.VisitUpsertCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCredential operation middleware
+func (sh *strictHandler) DeleteCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID) {
+	var request DeleteCredentialRequestObject
+
+	request.CredentialId = credentialId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCredential(ctx, request.(DeleteCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCredentialResponseObject); ok {
+		if err := validResponse.VisitDeleteCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCredential operation middleware
+func (sh *strictHandler) GetCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID) {
+	var request GetCredentialRequestObject
+
+	request.CredentialId = credentialId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCredential(ctx, request.(GetCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCredentialResponseObject); ok {
+		if err := validResponse.VisitGetCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCredential operation middleware
+func (sh *strictHandler) UpdateCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID) {
+	var request UpdateCredentialRequestObject
+
+	request.CredentialId = credentialId
+
+	var body UpdateCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCredential(ctx, request.(UpdateCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCredentialResponseObject); ok {
+		if err := validResponse.VisitUpdateCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDevices operation middleware
+func (sh *strictHandler) ListDevices(w http.ResponseWriter, r *http.Request, params ListDevicesParams) {
+	var request ListDevicesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDevices(ctx, request.(ListDevicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDevices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDevicesResponseObject); ok {
+		if err := validResponse.VisitListDevicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDevice operation middleware
+func (sh *strictHandler) CreateDevice(w http.ResponseWriter, r *http.Request) {
+	var request CreateDeviceRequestObject
+
+	var body CreateDeviceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDevice(ctx, request.(CreateDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDeviceResponseObject); ok {
+		if err := validResponse.VisitCreateDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertDevice operation middleware
+func (sh *strictHandler) UpsertDevice(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertDeviceParams) {
+	var request UpsertDeviceRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertDeviceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertDevice(ctx, request.(UpsertDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertDeviceResponseObject); ok {
+		if err := validResponse.VisitUpsertDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDevice operation middleware
+func (sh *strictHandler) DeleteDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params DeleteDeviceParams) {
+	var request DeleteDeviceRequestObject
+
+	request.DeviceId = deviceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDevice(ctx, request.(DeleteDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteDeviceResponseObject); ok {
+		if err := validResponse.VisitDeleteDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDevice operation middleware
+func (sh *strictHandler) GetDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request GetDeviceRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDevice(ctx, request.(GetDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDeviceResponseObject); ok {
+		if err := validResponse.VisitGetDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDevice operation middleware
+func (sh *strictHandler) UpdateDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request UpdateDeviceRequestObject
+
+	request.DeviceId = deviceId
+
+	var body UpdateDeviceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDevice(ctx, request.(UpdateDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDeviceResponseObject); ok {
+		if err := validResponse.VisitUpdateDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceChecks operation middleware
+func (sh *strictHandler) ListDeviceChecks(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChecksParams) {
+	var request ListDeviceChecksRequestObject
+
+	request.DeviceId = deviceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceChecks(ctx, request.(ListDeviceChecksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceChecks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceChecksResponseObject); ok {
+		if err := validResponse.VisitListDeviceChecksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCheck operation middleware
+func (sh *strictHandler) CreateCheck(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request CreateCheckRequestObject
+
+	request.DeviceId = deviceId
+
+	var body CreateCheckJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCheck(ctx, request.(CreateCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCheckResponseObject); ok {
+		if err := validResponse.VisitCreateCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceChildren operation middleware
+func (sh *strictHandler) ListDeviceChildren(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChildrenParams) {
+	var request ListDeviceChildrenRequestObject
+
+	request.DeviceId = deviceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceChildren(ctx, request.(ListDeviceChildrenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceChildren")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceChildrenResponseObject); ok {
+		if err := validResponse.VisitListDeviceChildrenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceDependencies operation middleware
+func (sh *strictHandler) ListDeviceDependencies(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request ListDeviceDependenciesRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceDependencies(ctx, request.(ListDeviceDependenciesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceDependencies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceDependenciesResponseObject); ok {
+		if err := validResponse.VisitListDeviceDependenciesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddDeviceDependency operation middleware
+func (sh *strictHandler) AddDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request AddDeviceDependencyRequestObject
+
+	request.DeviceId = deviceId
+
+	var body AddDeviceDependencyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddDeviceDependency(ctx, request.(AddDeviceDependencyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddDeviceDependency")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddDeviceDependencyResponseObject); ok {
+		if err := validResponse.VisitAddDeviceDependencyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveDeviceDependency operation middleware
+func (sh *strictHandler) RemoveDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID, dependsOnId openapi_types.UUID) {
+	var request RemoveDeviceDependencyRequestObject
+
+	request.DeviceId = deviceId
+	request.DependsOnId = dependsOnId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveDeviceDependency(ctx, request.(RemoveDeviceDependencyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveDeviceDependency")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveDeviceDependencyResponseObject); ok {
+		if err := validResponse.VisitRemoveDeviceDependencyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceDependents operation middleware
+func (sh *strictHandler) ListDeviceDependents(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request ListDeviceDependentsRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceDependents(ctx, request.(ListDeviceDependentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceDependents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceDependentsResponseObject); ok {
+		if err := validResponse.VisitListDeviceDependentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDeviceImpact operation middleware
+func (sh *strictHandler) GetDeviceImpact(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request GetDeviceImpactRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDeviceImpact(ctx, request.(GetDeviceImpactRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDeviceImpact")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDeviceImpactResponseObject); ok {
+		if err := validResponse.VisitGetDeviceImpactResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TestDevice operation middleware
+func (sh *strictHandler) TestDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request TestDeviceRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestDevice(ctx, request.(TestDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestDeviceResponseObject); ok {
+		if err := validResponse.VisitTestDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -2366,6 +6418,182 @@ func (sh *strictHandler) GetPlugin(w http.ResponseWriter, r *http.Request, pType
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetPluginResponseObject); ok {
 		if err := validResponse.VisitGetPluginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSites operation middleware
+func (sh *strictHandler) ListSites(w http.ResponseWriter, r *http.Request, params ListSitesParams) {
+	var request ListSitesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSites(ctx, request.(ListSitesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSites")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSitesResponseObject); ok {
+		if err := validResponse.VisitListSitesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSite operation middleware
+func (sh *strictHandler) CreateSite(w http.ResponseWriter, r *http.Request) {
+	var request CreateSiteRequestObject
+
+	var body CreateSiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSite(ctx, request.(CreateSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSiteResponseObject); ok {
+		if err := validResponse.VisitCreateSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertSite operation middleware
+func (sh *strictHandler) UpsertSite(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertSiteParams) {
+	var request UpsertSiteRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertSiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertSite(ctx, request.(UpsertSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertSiteResponseObject); ok {
+		if err := validResponse.VisitUpsertSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteSite operation middleware
+func (sh *strictHandler) DeleteSite(w http.ResponseWriter, r *http.Request, siteId SiteID) {
+	var request DeleteSiteRequestObject
+
+	request.SiteId = siteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteSite(ctx, request.(DeleteSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteSiteResponseObject); ok {
+		if err := validResponse.VisitDeleteSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSite operation middleware
+func (sh *strictHandler) GetSite(w http.ResponseWriter, r *http.Request, siteId SiteID) {
+	var request GetSiteRequestObject
+
+	request.SiteId = siteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSite(ctx, request.(GetSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSiteResponseObject); ok {
+		if err := validResponse.VisitGetSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSite operation middleware
+func (sh *strictHandler) UpdateSite(w http.ResponseWriter, r *http.Request, siteId SiteID) {
+	var request UpdateSiteRequestObject
+
+	request.SiteId = siteId
+
+	var body UpdateSiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSite(ctx, request.(UpdateSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSiteResponseObject); ok {
+		if err := validResponse.VisitUpdateSiteResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2646,69 +6874,128 @@ func (sh *strictHandler) PatchUser(w http.ResponseWriter, r *http.Request, exter
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"3Dtrc9s6dn8Fg3YmtktLcpLt9qqzH7xx7tbdm72uY087k2QkiDySEJMAA4C2tRn9984BwJcIypKjJNt+",
-	"k0g8zvvNrzSWWS4FCKPp+CvNmWIZGFD235tCaanwVwI6Vjw3XAo6pr/n7EsBJLavyVzJjEwFPJqJezIl",
-	"ck7MEkiu4J7LQpOcLWBAI8px95cC1IpGVLAM6Ji6PTSiOl5CxvA2s8rxjTaKiwVdryP69tGAEiy9vMD3",
-	"9picmWV9CvgFE57QiCr4UnAFCR0bVUDz6Iw9/gZiYZZ0/HI0imjGRfn/LNpy8XtZqBi6pHi/0gYyi20J",
-	"Arm8IDNIpVhoYuSAXMCcFakhXDuipMzMpcpeaMITEIabFdH2dHI0zdNCx6ksEj097iOYW0x7sPrDDkj9",
-	"FVa9hLyD1VM0ROiZoWNaFHZl94LfeMZNdcEG/Kl92TwwcRSi4zPLEvbIsyJDVBwu7l+NCRcGFqDsTTcg",
-	"mDC92Bj7+lsRWuNmnUuhwerFlZKzFDL8GUthQFhcWZ6nPGYoGMPcrfiXzxql5Gvjrn9WMKdj+k/DWvGG",
-	"7q0elufaG9tydi4IKCUd0n49Hnd+dflXWOGvXMkclOEOxFgBM5BMmGkhmDADp4Zn0MUyovCYcwX66T0f",
-	"yk0RFUWa0k/riPJkB0pGlOcTlqbyIeXaCYiBTAd0vtrKlGIr/J8ybSaFhuR58DmBCNyTK5jzx65m/8qV",
-	"NiRnypTm7A5WEZlLRRTEciH437lYECvKnUOVTOEpbl/jmvW6KZgfqKWahdUfUgG4QbuoyeJPFQhy9hli",
-	"gyA4yXhjF3Xl49t4/WwmllzYywx/AzmblHyKSFaAWZr+PqfjD9vvctvoOtok6x2supJ0swQyL9IUBWhA",
-	"3i/lgyBSxNYjdm1nE3w8rgs2suC8SLh5e+9NTxsIFruLA/xgsZEqsCPnE2/4e5U4JAgJGMbT+qbQmqZn",
-	"3rrwjgu7AgSa+w+00KBoVMKGiuA9Jz5MMi5O45TTiM65VRNtPXGDXDXWeNKeuG0yAmELCRCbG0CC4s89",
-	"TO0M5lKB27ej5XR3PklFv8wtCEgAYgX66XM0fGmBxYX519e064MjH49MeL7twJCZwyss2Uq5jErRbaMR",
-	"onsZl13DvCvOTdwaqOsqhuuxUzuDX4VgPCwV7yColVJNNoW8lm4v7pWQhwR5Fz0NmM3yMgUsOZUixesQ",
-	"NOaJjsr01NUuknrKCLtwrNQ5XC0F7GBQb7WVpYozluzrDt09EJVrbNA0zIZsBuowwdHuLqjG/WmMN/Dz",
-	"MuCxe8LBO+xucw0q4AQSrvOUrSZ9Hrdf85/tbHu97DswiscXIVVtecqAYm7qy4IVC+vRmYGgnPbGeQoM",
-	"CLxnEqdMh8OVQnATeBEOKuzidpzu4e1eFqLKVVosuOiSZMbTlItFDWaJ+4xpHtOIasNEwhTekxd6aTX4",
-	"nokY8MlcQZgwsRRzvpg0s64G6el/vv/9b+S9fUmOEsXmhrwcvRydnr08rtJ5C/ALTdxRAxpAKlZgk1qW",
-	"Wtut9wsPfSI44cKAumfpREMsRdLc3HA8+8pOvIT4DvVKpil4h8PFArQBFSRZZuW2jcM2rajlPIBbxsWO",
-	"eAmARE8Ue5hoGd9BUyJnUqbARNdl9cmqfVuJZVtW2xIR4F1NgS2s6cEsgEa0IdpBpahT67Z8Xv/6hvzy",
-	"+g9/JD61Ji721AMabejPZlDazD4F6k68e2TUeK0NM0UPxww36fbAYqNqZNgsBXJ7fUlyUC6zjwgMFgOy",
-	"NCbX4+Ewk4IbqQZ1RWgQy6wsLOihc4WnutA5iASSJ3MJLwkO1AqdEA+u9wkbQnpzU8UKG37XC1wVhzWi",
-	"oDKQD5quZxUzXIC4ewzSDCkDocjuJQ49qSKpoObaApjeLZT6za3dXsCQ91xzKSDp0vSz9VEzKY02iuVB",
-	"8taSXe2NDb+3UtIQrwRSMJCEM6w82ZNDW+oeHp42JaMN6anI2GB1mxYtuWmBGBL6Frm7wTuWOyCZGKYW",
-	"YCYCzINUd90Ihv7NvyH/cXNzRazH0YSJhDzAbCnlnSYZWxEFLF4OyNssNyvyJwL3oFZmieUkeIwhNwSt",
-	"3dkvZ/8WkVTKfMbiO3tIysXdaSpjltri8M5+FfMGxQxMclCTjIvCBIzSiPyJFMJS1VKvqryOQllfxh4n",
-	"ZTqS8jkglycJW1mAukXbD9XeRqSJZzgStTb13pfAPY9hl8XWbTk3s28Mgt7MAhX01k+Uo3vE6oqZeNmV",
-	"qm8zBHvW0HbS8k8hPe1Bqi/zqAo+pe8Lpx4N0H4gHUKhfMgc3GpQTydVT1e9frz72cLnhGuMO3rY3K3P",
-	"lHa4QqaPUj3y/fwc9NlIbICHR0FcKG5WNrfxGRYwBYG+5rkg51eXWKYl00yKycdiNHoVu/q7/Q3+kYZY",
-	"gXGPpoOyl2XdvDu6AgTDOdfP4WIuu1e+RdNPXNkLO4TMgRCzNB2QmyXXROcQl71D3yfEfEwVZkmOzi+u",
-	"T0ej0R+Pxx/FXyTRoO5BEWu45iwGTZgCsgABCn2fa9VyM/goPoqTk/PCLEEY37ManJyQKT6Siv/dPhmT",
-	"P1tsiEP6DlYlxh/FKTknLgStSMZiowkXhBtNsMTtXz9ws7TPlEzB7rxpdEHtziNs65DZyuJ4lRb6jQ14",
-	"8eRjUrl07U+0/vSjIKTQoHSE/6q7WXkripw9cvo/p85wnJYKdnp5MSVHUuER9dvLi+kxYY7MeHDrhHPM",
-	"FjcOcKQ/e3k8wIP+m5ulLAzyzxalCDcOKNbu+jpy2G6A4oulg9osmcFDHOwDcivuRE1BFz9YZC07fVRD",
-	"Phfa2N08A8/Ra5iDAmwtnJw46UlkXGQgbPfZSkdCmCHT4f3ZUOYgWM4H2KOcOpq2nq9Ylk4deRWIBFS5",
-	"N5GxnkbkoUS5LUYOkrdKSaVPTizEfbkbOZr2NU2nSNaTkxuegTYsy5tHvXr16hdE/PbmzYCcnPzGtcHX",
-	"ha5GEnK24KIEx4aKMQgNrjaMsM45KDqm7y5v6l4x/kF7UWQZUys0B1eXp3PbBfTJmA3QxIILQLmoBXVQ",
-	"5VVj+q6z9Pzqkkb0HpT2cdbgbDDCmzyh6Zi+so8i27y2FmrIcn56By6aWoDpGo5rZ62ddNlUzCkYmWrD",
-	"UpgSbM5pVC9NCmEVDFuXKGoEZxMiLOf49w+18Nq+oG9zsjgGrQkOccCDRdJlf1yKy4SOKRLedcI0jVqj",
-	"Ix86EyMiXQVg4RgOixXBuDEiUhGBoTByMrF/O4D1zkQgzu2RiG2B2qeNhv7L0WhLM7/bxN9oN5Sx5U5F",
-	"oqp3uBF5bnpge1bX4XZHA5D+5MhRzjoJ65yOG/W0PpAqGjQmD5oKgAy2RzpD9EKXth75bdhCu1DBDbFY",
-	"v51LvY+s3riuOhonBaZQAhLbGbVGJ2ZCSENmQLRtmbIF46Irha5566laVXH+LJPVXix9mmXuonIcpDlL",
-	"su6I09l3uTsJsR9pKODBTSdwEadF4uYStJeEAwiCu74MTly/KsD/dVQbruFX16haO3FIwaWcbd5dw728",
-	"q3m3YUJCkNZLhm6KKaDLr0MSiBclByCFO2k3UmCPfn8Djgy15g15COnchoV4FCTk6NfR2XGPJa4mAgLW",
-	"OGQzmy3WrdN3W7fz5Dmbqz7v3jsxhKXB4a2txabwYUY+66gnBNOPTe6w0s3J/Vx3VIlNcF6nnurcp7tv",
-	"L27v3sWTOemN0JyBNsTGXgdQ2f+yytTyY1afSCoXDe21z7zqZtDQ27au/QXMO6DfyLHtXaSgmbegRzYP",
-	"iKylsE4Svadtz1kXal3fASiGJkiBlinmC5iLgmoQasPMubZgf6R6LlbNHAESNwf1JuUIi88tfE8R48JM",
-	"+5HiVn9qGrZ6V/7yn6hBDoQDBnTuQIyM+Rw0KoSWyvgMGTcfMLLzzHMC5BOWB6bJrOCpy90bjPeL23wf",
-	"fkWY1tv0xVMo7JU2BnadN+qf1YVHluUpOEGMs5xGrsYSUS2yfFCXPkL1oU/fUW1LMQhHaCUzD8C730Wj",
-	"FV+d28elem6njzs31VDN9yKNv6GHNB7Cw1gtZ6xelLWiqC4/Ve2iHjPmNvSbsdtwjUpBLEXMU24JQz7L",
-	"WdhQ3fjjdwrNqhJ6YNZ/x9Cm/UHE1u3/n8KZegDt54YyJbsPZardceSoqiNiP/64qfVlmRSxaUn0cLY6",
-	"LaXhlCfDrw3R2MjO2ji8cd1LbWRuYw2UfEx6XKquyevRa1vH4ebfScIMw0QlL9QC64Rz46sRFcALxWIg",
-	"OSguk66KXFgY+kxRIKO78N3obyfwezk3p44Gdf14Z0Lvm7U2vmRaRzuv9p8foWrlZa+lTUDbgmnQ7/BV",
-	"kGYrc6ciyP85B/JmycSiFoIX2jYBIuK6UViQdE5kL+koAr7kMoEsl0iXATm3PssVZmMLgCZCummAB8WN",
-	"/esTFsAEqas8rhP7A5jvLvrH4f6tm+lAzhTCEc9ahEMW4Ppvr4pyh6qvIRoWo9oOzWwVqPVt4bN8wNfq",
-	"S7j1MLODw7o3JkSP886v2de8Vd/j/dQowEF/wJSsJMeB3HnDwnhmHIyrHW9vP37pd/mbBdlM3oMn326F",
-	"VdyQ0Ihiu4ZZ00WYx4qOMag6RM0VLyHMNWZtceD7O+pakqNgprpJ10N+dvysuCDkaJxhaXS1M66UVETJ",
-	"B/KwBEEEQALJgDQ8Uo97aQjF4d1L61uGH+xeSmPxc9xL/+3nSXIQ53KeJKXqGFkrjlQ+3KiGM/azQYUO",
-	"WZtNQ/MPFBzf6u8mvvUM1A+WXf8VUTAsLjSoA4jPhZu3QnlRgLavFCY7tfqwBLWP4DQGsqxAlKNYHz4h",
-	"+9z8khOVQqV0TIf3Z5ax/rzQp7Wu5BNZMfayjdkq/m20q73Vroo+62jzrCuPgx11r+pHFlU8z/vXJc+x",
-	"6MYWYMdqsCEXkWoWqL6ohfg6CgEe7Eb47fZRYJ/NySNSfcLiUPUfsdjqcLuWq4s8lwpTll9Hr5rg+SLh",
-	"+tP6fwcA",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

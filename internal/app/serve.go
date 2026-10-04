@@ -19,6 +19,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/api"
 	"github.com/plusclouds/monitoring.server/internal/buildinfo"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/crypto"
 	"github.com/plusclouds/monitoring.server/internal/logging"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
@@ -106,7 +107,11 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	g, gctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return status.Run(gctx) })
 	if slices.Contains(o.Roles, config.RoleAPI) {
-		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Logger: log.Logger, Registry: reg})
+		keys, err := crypto.Load(o.Config.Crypto)
+		if err != nil {
+			return err
+		}
+		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Keys: keys, Logger: log.Logger, Registry: reg})
 		if err != nil {
 			return err
 		}
