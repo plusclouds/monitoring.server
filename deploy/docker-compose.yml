@@ -11,7 +11,7 @@
 # from source on the host instead, publish it on 127.0.0.1:55432 with the
 # override file:
 #   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.db-port.yml up -d --wait postgres
-#   ./bin/monitor serve --config deploy/dev/config.yaml
+#   MONITOR_DEV_KEK=ZGV2LW9ubHkta2VrLWRvLW5vdC11c2UtaW4tcHJvZCE= ./bin/monitor serve --config deploy/dev/config.yaml
 name: monitor-dev
 
 services:
@@ -42,6 +42,9 @@ services:
         condition: service_healthy
     environment:
       MONITOR_CONFIG: /etc/monitor/config.yaml
+      # Development-only key-encryption key (ADR-0006); credentials stored with
+      # it are readable by anyone with this repository. Never reuse it.
+      MONITOR_DEV_KEK: ZGV2LW9ubHkta2VrLWRvLW5vdC11c2UtaW4tcHJvZCE=
     volumes:
       - ./docker/config.yaml:/etc/monitor/config.yaml:ro
     # backend for the database; frontend for the published API port and for

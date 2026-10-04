@@ -10,13 +10,18 @@ import (
 	"testing"
 
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/crypto"
 )
 
 func docsHandler(t *testing.T, enabled bool) http.Handler {
 	t.Helper()
 	cfg := config.Default()
 	cfg.API.Docs = enabled
-	s, err := New(Options{Config: cfg, Logger: slog.New(slog.DiscardHandler)})
+	keys, err := crypto.NewKeyring("docs", map[string][]byte{"docs": make([]byte, crypto.KeySize)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := New(Options{Config: cfg, Keys: keys, Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {
 		t.Fatal(err)
 	}

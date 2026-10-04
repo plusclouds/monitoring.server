@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/plusclouds/monitoring.server/internal/errs"
 	"github.com/plusclouds/monitoring.server/internal/tenancy"
 )
 
@@ -49,11 +50,17 @@ var (
 func toProblem(err error) *Problem {
 	var p *Problem
 	var v *tenancy.ValidationError
+	var inv *errs.Invalid
+	var conflict *errs.Conflict
 	switch {
 	case errors.As(err, &p):
 		return p
-	case errors.Is(err, tenancy.ErrNotFound):
+	case errors.Is(err, tenancy.ErrNotFound), errors.Is(err, errs.ErrNotFound):
 		return errNotFound
+	case errors.As(err, &inv):
+		return problem(http.StatusUnprocessableEntity, "invalid-value", "Invalid value", inv.Error())
+	case errors.As(err, &conflict):
+		return problem(http.StatusConflict, conflict.Type, "Conflict", conflict.Message)
 	case errors.Is(err, tenancy.ErrDeleted):
 		return problem(http.StatusConflict, "tenant-deleted", "Tenant deleted", "The tenant is deleted and cannot be changed.")
 	case errors.As(err, &v):

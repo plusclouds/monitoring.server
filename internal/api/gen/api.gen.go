@@ -24,6 +24,51 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AlertRouteMatchEventTypes.
+const (
+	MonitoringIncidentAcknowledged AlertRouteMatchEventTypes = "monitoring.incident.acknowledged"
+	MonitoringIncidentCommented    AlertRouteMatchEventTypes = "monitoring.incident.commented"
+	MonitoringIncidentOpened       AlertRouteMatchEventTypes = "monitoring.incident.opened"
+	MonitoringIncidentResolved     AlertRouteMatchEventTypes = "monitoring.incident.resolved"
+	MonitoringIncidentUpdated      AlertRouteMatchEventTypes = "monitoring.incident.updated"
+)
+
+// Valid indicates whether the value is a known member of the AlertRouteMatchEventTypes enum.
+func (e AlertRouteMatchEventTypes) Valid() bool {
+	switch e {
+	case MonitoringIncidentAcknowledged:
+		return true
+	case MonitoringIncidentCommented:
+		return true
+	case MonitoringIncidentOpened:
+		return true
+	case MonitoringIncidentResolved:
+		return true
+	case MonitoringIncidentUpdated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AlertRouteMatchSeverity.
+const (
+	AlertRouteMatchSeverityCritical AlertRouteMatchSeverity = "critical"
+	AlertRouteMatchSeverityWarning  AlertRouteMatchSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the AlertRouteMatchSeverity enum.
+func (e AlertRouteMatchSeverity) Valid() bool {
+	switch e {
+	case AlertRouteMatchSeverityCritical:
+		return true
+	case AlertRouteMatchSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuditEventActorKind.
 const (
 	AuditEventActorKindAdminCli AuditEventActorKind = "admin-cli"
@@ -48,6 +93,198 @@ func (e AuditEventActorKind) Valid() bool {
 	case AuditEventActorKindSystem:
 		return true
 	case AuditEventActorKindUser:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckRunStatus.
+const (
+	CheckRunStatusCRITICAL CheckRunStatus = "CRITICAL"
+	CheckRunStatusOK       CheckRunStatus = "OK"
+	CheckRunStatusUNKNOWN  CheckRunStatus = "UNKNOWN"
+	CheckRunStatusWARNING  CheckRunStatus = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the CheckRunStatus enum.
+func (e CheckRunStatus) Valid() bool {
+	switch e {
+	case CheckRunStatusCRITICAL:
+		return true
+	case CheckRunStatusOK:
+		return true
+	case CheckRunStatusUNKNOWN:
+		return true
+	case CheckRunStatusWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckStatePhase.
+const (
+	CheckStatePhaseOK      CheckStatePhase = "OK"
+	CheckStatePhasePENDING CheckStatePhase = "PENDING"
+	CheckStatePhasePROBLEM CheckStatePhase = "PROBLEM"
+)
+
+// Valid indicates whether the value is a known member of the CheckStatePhase enum.
+func (e CheckStatePhase) Valid() bool {
+	switch e {
+	case CheckStatePhaseOK:
+		return true
+	case CheckStatePhasePENDING:
+		return true
+	case CheckStatePhasePROBLEM:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CheckStateStatus.
+const (
+	CheckStateStatusCRITICAL CheckStateStatus = "CRITICAL"
+	CheckStateStatusOK       CheckStateStatus = "OK"
+	CheckStateStatusUNKNOWN  CheckStateStatus = "UNKNOWN"
+	CheckStateStatusWARNING  CheckStateStatus = "WARNING"
+)
+
+// Valid indicates whether the value is a known member of the CheckStateStatus enum.
+func (e CheckStateStatus) Valid() bool {
+	switch e {
+	case CheckStateStatusCRITICAL:
+		return true
+	case CheckStateStatusOK:
+		return true
+	case CheckStateStatusUNKNOWN:
+		return true
+	case CheckStateStatusWARNING:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DeviceType.
+const (
+	Bmc            DeviceType = "bmc"
+	Camera         DeviceType = "camera"
+	HypervisorHost DeviceType = "hypervisor_host"
+	HypervisorPool DeviceType = "hypervisor_pool"
+	Iot            DeviceType = "iot"
+	LlmApplication DeviceType = "llm_application"
+	LlmEndpoint    DeviceType = "llm_endpoint"
+	Network        DeviceType = "network"
+	Other          DeviceType = "other"
+	Pdu            DeviceType = "pdu"
+	Sensor         DeviceType = "sensor"
+	Server         DeviceType = "server"
+	Ups            DeviceType = "ups"
+	Vm             DeviceType = "vm"
+	Web            DeviceType = "web"
+)
+
+// Valid indicates whether the value is a known member of the DeviceType enum.
+func (e DeviceType) Valid() bool {
+	switch e {
+	case Bmc:
+		return true
+	case Camera:
+		return true
+	case HypervisorHost:
+		return true
+	case HypervisorPool:
+		return true
+	case Iot:
+		return true
+	case LlmApplication:
+		return true
+	case LlmEndpoint:
+		return true
+	case Network:
+		return true
+	case Other:
+		return true
+	case Pdu:
+		return true
+	case Sensor:
+		return true
+	case Server:
+		return true
+	case Ups:
+		return true
+	case Vm:
+		return true
+	case Web:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentResolvedBy.
+const (
+	IncidentResolvedByCheckDeleted  IncidentResolvedBy = "check-deleted"
+	IncidentResolvedByCheckDisabled IncidentResolvedBy = "check-disabled"
+	IncidentResolvedByLessThannil   IncidentResolvedBy = "<nil>"
+	IncidentResolvedByManual        IncidentResolvedBy = "manual"
+	IncidentResolvedByRecovery      IncidentResolvedBy = "recovery"
+)
+
+// Valid indicates whether the value is a known member of the IncidentResolvedBy enum.
+func (e IncidentResolvedBy) Valid() bool {
+	switch e {
+	case IncidentResolvedByCheckDeleted:
+		return true
+	case IncidentResolvedByCheckDisabled:
+		return true
+	case IncidentResolvedByLessThannil:
+		return true
+	case IncidentResolvedByManual:
+		return true
+	case IncidentResolvedByRecovery:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentSeverity.
+const (
+	IncidentSeverityCritical IncidentSeverity = "critical"
+	IncidentSeverityWarning  IncidentSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the IncidentSeverity enum.
+func (e IncidentSeverity) Valid() bool {
+	switch e {
+	case IncidentSeverityCritical:
+		return true
+	case IncidentSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IncidentStatus.
+const (
+	IncidentStatusAcknowledged IncidentStatus = "acknowledged"
+	IncidentStatusOpen         IncidentStatus = "open"
+	IncidentStatusResolved     IncidentStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the IncidentStatus enum.
+func (e IncidentStatus) Valid() bool {
+	switch e {
+	case IncidentStatusAcknowledged:
+		return true
+	case IncidentStatusOpen:
+		return true
+	case IncidentStatusResolved:
 		return true
 	default:
 		return false
@@ -146,19 +383,19 @@ func (e PluginBillingClass) Valid() bool {
 
 // Defines values for PluginKind.
 const (
-	Check     PluginKind = "check"
-	Collector PluginKind = "collector"
-	Ingester  PluginKind = "ingester"
+	PluginKindCheck     PluginKind = "check"
+	PluginKindCollector PluginKind = "collector"
+	PluginKindIngester  PluginKind = "ingester"
 )
 
 // Valid indicates whether the value is a known member of the PluginKind enum.
 func (e PluginKind) Valid() bool {
 	switch e {
-	case Check:
+	case PluginKindCheck:
 		return true
-	case Collector:
+	case PluginKindCollector:
 		return true
-	case Ingester:
+	case PluginKindIngester:
 		return true
 	default:
 		return false
@@ -264,6 +501,42 @@ func (e TenantPatchStatus) Valid() bool {
 	}
 }
 
+// Defines values for ThresholdConditionOp.
+const (
+	Between          ThresholdConditionOp = "between"
+	Empty            ThresholdConditionOp = "!="
+	EqualEqual       ThresholdConditionOp = "=="
+	GreaterThan      ThresholdConditionOp = ">"
+	GreaterThanEqual ThresholdConditionOp = ">="
+	LessThan         ThresholdConditionOp = "<"
+	LessThanEqual    ThresholdConditionOp = "<="
+	Outside          ThresholdConditionOp = "outside"
+)
+
+// Valid indicates whether the value is a known member of the ThresholdConditionOp enum.
+func (e ThresholdConditionOp) Valid() bool {
+	switch e {
+	case Between:
+		return true
+	case Empty:
+		return true
+	case EqualEqual:
+		return true
+	case GreaterThan:
+		return true
+	case GreaterThanEqual:
+		return true
+	case LessThan:
+		return true
+	case LessThanEqual:
+		return true
+	case Outside:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UserStatus.
 const (
 	UserStatusActive   UserStatus = "active"
@@ -294,6 +567,162 @@ func (e UserPatchStatus) Valid() bool {
 	case UserPatchStatusActive:
 		return true
 	case UserPatchStatusDisabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WebhookDeliveryStatus.
+const (
+	WebhookDeliveryStatusCancelled WebhookDeliveryStatus = "cancelled"
+	WebhookDeliveryStatusDelivered WebhookDeliveryStatus = "delivered"
+	WebhookDeliveryStatusFailed    WebhookDeliveryStatus = "failed"
+	WebhookDeliveryStatusPending   WebhookDeliveryStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the WebhookDeliveryStatus enum.
+func (e WebhookDeliveryStatus) Valid() bool {
+	switch e {
+	case WebhookDeliveryStatusCancelled:
+		return true
+	case WebhookDeliveryStatusDelivered:
+		return true
+	case WebhookDeliveryStatusFailed:
+		return true
+	case WebhookDeliveryStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListIncidentsParamsStatus.
+const (
+	ListIncidentsParamsStatusAcknowledged ListIncidentsParamsStatus = "acknowledged"
+	ListIncidentsParamsStatusActive       ListIncidentsParamsStatus = "active"
+	ListIncidentsParamsStatusOpen         ListIncidentsParamsStatus = "open"
+	ListIncidentsParamsStatusResolved     ListIncidentsParamsStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the ListIncidentsParamsStatus enum.
+func (e ListIncidentsParamsStatus) Valid() bool {
+	switch e {
+	case ListIncidentsParamsStatusAcknowledged:
+		return true
+	case ListIncidentsParamsStatusActive:
+		return true
+	case ListIncidentsParamsStatusOpen:
+		return true
+	case ListIncidentsParamsStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListIncidentsParamsSeverity.
+const (
+	ListIncidentsParamsSeverityCritical ListIncidentsParamsSeverity = "critical"
+	ListIncidentsParamsSeverityWarning  ListIncidentsParamsSeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the ListIncidentsParamsSeverity enum.
+func (e ListIncidentsParamsSeverity) Valid() bool {
+	switch e {
+	case ListIncidentsParamsSeverityCritical:
+		return true
+	case ListIncidentsParamsSeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetIncident200JSONResponseBodyResolvedBy.
+const (
+	GetIncident200JSONResponseBodyResolvedByCheckDeleted  GetIncident200JSONResponseBodyResolvedBy = "check-deleted"
+	GetIncident200JSONResponseBodyResolvedByCheckDisabled GetIncident200JSONResponseBodyResolvedBy = "check-disabled"
+	GetIncident200JSONResponseBodyResolvedByLessThannil   GetIncident200JSONResponseBodyResolvedBy = "<nil>"
+	GetIncident200JSONResponseBodyResolvedByManual        GetIncident200JSONResponseBodyResolvedBy = "manual"
+	GetIncident200JSONResponseBodyResolvedByRecovery      GetIncident200JSONResponseBodyResolvedBy = "recovery"
+)
+
+// Valid indicates whether the value is a known member of the GetIncident200JSONResponseBodyResolvedBy enum.
+func (e GetIncident200JSONResponseBodyResolvedBy) Valid() bool {
+	switch e {
+	case GetIncident200JSONResponseBodyResolvedByCheckDeleted:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByCheckDisabled:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByLessThannil:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByManual:
+		return true
+	case GetIncident200JSONResponseBodyResolvedByRecovery:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetIncident200JSONResponseBodySeverity.
+const (
+	GetIncident200JSONResponseBodySeverityCritical GetIncident200JSONResponseBodySeverity = "critical"
+	GetIncident200JSONResponseBodySeverityWarning  GetIncident200JSONResponseBodySeverity = "warning"
+)
+
+// Valid indicates whether the value is a known member of the GetIncident200JSONResponseBodySeverity enum.
+func (e GetIncident200JSONResponseBodySeverity) Valid() bool {
+	switch e {
+	case GetIncident200JSONResponseBodySeverityCritical:
+		return true
+	case GetIncident200JSONResponseBodySeverityWarning:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetIncident200JSONResponseBodyStatus.
+const (
+	GetIncident200JSONResponseBodyStatusAcknowledged GetIncident200JSONResponseBodyStatus = "acknowledged"
+	GetIncident200JSONResponseBodyStatusOpen         GetIncident200JSONResponseBodyStatus = "open"
+	GetIncident200JSONResponseBodyStatusResolved     GetIncident200JSONResponseBodyStatus = "resolved"
+)
+
+// Valid indicates whether the value is a known member of the GetIncident200JSONResponseBodyStatus enum.
+func (e GetIncident200JSONResponseBodyStatus) Valid() bool {
+	switch e {
+	case GetIncident200JSONResponseBodyStatusAcknowledged:
+		return true
+	case GetIncident200JSONResponseBodyStatusOpen:
+		return true
+	case GetIncident200JSONResponseBodyStatusResolved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListWebhookDeliveriesParamsStatus.
+const (
+	ListWebhookDeliveriesParamsStatusCancelled ListWebhookDeliveriesParamsStatus = "cancelled"
+	ListWebhookDeliveriesParamsStatusDelivered ListWebhookDeliveriesParamsStatus = "delivered"
+	ListWebhookDeliveriesParamsStatusFailed    ListWebhookDeliveriesParamsStatus = "failed"
+	ListWebhookDeliveriesParamsStatusPending   ListWebhookDeliveriesParamsStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the ListWebhookDeliveriesParamsStatus enum.
+func (e ListWebhookDeliveriesParamsStatus) Valid() bool {
+	switch e {
+	case ListWebhookDeliveriesParamsStatusCancelled:
+		return true
+	case ListWebhookDeliveriesParamsStatusDelivered:
+		return true
+	case ListWebhookDeliveriesParamsStatusFailed:
+		return true
+	case ListWebhookDeliveriesParamsStatusPending:
 		return true
 	default:
 		return false
@@ -339,6 +768,62 @@ type APIKeyCreated struct {
 	Role   Role   `json:"role"`
 }
 
+// AlertRoute defines model for AlertRoute.
+type AlertRoute struct {
+	// Continue Keep evaluating later routes after this one matched
+	Continue   bool               `json:"continue"`
+	CreatedAt  time.Time          `json:"created_at"`
+	Enabled    bool               `json:"enabled"`
+	EndpointId openapi_types.UUID `json:"endpoint_id"`
+	External   *ExternalRef       `json:"external"`
+	Id         openapi_types.UUID `json:"id"`
+
+	// Labels Sent as data.route.labels; the receiver decides what they mean (recipient, channel).
+	Labels    map[string]string `json:"labels"`
+	ManagedBy string            `json:"managed_by"`
+
+	// Match Every set field must match; an empty match takes everything.
+	Match AlertRouteMatch `json:"match"`
+	Name  string          `json:"name"`
+
+	// Position Evaluation order, lowest first
+	Position  int       `json:"position"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// AlertRouteMatch Every set field must match; an empty match takes everything.
+type AlertRouteMatch struct {
+	DeviceTypes *[]DeviceType `json:"device_types,omitempty"`
+
+	// EventTypes Default: opened, updated, acknowledged and resolved incident events.
+	EventTypes *[]AlertRouteMatchEventTypes `json:"event_types,omitempty"`
+	Severity   *[]AlertRouteMatchSeverity   `json:"severity,omitempty"`
+	SiteIds    *[]openapi_types.UUID        `json:"site_ids,omitempty"`
+	Tags       *map[string]string           `json:"tags,omitempty"`
+}
+
+// AlertRouteMatchEventTypes defines model for AlertRouteMatch.EventTypes.
+type AlertRouteMatchEventTypes string
+
+// AlertRouteMatchSeverity defines model for AlertRouteMatch.Severity.
+type AlertRouteMatchSeverity string
+
+// AlertRouteWrite defines model for AlertRouteWrite.
+type AlertRouteWrite struct {
+	Continue   *bool              `json:"continue,omitempty"`
+	Enabled    *bool              `json:"enabled,omitempty"`
+	EndpointId openapi_types.UUID `json:"endpoint_id"`
+	External   *ExternalRefWrite  `json:"external,omitempty"`
+	Labels     *map[string]string `json:"labels,omitempty"`
+
+	// Match Every set field must match; an empty match takes everything.
+	Match *AlertRouteMatch `json:"match,omitempty"`
+	Name  string           `json:"name"`
+
+	// Position Default: after every other route
+	Position *int `json:"position,omitempty"`
+}
+
 // AuditEvent defines model for AuditEvent.
 type AuditEvent struct {
 	Action string `json:"action"`
@@ -363,11 +848,267 @@ type AuditEvent struct {
 // AuditEventActorKind defines model for AuditEvent.Actor.Kind.
 type AuditEventActorKind string
 
+// Check defines model for Check.
+type Check struct {
+	Config    map[string]interface{} `json:"config"`
+	CreatedAt time.Time              `json:"created_at"`
+
+	// Credentials Credential ID per role, for example {"auth": "…"}
+	Credentials       map[string]openapi_types.UUID `json:"credentials"`
+	DeviceId          openapi_types.UUID            `json:"device_id"`
+	Enabled           bool                          `json:"enabled"`
+	FailureCount      int                           `json:"failure_count"`
+	Id                openapi_types.UUID            `json:"id"`
+	IntervalSeconds   int                           `json:"interval_seconds"`
+	IsHostCheck       bool                          `json:"is_host_check"`
+	ManagedBy         string                        `json:"managed_by"`
+	Name              string                        `json:"name"`
+	Plugin            string                        `json:"plugin"`
+	RecoveryCount     int                           `json:"recovery_count"`
+	RunbookUrl        *string                       `json:"runbook_url"`
+	Thresholds        []ThresholdRule               `json:"thresholds"`
+	TimeoutSeconds    *int                          `json:"timeout_seconds"`
+	UnknownIsCritical bool                          `json:"unknown_is_critical"`
+	UpdatedAt         time.Time                     `json:"updated_at"`
+}
+
+// CheckPage defines model for CheckPage.
+type CheckPage struct {
+	Items      []Check `json:"items"`
+	NextCursor *string `json:"next_cursor"`
+}
+
+// CheckRun defines model for CheckRun.
+type CheckRun struct {
+	CheckId    openapi_types.UUID `json:"check_id"`
+	DurationMs float64            `json:"duration_ms"`
+
+	// Metrics Metric values by name; null when not collected.
+	Metrics map[string]*float64 `json:"metrics"`
+	Name    string              `json:"name"`
+	Output  string              `json:"output"`
+	Plugin  string              `json:"plugin"`
+	Status  CheckRunStatus      `json:"status"`
+	Time    time.Time           `json:"time"`
+}
+
+// CheckRunStatus defines model for CheckRun.Status.
+type CheckRunStatus string
+
+// CheckState defines model for CheckState.
+type CheckState struct {
+	CheckId         openapi_types.UUID  `json:"check_id"`
+	ConsecutiveBad  int                 `json:"consecutive_bad"`
+	ConsecutiveGood int                 `json:"consecutive_good"`
+	Flapping        bool                `json:"flapping"`
+	IncidentId      *openapi_types.UUID `json:"incident_id"`
+	LastMetrics     map[string]float64  `json:"last_metrics"`
+	LastOutput      *string             `json:"last_output"`
+	LastResultAt    *time.Time          `json:"last_result_at"`
+
+	// LastStatus The plugin's own status of the last result
+	LastStatus *string         `json:"last_status"`
+	Phase      CheckStatePhase `json:"phase"`
+
+	// Since When status last changed
+	Since time.Time `json:"since"`
+
+	// Status Effective status: plugin and thresholds
+	Status    CheckStateStatus `json:"status"`
+	UpdatedAt time.Time        `json:"updated_at"`
+}
+
+// CheckStatePhase defines model for CheckState.Phase.
+type CheckStatePhase string
+
+// CheckStateStatus Effective status: plugin and thresholds
+type CheckStateStatus string
+
+// CheckWrite defines model for CheckWrite.
+type CheckWrite struct {
+	// Config Validated against the plugin's config_schema
+	Config       *map[string]interface{}        `json:"config,omitempty"`
+	Credentials  *map[string]openapi_types.UUID `json:"credentials,omitempty"`
+	Enabled      *bool                          `json:"enabled,omitempty"`
+	FailureCount *int                           `json:"failure_count,omitempty"`
+
+	// IntervalSeconds Default: the plugin's
+	IntervalSeconds *int `json:"interval_seconds,omitempty"`
+
+	// IsHostCheck The check that says whether the device is up
+	IsHostCheck *bool  `json:"is_host_check,omitempty"`
+	Name        string `json:"name"`
+
+	// Plugin One of GET /v1/plugins
+	Plugin            string           `json:"plugin"`
+	RecoveryCount     *int             `json:"recovery_count,omitempty"`
+	RunbookUrl        *string          `json:"runbook_url,omitempty"`
+	Thresholds        *[]ThresholdRule `json:"thresholds,omitempty"`
+	TimeoutSeconds    *int             `json:"timeout_seconds,omitempty"`
+	UnknownIsCritical *bool            `json:"unknown_is_critical,omitempty"`
+}
+
+// Credential defines model for Credential.
+type Credential struct {
+	CreatedAt time.Time    `json:"created_at"`
+	External  *ExternalRef `json:"external"`
+
+	// Fields Non-secret fields only.
+	Fields    map[string]string  `json:"fields"`
+	Id        openapi_types.UUID `json:"id"`
+	ManagedBy string             `json:"managed_by"`
+	Name      string             `json:"name"`
+
+	// SecretsSet Names of the secret fields that have a value.
+	SecretsSet []string  `json:"secrets_set"`
+	Type       string    `json:"type"`
+	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+// CredentialType defines model for CredentialType.
+type CredentialType struct {
+	Description string `json:"description"`
+
+	// FieldsSchema JSON Schema of `fields`; secret fields are `writeOnly`.
+	FieldsSchema map[string]interface{} `json:"fields_schema"`
+
+	// Name Examples: snmp_v3
+	Name string `json:"name"`
+}
+
+// CredentialWrite defines model for CredentialWrite.
+type CredentialWrite struct {
+	External *ExternalRefWrite `json:"external,omitempty"`
+
+	// Fields Field values, secret ones included. See the type's `fields_schema`.
+	Fields *map[string]*string `json:"fields,omitempty"`
+	Name   string              `json:"name"`
+
+	// Type One of GET /v1/credential-types
+	Type string `json:"type"`
+}
+
+// Dependency defines model for Dependency.
+type Dependency struct {
+	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	DependsOnId openapi_types.UUID `json:"depends_on_id"`
+	DeviceId    openapi_types.UUID `json:"device_id"`
+
+	// Source `api`, `containment`, or a discovery source such as `lldp`
+	Source string `json:"source"`
+}
+
+// DependencyList defines model for DependencyList.
+type DependencyList struct {
+	Items []Dependency `json:"items"`
+}
+
+// Device defines model for Device.
+type Device struct {
+	// Address IP, host name or URL
+	Address   string             `json:"address"`
+	CreatedAt time.Time          `json:"created_at"`
+	External  *ExternalRef       `json:"external"`
+	Id        openapi_types.UUID `json:"id"`
+
+	// Inventory Vendor, model, serial and firmware, written by plugins.
+	Inventory map[string]interface{} `json:"inventory"`
+
+	// ManagedBy `api`, `file`, or the collector that discovered it
+	ManagedBy string  `json:"managed_by"`
+	Name      string  `json:"name"`
+	Notes     *string `json:"notes"`
+
+	// ParentId Container (ADR-0014)
+	ParentId *openapi_types.UUID `json:"parent_id"`
+
+	// PhysicalPeerId Linked BMC or host
+	PhysicalPeerId *openapi_types.UUID `json:"physical_peer_id"`
+	SiteId         *openapi_types.UUID `json:"site_id"`
+	Tags           map[string]string   `json:"tags"`
+	Type           DeviceType          `json:"type"`
+	UpdatedAt      time.Time           `json:"updated_at"`
+}
+
+// DevicePage defines model for DevicePage.
+type DevicePage struct {
+	Items      []Device `json:"items"`
+	NextCursor *string  `json:"next_cursor"`
+}
+
+// DeviceType defines model for DeviceType.
+type DeviceType string
+
+// DeviceWrite defines model for DeviceWrite.
+type DeviceWrite struct {
+	Address        *string             `json:"address,omitempty"`
+	External       *ExternalRefWrite   `json:"external,omitempty"`
+	Name           string              `json:"name"`
+	Notes          *string             `json:"notes,omitempty"`
+	ParentId       *openapi_types.UUID `json:"parent_id,omitempty"`
+	PhysicalPeerId *openapi_types.UUID `json:"physical_peer_id,omitempty"`
+	SiteId         *openapi_types.UUID `json:"site_id,omitempty"`
+	Tags           *map[string]string  `json:"tags,omitempty"`
+	Type           DeviceType          `json:"type"`
+}
+
 // ExternalRef defines model for ExternalRef.
 type ExternalRef struct {
 	Id     string  `json:"id"`
 	Source string  `json:"source"`
 	Type   *string `json:"type,omitempty"`
+}
+
+// ExternalRefWrite defines model for ExternalRefWrite.
+type ExternalRefWrite struct {
+	Id     string  `json:"id"`
+	Source string  `json:"source"`
+	Type   *string `json:"type,omitempty"`
+}
+
+// Incident defines model for Incident.
+type Incident struct {
+	AcknowledgedAt *time.Time `json:"acknowledged_at"`
+
+	// AcknowledgedBy User ID
+	AcknowledgedBy           *openapi_types.UUID `json:"acknowledged_by"`
+	AcknowledgedByExternalId *string             `json:"acknowledged_by_external_id"`
+	CheckId                  *openapi_types.UUID `json:"check_id"`
+	DeviceId                 *openapi_types.UUID `json:"device_id"`
+	Flapping                 bool                `json:"flapping"`
+	Id                       openapi_types.UUID  `json:"id"`
+	LastOutput               *string             `json:"last_output"`
+	OpenedAt                 time.Time           `json:"opened_at"`
+	ResolvedAt               *time.Time          `json:"resolved_at"`
+	ResolvedBy               *IncidentResolvedBy `json:"resolved_by"`
+
+	// RuleId The threshold rule that caused it, if any
+	RuleId     *string          `json:"rule_id"`
+	RuleName   *string          `json:"rule_name"`
+	Severity   IncidentSeverity `json:"severity"`
+	Status     IncidentStatus   `json:"status"`
+	Summary    string           `json:"summary"`
+	Suppressed bool             `json:"suppressed"`
+	UpdatedAt  time.Time        `json:"updated_at"`
+}
+
+// IncidentResolvedBy defines model for Incident.ResolvedBy.
+type IncidentResolvedBy string
+
+// IncidentSeverity defines model for Incident.Severity.
+type IncidentSeverity string
+
+// IncidentStatus defines model for Incident.Status.
+type IncidentStatus string
+
+// IncidentComment defines model for IncidentComment.
+type IncidentComment struct {
+	AuthorExternalId *string             `json:"author_external_id"`
+	AuthorKind       string              `json:"author_kind"`
+	AuthorUserId     *openapi_types.UUID `json:"author_user_id"`
+	Body             string              `json:"body"`
+	CreatedAt        time.Time           `json:"created_at"`
+	Id               openapi_types.UUID  `json:"id"`
 }
 
 // Me defines model for Me.
@@ -447,6 +1188,36 @@ type Problem struct {
 // Role defines model for Role.
 type Role string
 
+// Site defines model for Site.
+type Site struct {
+	Address *string `json:"address"`
+
+	// Country ISO 3166-1 alpha-2
+	Country   *string            `json:"country"`
+	CreatedAt time.Time          `json:"created_at"`
+	External  *ExternalRef       `json:"external"`
+	Id        openapi_types.UUID `json:"id"`
+	ManagedBy string             `json:"managed_by"`
+	Name      string             `json:"name"`
+
+	// Timezone IANA time zone
+	Timezone  *string   `json:"timezone"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// SiteWrite defines model for SiteWrite.
+type SiteWrite struct {
+	Address *string `json:"address,omitempty"`
+
+	// Country Examples: TR
+	Country  *string           `json:"country,omitempty"`
+	External *ExternalRefWrite `json:"external,omitempty"`
+	Name     string            `json:"name"`
+
+	// Timezone Examples: Europe/Istanbul
+	Timezone *string `json:"timezone,omitempty"`
+}
+
 // Tenant defines model for Tenant.
 type Tenant struct {
 	ConfigSource TenantConfigSource `json:"config_source"`
@@ -503,6 +1274,42 @@ type TenantUpsert struct {
 	Name   string        `json:"name"`
 }
 
+// ThresholdCondition defines model for ThresholdCondition.
+type ThresholdCondition struct {
+	Op    ThresholdConditionOp `json:"op"`
+	Value float64              `json:"value"`
+
+	// ValueMax Upper bound for between and outside
+	ValueMax *float64 `json:"value_max,omitempty"`
+}
+
+// ThresholdConditionOp defines model for ThresholdCondition.Op.
+type ThresholdConditionOp string
+
+// ThresholdRule defines model for ThresholdRule.
+type ThresholdRule struct {
+	Critical *ThresholdCondition `json:"critical,omitempty"`
+
+	// For Condition must hold this long, e.g. 5m
+	//
+	// Examples: 5m
+	For *string `json:"for,omitempty"`
+
+	// Hysteresis Margin to cross back before clearing
+	Hysteresis *float64 `json:"hysteresis,omitempty"`
+
+	// Id Generated (r1, r2, ...) when missing
+	Id *string `json:"id,omitempty"`
+
+	// Metric A metric of the check's plugin
+	Metric string  `json:"metric"`
+	Name   *string `json:"name,omitempty"`
+
+	// Object Collectors: `*` or an object key
+	Object  *string             `json:"object,omitempty"`
+	Warning *ThresholdCondition `json:"warning,omitempty"`
+}
+
 // User defines model for User.
 type User struct {
 	DisplayName *string            `json:"display_name,omitempty"`
@@ -523,8 +1330,109 @@ type UserPatch struct {
 // UserPatchStatus defines model for UserPatch.Status.
 type UserPatchStatus string
 
+// Webhook defines model for Webhook.
+type Webhook struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// DisabledReason Set when the engine disabled it, e.g. after 410 Gone
+	DisabledReason *string      `json:"disabled_reason"`
+	Enabled        bool         `json:"enabled"`
+	External       *ExternalRef `json:"external"`
+
+	// HeaderNames Names of the static extra headers; values are encrypted and never returned.
+	HeaderNames []string           `json:"header_names"`
+	Id          openapi_types.UUID `json:"id"`
+	ManagedBy   string             `json:"managed_by"`
+	Name        string             `json:"name"`
+
+	// PreviousValidUntil Rotation overlap end
+	PreviousValidUntil *time.Time `json:"previous_valid_until"`
+	TimeoutSeconds     int        `json:"timeout_seconds"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	Url                string     `json:"url"`
+}
+
+// WebhookAttempt defines model for WebhookAttempt.
+type WebhookAttempt struct {
+	Error *string `json:"error"`
+	Ok    bool    `json:"ok"`
+
+	// Response Start of the response body
+	Response   string `json:"response"`
+	StatusCode *int   `json:"status_code"`
+}
+
+// WebhookDelivery defines model for WebhookDelivery.
+type WebhookDelivery struct {
+	Attempts    int        `json:"attempts"`
+	CreatedAt   time.Time  `json:"created_at"`
+	DeliveredAt *time.Time `json:"delivered_at"`
+
+	// EventId Also the webhook-id header
+	EventId        openapi_types.UUID    `json:"event_id"`
+	EventType      string                `json:"event_type"`
+	Id             openapi_types.UUID    `json:"id"`
+	LastAttemptAt  *time.Time            `json:"last_attempt_at"`
+	LastError      *string               `json:"last_error"`
+	LastResponse   *string               `json:"last_response"`
+	LastStatusCode *int                  `json:"last_status_code"`
+	NextAttemptAt  time.Time             `json:"next_attempt_at"`
+	RouteId        *openapi_types.UUID   `json:"route_id"`
+	Status         WebhookDeliveryStatus `json:"status"`
+	Subject        string                `json:"subject"`
+}
+
+// WebhookDeliveryStatus defines model for WebhookDelivery.Status.
+type WebhookDeliveryStatus string
+
+// WebhookWithSecret defines model for WebhookWithSecret.
+type WebhookWithSecret struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// DisabledReason Set when the engine disabled it, e.g. after 410 Gone
+	DisabledReason *string      `json:"disabled_reason"`
+	Enabled        bool         `json:"enabled"`
+	External       *ExternalRef `json:"external"`
+
+	// HeaderNames Names of the static extra headers; values are encrypted and never returned.
+	HeaderNames []string           `json:"header_names"`
+	Id          openapi_types.UUID `json:"id"`
+	ManagedBy   string             `json:"managed_by"`
+	Name        string             `json:"name"`
+
+	// PreviousValidUntil Rotation overlap end
+	PreviousValidUntil *time.Time `json:"previous_valid_until"`
+
+	// Secret Signing secret `whsec_…`. Shown once.
+	Secret         *string   `json:"secret,omitempty"`
+	TimeoutSeconds int       `json:"timeout_seconds"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Url            string    `json:"url"`
+}
+
+// WebhookWrite defines model for WebhookWrite.
+type WebhookWrite struct {
+	Enabled  *bool             `json:"enabled,omitempty"`
+	External *ExternalRefWrite `json:"external,omitempty"`
+
+	// Headers Static extra headers, encrypted at rest. null removes one.
+	Headers        *map[string]*string `json:"headers,omitempty"`
+	Name           string              `json:"name"`
+	TimeoutSeconds *int                `json:"timeout_seconds,omitempty"`
+	Url            string              `json:"url"`
+}
+
+// CheckID defines model for CheckID.
+type CheckID = openapi_types.UUID
+
+// CredentialID defines model for CredentialID.
+type CredentialID = openapi_types.UUID
+
 // Cursor defines model for Cursor.
 type Cursor = string
+
+// DeviceID defines model for DeviceID.
+type DeviceID = openapi_types.UUID
 
 // ExternalID defines model for ExternalID.
 type ExternalID = string
@@ -532,14 +1440,47 @@ type ExternalID = string
 // ExternalSource defines model for ExternalSource.
 type ExternalSource = string
 
+// ExternalType defines model for ExternalType.
+type ExternalType = string
+
+// FilterExternalID defines model for FilterExternalID.
+type FilterExternalID = string
+
+// FilterExternalSource defines model for FilterExternalSource.
+type FilterExternalSource = string
+
+// FilterExternalType defines model for FilterExternalType.
+type FilterExternalType = string
+
+// IncidentID defines model for IncidentID.
+type IncidentID = openapi_types.UUID
+
 // KeyID defines model for KeyID.
 type KeyID = openapi_types.UUID
 
 // Limit defines model for Limit.
 type Limit = int
 
+// RouteID defines model for RouteID.
+type RouteID = openapi_types.UUID
+
+// SiteID defines model for SiteID.
+type SiteID = openapi_types.UUID
+
 // TenantID defines model for TenantID.
 type TenantID = openapi_types.UUID
+
+// WebhookID defines model for WebhookID.
+type WebhookID = openapi_types.UUID
+
+// UpsertAlertRouteParams defines parameters for UpsertAlertRoute.
+type UpsertAlertRouteParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
+}
 
 // ListAPIKeysParams defines parameters for ListAPIKeys.
 type ListAPIKeysParams struct {
@@ -558,6 +1499,142 @@ type ListAuditEventsParams struct {
 	// Cursor Opaque cursor from `next_cursor` of the previous page.
 	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
 	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListChecksParams defines parameters for ListChecks.
+type ListChecksParams struct {
+	DeviceId *openapi_types.UUID `form:"device_id,omitempty" json:"device_id,omitempty"`
+	Plugin   *string             `form:"plugin,omitempty" json:"plugin,omitempty"`
+	Enabled  *bool               `form:"enabled,omitempty" json:"enabled,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCredentialsParams defines parameters for ListCredentials.
+type ListCredentialsParams struct {
+	Type           *string               `form:"type,omitempty" json:"type,omitempty"`
+	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
+	ExternalType   *FilterExternalType   `form:"external_type,omitempty" json:"external_type,omitempty"`
+	ExternalId     *FilterExternalID     `form:"external_id,omitempty" json:"external_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UpsertCredentialParams defines parameters for UpsertCredential.
+type UpsertCredentialParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
+}
+
+// ListDevicesParams defines parameters for ListDevices.
+type ListDevicesParams struct {
+	Type     *string             `form:"type,omitempty" json:"type,omitempty"`
+	SiteId   *openapi_types.UUID `form:"site_id,omitempty" json:"site_id,omitempty"`
+	ParentId *openapi_types.UUID `form:"parent_id,omitempty" json:"parent_id,omitempty"`
+
+	// Tag `key=value`; repeat for several tags, all must match.
+	Tag            *[]string             `form:"tag,omitempty" json:"tag,omitempty"`
+	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
+	ExternalType   *FilterExternalType   `form:"external_type,omitempty" json:"external_type,omitempty"`
+	ExternalId     *FilterExternalID     `form:"external_id,omitempty" json:"external_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UpsertDeviceParams defines parameters for UpsertDevice.
+type UpsertDeviceParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
+}
+
+// DeleteDeviceParams defines parameters for DeleteDevice.
+type DeleteDeviceParams struct {
+	// Confirm Required when the device contains other devices.
+	Confirm *bool `form:"confirm,omitempty" json:"confirm,omitempty"`
+}
+
+// ListDeviceChecksParams defines parameters for ListDeviceChecks.
+type ListDeviceChecksParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListDeviceChildrenParams defines parameters for ListDeviceChildren.
+type ListDeviceChildrenParams struct {
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// AddDeviceDependencyJSONBody defines parameters for AddDeviceDependency.
+type AddDeviceDependencyJSONBody struct {
+	DependsOnId openapi_types.UUID `json:"depends_on_id"`
+}
+
+// ListIncidentsParams defines parameters for ListIncidents.
+type ListIncidentsParams struct {
+	// Status `active` is open or acknowledged.
+	Status   *ListIncidentsParamsStatus   `form:"status,omitempty" json:"status,omitempty"`
+	Severity *ListIncidentsParamsSeverity `form:"severity,omitempty" json:"severity,omitempty"`
+	DeviceId *openapi_types.UUID          `form:"device_id,omitempty" json:"device_id,omitempty"`
+	CheckId  *openapi_types.UUID          `form:"check_id,omitempty" json:"check_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListIncidentsParamsStatus defines parameters for ListIncidents.
+type ListIncidentsParamsStatus string
+
+// ListIncidentsParamsSeverity defines parameters for ListIncidents.
+type ListIncidentsParamsSeverity string
+
+// GetIncident200JSONResponseBodyResolvedBy defines parameters for GetIncident.
+type GetIncident200JSONResponseBodyResolvedBy string
+
+// GetIncident200JSONResponseBodySeverity defines parameters for GetIncident.
+type GetIncident200JSONResponseBodySeverity string
+
+// GetIncident200JSONResponseBodyStatus defines parameters for GetIncident.
+type GetIncident200JSONResponseBodyStatus string
+
+// CommentIncidentJSONBody defines parameters for CommentIncident.
+type CommentIncidentJSONBody struct {
+	Body string `json:"body"`
+}
+
+// ListSitesParams defines parameters for ListSites.
+type ListSitesParams struct {
+	ExternalSource *FilterExternalSource `form:"external_source,omitempty" json:"external_source,omitempty"`
+	ExternalType   *FilterExternalType   `form:"external_type,omitempty" json:"external_type,omitempty"`
+	ExternalId     *FilterExternalID     `form:"external_id,omitempty" json:"external_id,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UpsertSiteParams defines parameters for UpsertSite.
+type UpsertSiteParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
 }
 
 // ListTenantsParams defines parameters for ListTenants.
@@ -606,8 +1683,77 @@ type PatchUserParams struct {
 	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
 }
 
+// UpsertWebhookParams defines parameters for UpsertWebhook.
+type UpsertWebhookParams struct {
+	// Source System the external ID belongs to. Default is the platform's identity source (`plusclouds`).
+	Source *ExternalSource `form:"source,omitempty" json:"source,omitempty"`
+
+	// Type Object type in the external system. Without it, a lookup matches any type.
+	Type *ExternalType `form:"type,omitempty" json:"type,omitempty"`
+}
+
+// ListWebhookDeliveriesParams defines parameters for ListWebhookDeliveries.
+type ListWebhookDeliveriesParams struct {
+	Status *ListWebhookDeliveriesParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Cursor Opaque cursor from `next_cursor` of the previous page.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *Limit  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListWebhookDeliveriesParamsStatus defines parameters for ListWebhookDeliveries.
+type ListWebhookDeliveriesParamsStatus string
+
+// CreateAlertRouteJSONRequestBody defines body for CreateAlertRoute for application/json ContentType.
+type CreateAlertRouteJSONRequestBody = AlertRouteWrite
+
+// UpsertAlertRouteJSONRequestBody defines body for UpsertAlertRoute for application/json ContentType.
+type UpsertAlertRouteJSONRequestBody = AlertRouteWrite
+
+// UpdateAlertRouteJSONRequestBody defines body for UpdateAlertRoute for application/json ContentType.
+type UpdateAlertRouteJSONRequestBody = AlertRouteWrite
+
 // CreateAPIKeyJSONRequestBody defines body for CreateAPIKey for application/json ContentType.
 type CreateAPIKeyJSONRequestBody = APIKeyCreate
+
+// UpdateCheckJSONRequestBody defines body for UpdateCheck for application/json ContentType.
+type UpdateCheckJSONRequestBody = CheckWrite
+
+// CreateCredentialJSONRequestBody defines body for CreateCredential for application/json ContentType.
+type CreateCredentialJSONRequestBody = CredentialWrite
+
+// UpsertCredentialJSONRequestBody defines body for UpsertCredential for application/json ContentType.
+type UpsertCredentialJSONRequestBody = CredentialWrite
+
+// UpdateCredentialJSONRequestBody defines body for UpdateCredential for application/json ContentType.
+type UpdateCredentialJSONRequestBody = CredentialWrite
+
+// CreateDeviceJSONRequestBody defines body for CreateDevice for application/json ContentType.
+type CreateDeviceJSONRequestBody = DeviceWrite
+
+// UpsertDeviceJSONRequestBody defines body for UpsertDevice for application/json ContentType.
+type UpsertDeviceJSONRequestBody = DeviceWrite
+
+// UpdateDeviceJSONRequestBody defines body for UpdateDevice for application/json ContentType.
+type UpdateDeviceJSONRequestBody = DeviceWrite
+
+// CreateCheckJSONRequestBody defines body for CreateCheck for application/json ContentType.
+type CreateCheckJSONRequestBody = CheckWrite
+
+// AddDeviceDependencyJSONRequestBody defines body for AddDeviceDependency for application/json ContentType.
+type AddDeviceDependencyJSONRequestBody AddDeviceDependencyJSONBody
+
+// CommentIncidentJSONRequestBody defines body for CommentIncident for application/json ContentType.
+type CommentIncidentJSONRequestBody CommentIncidentJSONBody
+
+// CreateSiteJSONRequestBody defines body for CreateSite for application/json ContentType.
+type CreateSiteJSONRequestBody = SiteWrite
+
+// UpsertSiteJSONRequestBody defines body for UpsertSite for application/json ContentType.
+type UpsertSiteJSONRequestBody = SiteWrite
+
+// UpdateSiteJSONRequestBody defines body for UpdateSite for application/json ContentType.
+type UpdateSiteJSONRequestBody = SiteWrite
 
 // PatchTenantJSONRequestBody defines body for PatchTenant for application/json ContentType.
 type PatchTenantJSONRequestBody = TenantPatch
@@ -621,8 +1767,35 @@ type UpsertMemberJSONRequestBody = MemberUpsert
 // PatchUserJSONRequestBody defines body for PatchUser for application/json ContentType.
 type PatchUserJSONRequestBody = UserPatch
 
+// CreateWebhookJSONRequestBody defines body for CreateWebhook for application/json ContentType.
+type CreateWebhookJSONRequestBody = WebhookWrite
+
+// UpsertWebhookJSONRequestBody defines body for UpsertWebhook for application/json ContentType.
+type UpsertWebhookJSONRequestBody = WebhookWrite
+
+// UpdateWebhookJSONRequestBody defines body for UpdateWebhook for application/json ContentType.
+type UpdateWebhookJSONRequestBody = WebhookWrite
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ListAlertRoutes List alert routes in evaluation order
+	// (GET /alert-routes)
+	ListAlertRoutes(w http.ResponseWriter, r *http.Request)
+	// CreateAlertRoute Add an alert route
+	// (POST /alert-routes)
+	CreateAlertRoute(w http.ResponseWriter, r *http.Request)
+	// UpsertAlertRoute Create or replace an alert route by its external ID
+	// (PUT /alert-routes/by-external-id/{external_id})
+	UpsertAlertRoute(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertAlertRouteParams)
+	// DeleteAlertRoute Delete an alert route
+	// (DELETE /alert-routes/{route_id})
+	DeleteAlertRoute(w http.ResponseWriter, r *http.Request, routeId RouteID)
+	// GetAlertRoute One alert route
+	// (GET /alert-routes/{route_id})
+	GetAlertRoute(w http.ResponseWriter, r *http.Request, routeId RouteID)
+	// UpdateAlertRoute Replace an alert route
+	// (PUT /alert-routes/{route_id})
+	UpdateAlertRoute(w http.ResponseWriter, r *http.Request, routeId RouteID)
 	// ListAPIKeys List the tenant's API keys
 	// (GET /api-keys)
 	ListAPIKeys(w http.ResponseWriter, r *http.Request, params ListAPIKeysParams)
@@ -635,6 +1808,105 @@ type ServerInterface interface {
 	// ListAuditEvents Query the tenant's audit log
 	// (GET /audit)
 	ListAuditEvents(w http.ResponseWriter, r *http.Request, params ListAuditEventsParams)
+	// ListChecks List checks
+	// (GET /checks)
+	ListChecks(w http.ResponseWriter, r *http.Request, params ListChecksParams)
+	// DeleteCheck Delete a check
+	// (DELETE /checks/{check_id})
+	DeleteCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// GetCheck One check
+	// (GET /checks/{check_id})
+	GetCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// UpdateCheck Replace a check
+	// (PUT /checks/{check_id})
+	UpdateCheck(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// RunCheckNow Run the check at once
+	// (POST /checks/{check_id}/run-now)
+	RunCheckNow(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// GetCheckState The check's current state
+	// (GET /checks/{check_id}/state)
+	GetCheckState(w http.ResponseWriter, r *http.Request, checkId CheckID)
+	// ListCredentialTypes Credential types and their fields
+	// (GET /credential-types)
+	ListCredentialTypes(w http.ResponseWriter, r *http.Request)
+	// ListCredentials List credentials (never their secrets)
+	// (GET /credentials)
+	ListCredentials(w http.ResponseWriter, r *http.Request, params ListCredentialsParams)
+	// CreateCredential Store a credential
+	// (POST /credentials)
+	CreateCredential(w http.ResponseWriter, r *http.Request)
+	// UpsertCredential Create or replace a credential by its external ID
+	// (PUT /credentials/by-external-id/{external_id})
+	UpsertCredential(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertCredentialParams)
+	// DeleteCredential Delete a credential that no check uses
+	// (DELETE /credentials/{credential_id})
+	DeleteCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID)
+	// GetCredential One credential (never its secrets)
+	// (GET /credentials/{credential_id})
+	GetCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID)
+	// UpdateCredential Replace a credential's name and fields
+	// (PUT /credentials/{credential_id})
+	UpdateCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID)
+	// ListDevices List devices
+	// (GET /devices)
+	ListDevices(w http.ResponseWriter, r *http.Request, params ListDevicesParams)
+	// CreateDevice Add a device
+	// (POST /devices)
+	CreateDevice(w http.ResponseWriter, r *http.Request)
+	// UpsertDevice Create or replace a device by its external ID
+	// (PUT /devices/by-external-id/{external_id})
+	UpsertDevice(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertDeviceParams)
+	// DeleteDevice Delete a device, its checks and the devices it contains
+	// (DELETE /devices/{device_id})
+	DeleteDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params DeleteDeviceParams)
+	// GetDevice One device
+	// (GET /devices/{device_id})
+	GetDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// UpdateDevice Replace a device
+	// (PUT /devices/{device_id})
+	UpdateDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// ListDeviceChecks The device's checks
+	// (GET /devices/{device_id}/checks)
+	ListDeviceChecks(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChecksParams)
+	// CreateCheck Add a check to the device
+	// (POST /devices/{device_id}/checks)
+	CreateCheck(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// ListDeviceChildren Devices this device contains
+	// (GET /devices/{device_id}/children)
+	ListDeviceChildren(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChildrenParams)
+	// ListDeviceDependencies What this device needs to work, directly
+	// (GET /devices/{device_id}/dependencies)
+	ListDeviceDependencies(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// AddDeviceDependency Record that this device needs another one
+	// (POST /devices/{device_id}/dependencies)
+	AddDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// RemoveDeviceDependency Remove a stored dependency
+	// (DELETE /devices/{device_id}/dependencies/{depends_on_id})
+	RemoveDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID, dependsOnId openapi_types.UUID)
+	// ListDeviceDependents Devices that need this device, directly
+	// (GET /devices/{device_id}/dependents)
+	ListDeviceDependents(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// GetDeviceImpact Every device that would be suppressed if this one failed
+	// (GET /devices/{device_id}/impact)
+	GetDeviceImpact(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// TestDevice Run every enabled check of the device once
+	// (POST /devices/{device_id}/test)
+	TestDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID)
+	// ListIncidents List incidents, newest first
+	// (GET /incidents)
+	ListIncidents(w http.ResponseWriter, r *http.Request, params ListIncidentsParams)
+	// GetIncident One incident with its comments
+	// (GET /incidents/{incident_id})
+	GetIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
+	// AcknowledgeIncident Acknowledge an incident
+	// (POST /incidents/{incident_id}/ack)
+	AcknowledgeIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
+	// CommentIncident Add a comment to an incident
+	// (POST /incidents/{incident_id}/comments)
+	CommentIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
+	// ResolveIncident Resolve an incident by hand
+	// (POST /incidents/{incident_id}/resolve)
+	ResolveIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID)
 	// GetMe The resolved caller
 	// (GET /me)
 	GetMe(w http.ResponseWriter, r *http.Request)
@@ -644,6 +1916,24 @@ type ServerInterface interface {
 	// GetPlugin One plugin's manifest
 	// (GET /plugins/{type})
 	GetPlugin(w http.ResponseWriter, r *http.Request, pType string)
+	// ListSites List sites
+	// (GET /sites)
+	ListSites(w http.ResponseWriter, r *http.Request, params ListSitesParams)
+	// CreateSite Add a site
+	// (POST /sites)
+	CreateSite(w http.ResponseWriter, r *http.Request)
+	// UpsertSite Create or replace a site by its external ID
+	// (PUT /sites/by-external-id/{external_id})
+	UpsertSite(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertSiteParams)
+	// DeleteSite Delete a site without devices
+	// (DELETE /sites/{site_id})
+	DeleteSite(w http.ResponseWriter, r *http.Request, siteId SiteID)
+	// GetSite One site
+	// (GET /sites/{site_id})
+	GetSite(w http.ResponseWriter, r *http.Request, siteId SiteID)
+	// UpdateSite Replace a site
+	// (PUT /sites/{site_id})
+	UpdateSite(w http.ResponseWriter, r *http.Request, siteId SiteID)
 	// GetTenant The caller's tenant, with its limits
 	// (GET /tenant)
 	GetTenant(w http.ResponseWriter, r *http.Request)
@@ -671,6 +1961,36 @@ type ServerInterface interface {
 	// PatchUser Disable or rename a user everywhere (platform only)
 	// (PATCH /users/by-external-id/{external_id})
 	PatchUser(w http.ResponseWriter, r *http.Request, externalId ExternalID, params PatchUserParams)
+	// ListWebhooks List webhook endpoints
+	// (GET /webhooks)
+	ListWebhooks(w http.ResponseWriter, r *http.Request)
+	// CreateWebhook Add a webhook endpoint
+	// (POST /webhooks)
+	CreateWebhook(w http.ResponseWriter, r *http.Request)
+	// UpsertWebhook Create or replace a webhook endpoint by its external ID
+	// (PUT /webhooks/by-external-id/{external_id})
+	UpsertWebhook(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertWebhookParams)
+	// DeleteWebhook Delete a webhook endpoint no route uses
+	// (DELETE /webhooks/{webhook_id})
+	DeleteWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID)
+	// GetWebhook One webhook endpoint
+	// (GET /webhooks/{webhook_id})
+	GetWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID)
+	// UpdateWebhook Replace a webhook endpoint
+	// (PUT /webhooks/{webhook_id})
+	UpdateWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID)
+	// ListWebhookDeliveries The endpoint's delivery log, newest first
+	// (GET /webhooks/{webhook_id}/deliveries)
+	ListWebhookDeliveries(w http.ResponseWriter, r *http.Request, webhookId WebhookID, params ListWebhookDeliveriesParams)
+	// ReplayWebhookDelivery Send a delivery again
+	// (POST /webhooks/{webhook_id}/deliveries/{delivery_id}/replay)
+	ReplayWebhookDelivery(w http.ResponseWriter, r *http.Request, webhookId WebhookID, deliveryId openapi_types.UUID)
+	// RotateWebhookSecret Replace the signing secret
+	// (POST /webhooks/{webhook_id}/rotate-secret)
+	RotateWebhookSecret(w http.ResponseWriter, r *http.Request, webhookId WebhookID)
+	// TestWebhook Send a signed monitoring.webhook.test event now
+	// (POST /webhooks/{webhook_id}/test)
+	TestWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -681,6 +2001,167 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListAlertRoutes operation middleware
+func (siw *ServerInterfaceWrapper) ListAlertRoutes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAlertRoutes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAlertRoute operation middleware
+func (siw *ServerInterfaceWrapper) CreateAlertRoute(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAlertRoute(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertAlertRoute operation middleware
+func (siw *ServerInterfaceWrapper) UpsertAlertRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertAlertRouteParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertAlertRoute(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteAlertRoute operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAlertRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "route_id" -------------
+	var routeId RouteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "route_id", r.PathValue("route_id"), &routeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "route_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAlertRoute(w, r, routeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAlertRoute operation middleware
+func (siw *ServerInterfaceWrapper) GetAlertRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "route_id" -------------
+	var routeId RouteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "route_id", r.PathValue("route_id"), &routeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "route_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAlertRoute(w, r, routeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAlertRoute operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAlertRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "route_id" -------------
+	var routeId RouteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "route_id", r.PathValue("route_id"), &routeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "route_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAlertRoute(w, r, routeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListAPIKeys operation middleware
 func (siw *ServerInterfaceWrapper) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
@@ -866,6 +2347,1283 @@ func (siw *ServerInterfaceWrapper) ListAuditEvents(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListChecks operation middleware
+func (siw *ServerInterfaceWrapper) ListChecks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListChecksParams
+
+	// ------------- Optional query parameter "device_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "device_id", r.URL.Query(), &params.DeviceId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "device_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "plugin" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "plugin", r.URL.Query(), &params.Plugin, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "plugin"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plugin", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "enabled" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "enabled", r.URL.Query(), &params.Enabled, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "enabled"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "enabled", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChecks(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCheck operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCheck operation middleware
+func (siw *ServerInterfaceWrapper) GetCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCheck operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCheck(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RunCheckNow operation middleware
+func (siw *ServerInterfaceWrapper) RunCheckNow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RunCheckNow(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCheckState operation middleware
+func (siw *ServerInterfaceWrapper) GetCheckState(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "check_id" -------------
+	var checkId CheckID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "check_id", r.PathValue("check_id"), &checkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCheckState(w, r, checkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCredentialTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListCredentialTypes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCredentialTypes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCredentials operation middleware
+func (siw *ServerInterfaceWrapper) ListCredentials(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCredentialsParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_source", r.URL.Query(), &params.ExternalSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_type", r.URL.Query(), &params.ExternalType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_id", r.URL.Query(), &params.ExternalId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCredentials(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCredential operation middleware
+func (siw *ServerInterfaceWrapper) CreateCredential(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCredential(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertCredential operation middleware
+func (siw *ServerInterfaceWrapper) UpsertCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertCredentialParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertCredential(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteCredential operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "credential_id" -------------
+	var credentialId CredentialID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credential_id", r.PathValue("credential_id"), &credentialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credential_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCredential(w, r, credentialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCredential operation middleware
+func (siw *ServerInterfaceWrapper) GetCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "credential_id" -------------
+	var credentialId CredentialID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credential_id", r.PathValue("credential_id"), &credentialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credential_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCredential(w, r, credentialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCredential operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCredential(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "credential_id" -------------
+	var credentialId CredentialID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "credential_id", r.PathValue("credential_id"), &credentialId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "credential_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCredential(w, r, credentialId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDevices operation middleware
+func (siw *ServerInterfaceWrapper) ListDevices(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDevicesParams
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "site_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "site_id", r.URL.Query(), &params.SiteId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "site_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "parent_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "parent_id", r.URL.Query(), &params.ParentId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "parent_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "parent_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "tag" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "tag", r.URL.Query(), &params.Tag, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "tag"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_source", r.URL.Query(), &params.ExternalSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_type", r.URL.Query(), &params.ExternalType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_id", r.URL.Query(), &params.ExternalId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDevices(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDevice operation middleware
+func (siw *ServerInterfaceWrapper) CreateDevice(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDevice(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertDevice operation middleware
+func (siw *ServerInterfaceWrapper) UpsertDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertDeviceParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertDevice(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteDevice operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteDeviceParams
+
+	// ------------- Optional query parameter "confirm" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "confirm", r.URL.Query(), &params.Confirm, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "confirm"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "confirm", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDevice(w, r, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDevice operation middleware
+func (siw *ServerInterfaceWrapper) GetDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDevice(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDevice operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDevice(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceChecks operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceChecks(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeviceChecksParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceChecks(w, r, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCheck operation middleware
+func (siw *ServerInterfaceWrapper) CreateCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCheck(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceChildren operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceChildren(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDeviceChildrenParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceChildren(w, r, deviceId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceDependencies operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceDependencies(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceDependencies(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddDeviceDependency operation middleware
+func (siw *ServerInterfaceWrapper) AddDeviceDependency(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDeviceDependency(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveDeviceDependency operation middleware
+func (siw *ServerInterfaceWrapper) RemoveDeviceDependency(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "depends_on_id" -------------
+	var dependsOnId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "depends_on_id", r.PathValue("depends_on_id"), &dependsOnId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "depends_on_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveDeviceDependency(w, r, deviceId, dependsOnId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDeviceDependents operation middleware
+func (siw *ServerInterfaceWrapper) ListDeviceDependents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDeviceDependents(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDeviceImpact operation middleware
+func (siw *ServerInterfaceWrapper) GetDeviceImpact(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDeviceImpact(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestDevice operation middleware
+func (siw *ServerInterfaceWrapper) TestDevice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "device_id" -------------
+	var deviceId DeviceID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "device_id", r.PathValue("device_id"), &deviceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestDevice(w, r, deviceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIncidents operation middleware
+func (siw *ServerInterfaceWrapper) ListIncidents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIncidentsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "severity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "severity", r.URL.Query(), &params.Severity, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "severity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "severity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "device_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "device_id", r.URL.Query(), &params.DeviceId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "device_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "device_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "check_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "check_id", r.URL.Query(), &params.CheckId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "check_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "check_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIncidents(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetIncident operation middleware
+func (siw *ServerInterfaceWrapper) GetIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcknowledgeIncident operation middleware
+func (siw *ServerInterfaceWrapper) AcknowledgeIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcknowledgeIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CommentIncident operation middleware
+func (siw *ServerInterfaceWrapper) CommentIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CommentIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResolveIncident operation middleware
+func (siw *ServerInterfaceWrapper) ResolveIncident(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "incident_id" -------------
+	var incidentId IncidentID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "incident_id", r.PathValue("incident_id"), &incidentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "incident_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResolveIncident(w, r, incidentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMe operation middleware
 func (siw *ServerInterfaceWrapper) GetMe(w http.ResponseWriter, r *http.Request) {
 
@@ -911,6 +3669,238 @@ func (siw *ServerInterfaceWrapper) GetPlugin(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPlugin(w, r, pType)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSites operation middleware
+func (siw *ServerInterfaceWrapper) ListSites(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSitesParams
+
+	// ------------- Optional query parameter "external_source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_source", r.URL.Query(), &params.ExternalSource, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_type", r.URL.Query(), &params.ExternalType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "external_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "external_id", r.URL.Query(), &params.ExternalId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSites(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSite operation middleware
+func (siw *ServerInterfaceWrapper) CreateSite(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSite(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertSite operation middleware
+func (siw *ServerInterfaceWrapper) UpsertSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertSiteParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertSite(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteSite operation middleware
+func (siw *ServerInterfaceWrapper) DeleteSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "site_id" -------------
+	var siteId SiteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "site_id", r.PathValue("site_id"), &siteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteSite(w, r, siteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSite operation middleware
+func (siw *ServerInterfaceWrapper) GetSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "site_id" -------------
+	var siteId SiteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "site_id", r.PathValue("site_id"), &siteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSite(w, r, siteId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSite operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "site_id" -------------
+	var siteId SiteID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "site_id", r.PathValue("site_id"), &siteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "site_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSite(w, r, siteId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1302,6 +4292,322 @@ func (siw *ServerInterfaceWrapper) PatchUser(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// ListWebhooks operation middleware
+func (siw *ServerInterfaceWrapper) ListWebhooks(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWebhooks(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateWebhook operation middleware
+func (siw *ServerInterfaceWrapper) CreateWebhook(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateWebhook(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertWebhook operation middleware
+func (siw *ServerInterfaceWrapper) UpsertWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "external_id" -------------
+	var externalId ExternalID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "external_id", r.PathValue("external_id"), &externalId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpsertWebhookParams
+
+	// ------------- Optional query parameter "source" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "source", r.URL.Query(), &params.Source, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "source"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "source", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertWebhook(w, r, externalId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteWebhook operation middleware
+func (siw *ServerInterfaceWrapper) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteWebhook(w, r, webhookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWebhook operation middleware
+func (siw *ServerInterfaceWrapper) GetWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWebhook(w, r, webhookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateWebhook operation middleware
+func (siw *ServerInterfaceWrapper) UpdateWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateWebhook(w, r, webhookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWebhookDeliveries operation middleware
+func (siw *ServerInterfaceWrapper) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListWebhookDeliveriesParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWebhookDeliveries(w, r, webhookId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplayWebhookDelivery operation middleware
+func (siw *ServerInterfaceWrapper) ReplayWebhookDelivery(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "delivery_id" -------------
+	var deliveryId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "delivery_id", r.PathValue("delivery_id"), &deliveryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "delivery_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplayWebhookDelivery(w, r, webhookId, deliveryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RotateWebhookSecret operation middleware
+func (siw *ServerInterfaceWrapper) RotateWebhookSecret(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RotateWebhookSecret(w, r, webhookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// TestWebhook operation middleware
+func (siw *ServerInterfaceWrapper) TestWebhook(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "webhook_id" -------------
+	var webhookId WebhookID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "webhook_id", r.PathValue("webhook_id"), &webhookId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "webhook_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.TestWebhook(w, r, webhookId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 type UnescapedCookieParamError struct {
 	ParamName string
 	Err       error
@@ -1438,11 +4744,312 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/tenants/{tenant_id}/members/by-external-id/{user_external_id}", wrapper.RemoveMember)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/tenants/{tenant_id}/members/by-external-id/{user_external_id}", wrapper.UpsertMember)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/users/by-external-id/{external_id}", wrapper.PatchUser)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/credential-types", wrapper.ListCredentialTypes)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/credentials", wrapper.ListCredentials)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/credentials", wrapper.CreateCredential)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/credentials/by-external-id/{external_id}", wrapper.UpsertCredential)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/credentials/{credential_id}", wrapper.DeleteCredential)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/credentials/{credential_id}", wrapper.GetCredential)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/credentials/{credential_id}", wrapper.UpdateCredential)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/sites", wrapper.ListSites)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/sites", wrapper.CreateSite)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/sites/by-external-id/{external_id}", wrapper.UpsertSite)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/sites/{site_id}", wrapper.DeleteSite)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/sites/{site_id}", wrapper.GetSite)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/sites/{site_id}", wrapper.UpdateSite)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices", wrapper.ListDevices)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices", wrapper.CreateDevice)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/devices/by-external-id/{external_id}", wrapper.UpsertDevice)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/devices/{device_id}", wrapper.DeleteDevice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}", wrapper.GetDevice)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/devices/{device_id}", wrapper.UpdateDevice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/children", wrapper.ListDeviceChildren)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/dependencies", wrapper.ListDeviceDependencies)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices/{device_id}/dependencies", wrapper.AddDeviceDependency)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/devices/{device_id}/dependencies/{depends_on_id}", wrapper.RemoveDeviceDependency)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/dependents", wrapper.ListDeviceDependents)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/impact", wrapper.GetDeviceImpact)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices/{device_id}/test", wrapper.TestDevice)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/devices/{device_id}/checks", wrapper.ListDeviceChecks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/devices/{device_id}/checks", wrapper.CreateCheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks", wrapper.ListChecks)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/checks/{check_id}", wrapper.DeleteCheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks/{check_id}", wrapper.GetCheck)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/checks/{check_id}", wrapper.UpdateCheck)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/checks/{check_id}/state", wrapper.GetCheckState)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/checks/{check_id}/run-now", wrapper.RunCheckNow)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/incidents", wrapper.ListIncidents)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/incidents/{incident_id}", wrapper.GetIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/incidents/{incident_id}/ack", wrapper.AcknowledgeIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/incidents/{incident_id}/resolve", wrapper.ResolveIncident)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/incidents/{incident_id}/comments", wrapper.CommentIncident)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/webhooks", wrapper.ListWebhooks)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks", wrapper.CreateWebhook)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/webhooks/by-external-id/{external_id}", wrapper.UpsertWebhook)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/webhooks/{webhook_id}", wrapper.DeleteWebhook)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/webhooks/{webhook_id}", wrapper.GetWebhook)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/webhooks/{webhook_id}", wrapper.UpdateWebhook)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks/{webhook_id}/test", wrapper.TestWebhook)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks/{webhook_id}/rotate-secret", wrapper.RotateWebhookSecret)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/webhooks/{webhook_id}/deliveries", wrapper.ListWebhookDeliveries)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/webhooks/{webhook_id}/deliveries/{delivery_id}/replay", wrapper.ReplayWebhookDelivery)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/alert-routes", wrapper.ListAlertRoutes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/alert-routes", wrapper.CreateAlertRoute)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/alert-routes/by-external-id/{external_id}", wrapper.UpsertAlertRoute)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/alert-routes/{route_id}", wrapper.DeleteAlertRoute)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/alert-routes/{route_id}", wrapper.GetAlertRoute)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/alert-routes/{route_id}", wrapper.UpdateAlertRoute)
 
 	return m
 }
 
 type ProblemApplicationProblemPlusJSONResponse Problem
+
+type ListAlertRoutesRequestObject struct {
+}
+
+type ListAlertRoutesResponseObject interface {
+	VisitListAlertRoutesResponse(w http.ResponseWriter) error
+}
+
+type ListAlertRoutes200JSONResponse struct {
+	Items []AlertRoute `json:"items"`
+}
+
+func (response ListAlertRoutes200JSONResponse) VisitListAlertRoutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAlertRoutesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListAlertRoutesdefaultApplicationProblemPlusJSONResponse) VisitListAlertRoutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertRouteRequestObject struct {
+	Body *CreateAlertRouteJSONRequestBody
+}
+
+type CreateAlertRouteResponseObject interface {
+	VisitCreateAlertRouteResponse(w http.ResponseWriter) error
+}
+
+type CreateAlertRoute201JSONResponse AlertRoute
+
+func (response CreateAlertRoute201JSONResponse) VisitCreateAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAlertRoutedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateAlertRoutedefaultApplicationProblemPlusJSONResponse) VisitCreateAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAlertRouteRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertAlertRouteParams
+	Body       *UpsertAlertRouteJSONRequestBody
+}
+
+type UpsertAlertRouteResponseObject interface {
+	VisitUpsertAlertRouteResponse(w http.ResponseWriter) error
+}
+
+type UpsertAlertRoute200JSONResponse AlertRoute
+
+func (response UpsertAlertRoute200JSONResponse) VisitUpsertAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAlertRoute201JSONResponse AlertRoute
+
+func (response UpsertAlertRoute201JSONResponse) VisitUpsertAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAlertRoutedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertAlertRoutedefaultApplicationProblemPlusJSONResponse) VisitUpsertAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteAlertRouteRequestObject struct {
+	RouteId RouteID `json:"route_id"`
+}
+
+type DeleteAlertRouteResponseObject interface {
+	VisitDeleteAlertRouteResponse(w http.ResponseWriter) error
+}
+
+type DeleteAlertRoute204Response struct {
+}
+
+func (response DeleteAlertRoute204Response) VisitDeleteAlertRouteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteAlertRoutedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteAlertRoutedefaultApplicationProblemPlusJSONResponse) VisitDeleteAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertRouteRequestObject struct {
+	RouteId RouteID `json:"route_id"`
+}
+
+type GetAlertRouteResponseObject interface {
+	VisitGetAlertRouteResponse(w http.ResponseWriter) error
+}
+
+type GetAlertRoute200JSONResponse AlertRoute
+
+func (response GetAlertRoute200JSONResponse) VisitGetAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAlertRoutedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetAlertRoutedefaultApplicationProblemPlusJSONResponse) VisitGetAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertRouteRequestObject struct {
+	RouteId RouteID `json:"route_id"`
+	Body    *UpdateAlertRouteJSONRequestBody
+}
+
+type UpdateAlertRouteResponseObject interface {
+	VisitUpdateAlertRouteResponse(w http.ResponseWriter) error
+}
+
+type UpdateAlertRoute200JSONResponse AlertRoute
+
+func (response UpdateAlertRoute200JSONResponse) VisitUpdateAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateAlertRoutedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateAlertRoutedefaultApplicationProblemPlusJSONResponse) VisitUpdateAlertRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ListAPIKeysRequestObject struct {
 	Params ListAPIKeysParams
@@ -1599,6 +5206,1359 @@ func (response ListAuditEventsdefaultApplicationProblemPlusJSONResponse) VisitLi
 	return err
 }
 
+type ListChecksRequestObject struct {
+	Params ListChecksParams
+}
+
+type ListChecksResponseObject interface {
+	VisitListChecksResponse(w http.ResponseWriter) error
+}
+
+type ListChecks200JSONResponse CheckPage
+
+func (response ListChecks200JSONResponse) VisitListChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChecksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListChecksdefaultApplicationProblemPlusJSONResponse) VisitListChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCheckRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type DeleteCheckResponseObject interface {
+	VisitDeleteCheckResponse(w http.ResponseWriter) error
+}
+
+type DeleteCheck204Response struct {
+}
+
+func (response DeleteCheck204Response) VisitDeleteCheckResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteCheckdefaultApplicationProblemPlusJSONResponse) VisitDeleteCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type GetCheckResponseObject interface {
+	VisitGetCheckResponse(w http.ResponseWriter) error
+}
+
+type GetCheck200JSONResponse Check
+
+func (response GetCheck200JSONResponse) VisitGetCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCheckdefaultApplicationProblemPlusJSONResponse) VisitGetCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCheckRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+	Body    *UpdateCheckJSONRequestBody
+}
+
+type UpdateCheckResponseObject interface {
+	VisitUpdateCheckResponse(w http.ResponseWriter) error
+}
+
+type UpdateCheck200JSONResponse Check
+
+func (response UpdateCheck200JSONResponse) VisitUpdateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateCheckdefaultApplicationProblemPlusJSONResponse) VisitUpdateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RunCheckNowRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type RunCheckNowResponseObject interface {
+	VisitRunCheckNowResponse(w http.ResponseWriter) error
+}
+
+type RunCheckNow202Response struct {
+}
+
+func (response RunCheckNow202Response) VisitRunCheckNowResponse(w http.ResponseWriter) error {
+	w.WriteHeader(202)
+	return nil
+}
+
+type RunCheckNowdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RunCheckNowdefaultApplicationProblemPlusJSONResponse) VisitRunCheckNowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckStateRequestObject struct {
+	CheckId CheckID `json:"check_id"`
+}
+
+type GetCheckStateResponseObject interface {
+	VisitGetCheckStateResponse(w http.ResponseWriter) error
+}
+
+type GetCheckState200JSONResponse CheckState
+
+func (response GetCheckState200JSONResponse) VisitGetCheckStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCheckStatedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCheckStatedefaultApplicationProblemPlusJSONResponse) VisitGetCheckStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialTypesRequestObject struct {
+}
+
+type ListCredentialTypesResponseObject interface {
+	VisitListCredentialTypesResponse(w http.ResponseWriter) error
+}
+
+type ListCredentialTypes200JSONResponse struct {
+	Items []CredentialType `json:"items"`
+}
+
+func (response ListCredentialTypes200JSONResponse) VisitListCredentialTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialTypesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListCredentialTypesdefaultApplicationProblemPlusJSONResponse) VisitListCredentialTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialsRequestObject struct {
+	Params ListCredentialsParams
+}
+
+type ListCredentialsResponseObject interface {
+	VisitListCredentialsResponse(w http.ResponseWriter) error
+}
+
+type ListCredentials200JSONResponse struct {
+	Items      []Credential `json:"items"`
+	NextCursor *string      `json:"next_cursor"`
+}
+
+func (response ListCredentials200JSONResponse) VisitListCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCredentialsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListCredentialsdefaultApplicationProblemPlusJSONResponse) VisitListCredentialsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCredentialRequestObject struct {
+	Body *CreateCredentialJSONRequestBody
+}
+
+type CreateCredentialResponseObject interface {
+	VisitCreateCredentialResponse(w http.ResponseWriter) error
+}
+
+type CreateCredential201JSONResponse Credential
+
+func (response CreateCredential201JSONResponse) VisitCreateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateCredentialdefaultApplicationProblemPlusJSONResponse) VisitCreateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertCredentialRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertCredentialParams
+	Body       *UpsertCredentialJSONRequestBody
+}
+
+type UpsertCredentialResponseObject interface {
+	VisitUpsertCredentialResponse(w http.ResponseWriter) error
+}
+
+type UpsertCredential200JSONResponse Credential
+
+func (response UpsertCredential200JSONResponse) VisitUpsertCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertCredential201JSONResponse Credential
+
+func (response UpsertCredential201JSONResponse) VisitUpsertCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertCredentialdefaultApplicationProblemPlusJSONResponse) VisitUpsertCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteCredentialRequestObject struct {
+	CredentialId CredentialID `json:"credential_id"`
+}
+
+type DeleteCredentialResponseObject interface {
+	VisitDeleteCredentialResponse(w http.ResponseWriter) error
+}
+
+type DeleteCredential204Response struct {
+}
+
+func (response DeleteCredential204Response) VisitDeleteCredentialResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteCredentialdefaultApplicationProblemPlusJSONResponse) VisitDeleteCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCredentialRequestObject struct {
+	CredentialId CredentialID `json:"credential_id"`
+}
+
+type GetCredentialResponseObject interface {
+	VisitGetCredentialResponse(w http.ResponseWriter) error
+}
+
+type GetCredential200JSONResponse Credential
+
+func (response GetCredential200JSONResponse) VisitGetCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetCredentialdefaultApplicationProblemPlusJSONResponse) VisitGetCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCredentialRequestObject struct {
+	CredentialId CredentialID `json:"credential_id"`
+	Body         *UpdateCredentialJSONRequestBody
+}
+
+type UpdateCredentialResponseObject interface {
+	VisitUpdateCredentialResponse(w http.ResponseWriter) error
+}
+
+type UpdateCredential200JSONResponse Credential
+
+func (response UpdateCredential200JSONResponse) VisitUpdateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCredentialdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateCredentialdefaultApplicationProblemPlusJSONResponse) VisitUpdateCredentialResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDevicesRequestObject struct {
+	Params ListDevicesParams
+}
+
+type ListDevicesResponseObject interface {
+	VisitListDevicesResponse(w http.ResponseWriter) error
+}
+
+type ListDevices200JSONResponse DevicePage
+
+func (response ListDevices200JSONResponse) VisitListDevicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDevicesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDevicesdefaultApplicationProblemPlusJSONResponse) VisitListDevicesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDeviceRequestObject struct {
+	Body *CreateDeviceJSONRequestBody
+}
+
+type CreateDeviceResponseObject interface {
+	VisitCreateDeviceResponse(w http.ResponseWriter) error
+}
+
+type CreateDevice201JSONResponse Device
+
+func (response CreateDevice201JSONResponse) VisitCreateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateDevicedefaultApplicationProblemPlusJSONResponse) VisitCreateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertDeviceRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertDeviceParams
+	Body       *UpsertDeviceJSONRequestBody
+}
+
+type UpsertDeviceResponseObject interface {
+	VisitUpsertDeviceResponse(w http.ResponseWriter) error
+}
+
+type UpsertDevice200JSONResponse Device
+
+func (response UpsertDevice200JSONResponse) VisitUpsertDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertDevice201JSONResponse Device
+
+func (response UpsertDevice201JSONResponse) VisitUpsertDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertDevicedefaultApplicationProblemPlusJSONResponse) VisitUpsertDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Params   DeleteDeviceParams
+}
+
+type DeleteDeviceResponseObject interface {
+	VisitDeleteDeviceResponse(w http.ResponseWriter) error
+}
+
+type DeleteDevice204Response struct {
+}
+
+func (response DeleteDevice204Response) VisitDeleteDeviceResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteDevicedefaultApplicationProblemPlusJSONResponse) VisitDeleteDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type GetDeviceResponseObject interface {
+	VisitGetDeviceResponse(w http.ResponseWriter) error
+}
+
+type GetDevice200JSONResponse Device
+
+func (response GetDevice200JSONResponse) VisitGetDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetDevicedefaultApplicationProblemPlusJSONResponse) VisitGetDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Body     *UpdateDeviceJSONRequestBody
+}
+
+type UpdateDeviceResponseObject interface {
+	VisitUpdateDeviceResponse(w http.ResponseWriter) error
+}
+
+type UpdateDevice200JSONResponse Device
+
+func (response UpdateDevice200JSONResponse) VisitUpdateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateDevicedefaultApplicationProblemPlusJSONResponse) VisitUpdateDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChecksRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Params   ListDeviceChecksParams
+}
+
+type ListDeviceChecksResponseObject interface {
+	VisitListDeviceChecksResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceChecks200JSONResponse CheckPage
+
+func (response ListDeviceChecks200JSONResponse) VisitListDeviceChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChecksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceChecksdefaultApplicationProblemPlusJSONResponse) VisitListDeviceChecksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Body     *CreateCheckJSONRequestBody
+}
+
+type CreateCheckResponseObject interface {
+	VisitCreateCheckResponse(w http.ResponseWriter) error
+}
+
+type CreateCheck201JSONResponse Check
+
+func (response CreateCheck201JSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateCheckdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateCheckdefaultApplicationProblemPlusJSONResponse) VisitCreateCheckResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChildrenRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Params   ListDeviceChildrenParams
+}
+
+type ListDeviceChildrenResponseObject interface {
+	VisitListDeviceChildrenResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceChildren200JSONResponse DevicePage
+
+func (response ListDeviceChildren200JSONResponse) VisitListDeviceChildrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceChildrendefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceChildrendefaultApplicationProblemPlusJSONResponse) VisitListDeviceChildrenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependenciesRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type ListDeviceDependenciesResponseObject interface {
+	VisitListDeviceDependenciesResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceDependencies200JSONResponse DependencyList
+
+func (response ListDeviceDependencies200JSONResponse) VisitListDeviceDependenciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependenciesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceDependenciesdefaultApplicationProblemPlusJSONResponse) VisitListDeviceDependenciesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDeviceDependencyRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+	Body     *AddDeviceDependencyJSONRequestBody
+}
+
+type AddDeviceDependencyResponseObject interface {
+	VisitAddDeviceDependencyResponse(w http.ResponseWriter) error
+}
+
+type AddDeviceDependency200JSONResponse Dependency
+
+func (response AddDeviceDependency200JSONResponse) VisitAddDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDeviceDependency201JSONResponse Dependency
+
+func (response AddDeviceDependency201JSONResponse) VisitAddDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDeviceDependencydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response AddDeviceDependencydefaultApplicationProblemPlusJSONResponse) VisitAddDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveDeviceDependencyRequestObject struct {
+	DeviceId    DeviceID           `json:"device_id"`
+	DependsOnId openapi_types.UUID `json:"depends_on_id"`
+}
+
+type RemoveDeviceDependencyResponseObject interface {
+	VisitRemoveDeviceDependencyResponse(w http.ResponseWriter) error
+}
+
+type RemoveDeviceDependency204Response struct {
+}
+
+func (response RemoveDeviceDependency204Response) VisitRemoveDeviceDependencyResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemoveDeviceDependencydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RemoveDeviceDependencydefaultApplicationProblemPlusJSONResponse) VisitRemoveDeviceDependencyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependentsRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type ListDeviceDependentsResponseObject interface {
+	VisitListDeviceDependentsResponse(w http.ResponseWriter) error
+}
+
+type ListDeviceDependents200JSONResponse DependencyList
+
+func (response ListDeviceDependents200JSONResponse) VisitListDeviceDependentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDeviceDependentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListDeviceDependentsdefaultApplicationProblemPlusJSONResponse) VisitListDeviceDependentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDeviceImpactRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type GetDeviceImpactResponseObject interface {
+	VisitGetDeviceImpactResponse(w http.ResponseWriter) error
+}
+
+type GetDeviceImpact200JSONResponse struct {
+	Items []struct {
+		Device Device `json:"device"`
+
+		// Distance Edges between the two devices
+		Distance int `json:"distance"`
+	} `json:"items"`
+}
+
+func (response GetDeviceImpact200JSONResponse) VisitGetDeviceImpactResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDeviceImpactdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetDeviceImpactdefaultApplicationProblemPlusJSONResponse) VisitGetDeviceImpactResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestDeviceRequestObject struct {
+	DeviceId DeviceID `json:"device_id"`
+}
+
+type TestDeviceResponseObject interface {
+	VisitTestDeviceResponse(w http.ResponseWriter) error
+}
+
+type TestDevice200JSONResponse struct {
+	Items []CheckRun `json:"items"`
+}
+
+func (response TestDevice200JSONResponse) VisitTestDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestDevicedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response TestDevicedefaultApplicationProblemPlusJSONResponse) VisitTestDeviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentsRequestObject struct {
+	Params ListIncidentsParams
+}
+
+type ListIncidentsResponseObject interface {
+	VisitListIncidentsResponse(w http.ResponseWriter) error
+}
+
+type ListIncidents200JSONResponse struct {
+	Items      []Incident `json:"items"`
+	NextCursor *string    `json:"next_cursor"`
+}
+
+func (response ListIncidents200JSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIncidentsdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListIncidentsdefaultApplicationProblemPlusJSONResponse) VisitListIncidentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+}
+
+type GetIncidentResponseObject interface {
+	VisitGetIncidentResponse(w http.ResponseWriter) error
+}
+
+type GetIncident200JSONResponse struct {
+	AcknowledgedAt *time.Time `json:"acknowledged_at"`
+
+	// AcknowledgedBy User ID
+	AcknowledgedBy           *openapi_types.UUID                       `json:"acknowledged_by"`
+	AcknowledgedByExternalId *string                                   `json:"acknowledged_by_external_id"`
+	CheckId                  *openapi_types.UUID                       `json:"check_id"`
+	Comments                 []IncidentComment                         `json:"comments"`
+	DeviceId                 *openapi_types.UUID                       `json:"device_id"`
+	Flapping                 bool                                      `json:"flapping"`
+	Id                       openapi_types.UUID                        `json:"id"`
+	LastOutput               *string                                   `json:"last_output"`
+	OpenedAt                 time.Time                                 `json:"opened_at"`
+	ResolvedAt               *time.Time                                `json:"resolved_at"`
+	ResolvedBy               *GetIncident200JSONResponseBodyResolvedBy `json:"resolved_by"`
+
+	// RuleId The threshold rule that caused it, if any
+	RuleId     *string                                `json:"rule_id"`
+	RuleName   *string                                `json:"rule_name"`
+	Severity   GetIncident200JSONResponseBodySeverity `json:"severity"`
+	Status     GetIncident200JSONResponseBodyStatus   `json:"status"`
+	Summary    string                                 `json:"summary"`
+	Suppressed bool                                   `json:"suppressed"`
+	UpdatedAt  time.Time                              `json:"updated_at"`
+}
+
+func (response GetIncident200JSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetIncidentdefaultApplicationProblemPlusJSONResponse) VisitGetIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcknowledgeIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+}
+
+type AcknowledgeIncidentResponseObject interface {
+	VisitAcknowledgeIncidentResponse(w http.ResponseWriter) error
+}
+
+type AcknowledgeIncident200JSONResponse Incident
+
+func (response AcknowledgeIncident200JSONResponse) VisitAcknowledgeIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AcknowledgeIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response AcknowledgeIncidentdefaultApplicationProblemPlusJSONResponse) VisitAcknowledgeIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CommentIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+	Body       *CommentIncidentJSONRequestBody
+}
+
+type CommentIncidentResponseObject interface {
+	VisitCommentIncidentResponse(w http.ResponseWriter) error
+}
+
+type CommentIncident201JSONResponse IncidentComment
+
+func (response CommentIncident201JSONResponse) VisitCommentIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CommentIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CommentIncidentdefaultApplicationProblemPlusJSONResponse) VisitCommentIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncidentRequestObject struct {
+	IncidentId IncidentID `json:"incident_id"`
+}
+
+type ResolveIncidentResponseObject interface {
+	VisitResolveIncidentResponse(w http.ResponseWriter) error
+}
+
+type ResolveIncident200JSONResponse Incident
+
+func (response ResolveIncident200JSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveIncidentdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ResolveIncidentdefaultApplicationProblemPlusJSONResponse) VisitResolveIncidentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMeRequestObject struct {
 }
 
@@ -1705,6 +6665,254 @@ type GetPlugindefaultApplicationProblemPlusJSONResponse struct {
 }
 
 func (response GetPlugindefaultApplicationProblemPlusJSONResponse) VisitGetPluginResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSitesRequestObject struct {
+	Params ListSitesParams
+}
+
+type ListSitesResponseObject interface {
+	VisitListSitesResponse(w http.ResponseWriter) error
+}
+
+type ListSites200JSONResponse struct {
+	Items      []Site  `json:"items"`
+	NextCursor *string `json:"next_cursor"`
+}
+
+func (response ListSites200JSONResponse) VisitListSitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSitesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListSitesdefaultApplicationProblemPlusJSONResponse) VisitListSitesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSiteRequestObject struct {
+	Body *CreateSiteJSONRequestBody
+}
+
+type CreateSiteResponseObject interface {
+	VisitCreateSiteResponse(w http.ResponseWriter) error
+}
+
+type CreateSite201JSONResponse Site
+
+func (response CreateSite201JSONResponse) VisitCreateSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateSitedefaultApplicationProblemPlusJSONResponse) VisitCreateSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertSiteRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertSiteParams
+	Body       *UpsertSiteJSONRequestBody
+}
+
+type UpsertSiteResponseObject interface {
+	VisitUpsertSiteResponse(w http.ResponseWriter) error
+}
+
+type UpsertSite200JSONResponse Site
+
+func (response UpsertSite200JSONResponse) VisitUpsertSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertSite201JSONResponse Site
+
+func (response UpsertSite201JSONResponse) VisitUpsertSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertSitedefaultApplicationProblemPlusJSONResponse) VisitUpsertSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteSiteRequestObject struct {
+	SiteId SiteID `json:"site_id"`
+}
+
+type DeleteSiteResponseObject interface {
+	VisitDeleteSiteResponse(w http.ResponseWriter) error
+}
+
+type DeleteSite204Response struct {
+}
+
+func (response DeleteSite204Response) VisitDeleteSiteResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteSitedefaultApplicationProblemPlusJSONResponse) VisitDeleteSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSiteRequestObject struct {
+	SiteId SiteID `json:"site_id"`
+}
+
+type GetSiteResponseObject interface {
+	VisitGetSiteResponse(w http.ResponseWriter) error
+}
+
+type GetSite200JSONResponse Site
+
+func (response GetSite200JSONResponse) VisitGetSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetSitedefaultApplicationProblemPlusJSONResponse) VisitGetSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSiteRequestObject struct {
+	SiteId SiteID `json:"site_id"`
+	Body   *UpdateSiteJSONRequestBody
+}
+
+type UpdateSiteResponseObject interface {
+	VisitUpdateSiteResponse(w http.ResponseWriter) error
+}
+
+type UpdateSite200JSONResponse Site
+
+func (response UpdateSite200JSONResponse) VisitUpdateSiteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSitedefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateSitedefaultApplicationProblemPlusJSONResponse) VisitUpdateSiteResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2099,8 +7307,433 @@ func (response PatchUserdefaultApplicationProblemPlusJSONResponse) VisitPatchUse
 	return err
 }
 
+type ListWebhooksRequestObject struct {
+}
+
+type ListWebhooksResponseObject interface {
+	VisitListWebhooksResponse(w http.ResponseWriter) error
+}
+
+type ListWebhooks200JSONResponse struct {
+	Items []Webhook `json:"items"`
+}
+
+func (response ListWebhooks200JSONResponse) VisitListWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWebhooksdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListWebhooksdefaultApplicationProblemPlusJSONResponse) VisitListWebhooksResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWebhookRequestObject struct {
+	Body *CreateWebhookJSONRequestBody
+}
+
+type CreateWebhookResponseObject interface {
+	VisitCreateWebhookResponse(w http.ResponseWriter) error
+}
+
+type CreateWebhook201JSONResponse WebhookWithSecret
+
+func (response CreateWebhook201JSONResponse) VisitCreateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response CreateWebhookdefaultApplicationProblemPlusJSONResponse) VisitCreateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertWebhookRequestObject struct {
+	ExternalId ExternalID `json:"external_id"`
+	Params     UpsertWebhookParams
+	Body       *UpsertWebhookJSONRequestBody
+}
+
+type UpsertWebhookResponseObject interface {
+	VisitUpsertWebhookResponse(w http.ResponseWriter) error
+}
+
+type UpsertWebhook200JSONResponse WebhookWithSecret
+
+func (response UpsertWebhook200JSONResponse) VisitUpsertWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertWebhook201JSONResponse WebhookWithSecret
+
+func (response UpsertWebhook201JSONResponse) VisitUpsertWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpsertWebhookdefaultApplicationProblemPlusJSONResponse) VisitUpsertWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteWebhookRequestObject struct {
+	WebhookId WebhookID `json:"webhook_id"`
+}
+
+type DeleteWebhookResponseObject interface {
+	VisitDeleteWebhookResponse(w http.ResponseWriter) error
+}
+
+type DeleteWebhook204Response struct {
+}
+
+func (response DeleteWebhook204Response) VisitDeleteWebhookResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response DeleteWebhookdefaultApplicationProblemPlusJSONResponse) VisitDeleteWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWebhookRequestObject struct {
+	WebhookId WebhookID `json:"webhook_id"`
+}
+
+type GetWebhookResponseObject interface {
+	VisitGetWebhookResponse(w http.ResponseWriter) error
+}
+
+type GetWebhook200JSONResponse Webhook
+
+func (response GetWebhook200JSONResponse) VisitGetWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response GetWebhookdefaultApplicationProblemPlusJSONResponse) VisitGetWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateWebhookRequestObject struct {
+	WebhookId WebhookID `json:"webhook_id"`
+	Body      *UpdateWebhookJSONRequestBody
+}
+
+type UpdateWebhookResponseObject interface {
+	VisitUpdateWebhookResponse(w http.ResponseWriter) error
+}
+
+type UpdateWebhook200JSONResponse Webhook
+
+func (response UpdateWebhook200JSONResponse) VisitUpdateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response UpdateWebhookdefaultApplicationProblemPlusJSONResponse) VisitUpdateWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWebhookDeliveriesRequestObject struct {
+	WebhookId WebhookID `json:"webhook_id"`
+	Params    ListWebhookDeliveriesParams
+}
+
+type ListWebhookDeliveriesResponseObject interface {
+	VisitListWebhookDeliveriesResponse(w http.ResponseWriter) error
+}
+
+type ListWebhookDeliveries200JSONResponse struct {
+	Items      []WebhookDelivery `json:"items"`
+	NextCursor *string           `json:"next_cursor"`
+}
+
+func (response ListWebhookDeliveries200JSONResponse) VisitListWebhookDeliveriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWebhookDeliveriesdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ListWebhookDeliveriesdefaultApplicationProblemPlusJSONResponse) VisitListWebhookDeliveriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplayWebhookDeliveryRequestObject struct {
+	WebhookId  WebhookID          `json:"webhook_id"`
+	DeliveryId openapi_types.UUID `json:"delivery_id"`
+}
+
+type ReplayWebhookDeliveryResponseObject interface {
+	VisitReplayWebhookDeliveryResponse(w http.ResponseWriter) error
+}
+
+type ReplayWebhookDelivery202JSONResponse WebhookDelivery
+
+func (response ReplayWebhookDelivery202JSONResponse) VisitReplayWebhookDeliveryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReplayWebhookDeliverydefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response ReplayWebhookDeliverydefaultApplicationProblemPlusJSONResponse) VisitReplayWebhookDeliveryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateWebhookSecretRequestObject struct {
+	WebhookId WebhookID `json:"webhook_id"`
+}
+
+type RotateWebhookSecretResponseObject interface {
+	VisitRotateWebhookSecretResponse(w http.ResponseWriter) error
+}
+
+type RotateWebhookSecret200JSONResponse WebhookWithSecret
+
+func (response RotateWebhookSecret200JSONResponse) VisitRotateWebhookSecretResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RotateWebhookSecretdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response RotateWebhookSecretdefaultApplicationProblemPlusJSONResponse) VisitRotateWebhookSecretResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestWebhookRequestObject struct {
+	WebhookId WebhookID `json:"webhook_id"`
+}
+
+type TestWebhookResponseObject interface {
+	VisitTestWebhookResponse(w http.ResponseWriter) error
+}
+
+type TestWebhook200JSONResponse WebhookAttempt
+
+func (response TestWebhook200JSONResponse) VisitTestWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type TestWebhookdefaultApplicationProblemPlusJSONResponse struct {
+	Body       Problem
+	StatusCode int
+}
+
+func (response TestWebhookdefaultApplicationProblemPlusJSONResponse) VisitTestWebhookResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// ListAlertRoutes List alert routes in evaluation order
+	// (GET /alert-routes)
+	ListAlertRoutes(ctx context.Context, request ListAlertRoutesRequestObject) (ListAlertRoutesResponseObject, error)
+	// CreateAlertRoute Add an alert route
+	// (POST /alert-routes)
+	CreateAlertRoute(ctx context.Context, request CreateAlertRouteRequestObject) (CreateAlertRouteResponseObject, error)
+	// UpsertAlertRoute Create or replace an alert route by its external ID
+	// (PUT /alert-routes/by-external-id/{external_id})
+	UpsertAlertRoute(ctx context.Context, request UpsertAlertRouteRequestObject) (UpsertAlertRouteResponseObject, error)
+	// DeleteAlertRoute Delete an alert route
+	// (DELETE /alert-routes/{route_id})
+	DeleteAlertRoute(ctx context.Context, request DeleteAlertRouteRequestObject) (DeleteAlertRouteResponseObject, error)
+	// GetAlertRoute One alert route
+	// (GET /alert-routes/{route_id})
+	GetAlertRoute(ctx context.Context, request GetAlertRouteRequestObject) (GetAlertRouteResponseObject, error)
+	// UpdateAlertRoute Replace an alert route
+	// (PUT /alert-routes/{route_id})
+	UpdateAlertRoute(ctx context.Context, request UpdateAlertRouteRequestObject) (UpdateAlertRouteResponseObject, error)
 	// ListAPIKeys List the tenant's API keys
 	// (GET /api-keys)
 	ListAPIKeys(ctx context.Context, request ListAPIKeysRequestObject) (ListAPIKeysResponseObject, error)
@@ -2113,6 +7746,105 @@ type StrictServerInterface interface {
 	// ListAuditEvents Query the tenant's audit log
 	// (GET /audit)
 	ListAuditEvents(ctx context.Context, request ListAuditEventsRequestObject) (ListAuditEventsResponseObject, error)
+	// ListChecks List checks
+	// (GET /checks)
+	ListChecks(ctx context.Context, request ListChecksRequestObject) (ListChecksResponseObject, error)
+	// DeleteCheck Delete a check
+	// (DELETE /checks/{check_id})
+	DeleteCheck(ctx context.Context, request DeleteCheckRequestObject) (DeleteCheckResponseObject, error)
+	// GetCheck One check
+	// (GET /checks/{check_id})
+	GetCheck(ctx context.Context, request GetCheckRequestObject) (GetCheckResponseObject, error)
+	// UpdateCheck Replace a check
+	// (PUT /checks/{check_id})
+	UpdateCheck(ctx context.Context, request UpdateCheckRequestObject) (UpdateCheckResponseObject, error)
+	// RunCheckNow Run the check at once
+	// (POST /checks/{check_id}/run-now)
+	RunCheckNow(ctx context.Context, request RunCheckNowRequestObject) (RunCheckNowResponseObject, error)
+	// GetCheckState The check's current state
+	// (GET /checks/{check_id}/state)
+	GetCheckState(ctx context.Context, request GetCheckStateRequestObject) (GetCheckStateResponseObject, error)
+	// ListCredentialTypes Credential types and their fields
+	// (GET /credential-types)
+	ListCredentialTypes(ctx context.Context, request ListCredentialTypesRequestObject) (ListCredentialTypesResponseObject, error)
+	// ListCredentials List credentials (never their secrets)
+	// (GET /credentials)
+	ListCredentials(ctx context.Context, request ListCredentialsRequestObject) (ListCredentialsResponseObject, error)
+	// CreateCredential Store a credential
+	// (POST /credentials)
+	CreateCredential(ctx context.Context, request CreateCredentialRequestObject) (CreateCredentialResponseObject, error)
+	// UpsertCredential Create or replace a credential by its external ID
+	// (PUT /credentials/by-external-id/{external_id})
+	UpsertCredential(ctx context.Context, request UpsertCredentialRequestObject) (UpsertCredentialResponseObject, error)
+	// DeleteCredential Delete a credential that no check uses
+	// (DELETE /credentials/{credential_id})
+	DeleteCredential(ctx context.Context, request DeleteCredentialRequestObject) (DeleteCredentialResponseObject, error)
+	// GetCredential One credential (never its secrets)
+	// (GET /credentials/{credential_id})
+	GetCredential(ctx context.Context, request GetCredentialRequestObject) (GetCredentialResponseObject, error)
+	// UpdateCredential Replace a credential's name and fields
+	// (PUT /credentials/{credential_id})
+	UpdateCredential(ctx context.Context, request UpdateCredentialRequestObject) (UpdateCredentialResponseObject, error)
+	// ListDevices List devices
+	// (GET /devices)
+	ListDevices(ctx context.Context, request ListDevicesRequestObject) (ListDevicesResponseObject, error)
+	// CreateDevice Add a device
+	// (POST /devices)
+	CreateDevice(ctx context.Context, request CreateDeviceRequestObject) (CreateDeviceResponseObject, error)
+	// UpsertDevice Create or replace a device by its external ID
+	// (PUT /devices/by-external-id/{external_id})
+	UpsertDevice(ctx context.Context, request UpsertDeviceRequestObject) (UpsertDeviceResponseObject, error)
+	// DeleteDevice Delete a device, its checks and the devices it contains
+	// (DELETE /devices/{device_id})
+	DeleteDevice(ctx context.Context, request DeleteDeviceRequestObject) (DeleteDeviceResponseObject, error)
+	// GetDevice One device
+	// (GET /devices/{device_id})
+	GetDevice(ctx context.Context, request GetDeviceRequestObject) (GetDeviceResponseObject, error)
+	// UpdateDevice Replace a device
+	// (PUT /devices/{device_id})
+	UpdateDevice(ctx context.Context, request UpdateDeviceRequestObject) (UpdateDeviceResponseObject, error)
+	// ListDeviceChecks The device's checks
+	// (GET /devices/{device_id}/checks)
+	ListDeviceChecks(ctx context.Context, request ListDeviceChecksRequestObject) (ListDeviceChecksResponseObject, error)
+	// CreateCheck Add a check to the device
+	// (POST /devices/{device_id}/checks)
+	CreateCheck(ctx context.Context, request CreateCheckRequestObject) (CreateCheckResponseObject, error)
+	// ListDeviceChildren Devices this device contains
+	// (GET /devices/{device_id}/children)
+	ListDeviceChildren(ctx context.Context, request ListDeviceChildrenRequestObject) (ListDeviceChildrenResponseObject, error)
+	// ListDeviceDependencies What this device needs to work, directly
+	// (GET /devices/{device_id}/dependencies)
+	ListDeviceDependencies(ctx context.Context, request ListDeviceDependenciesRequestObject) (ListDeviceDependenciesResponseObject, error)
+	// AddDeviceDependency Record that this device needs another one
+	// (POST /devices/{device_id}/dependencies)
+	AddDeviceDependency(ctx context.Context, request AddDeviceDependencyRequestObject) (AddDeviceDependencyResponseObject, error)
+	// RemoveDeviceDependency Remove a stored dependency
+	// (DELETE /devices/{device_id}/dependencies/{depends_on_id})
+	RemoveDeviceDependency(ctx context.Context, request RemoveDeviceDependencyRequestObject) (RemoveDeviceDependencyResponseObject, error)
+	// ListDeviceDependents Devices that need this device, directly
+	// (GET /devices/{device_id}/dependents)
+	ListDeviceDependents(ctx context.Context, request ListDeviceDependentsRequestObject) (ListDeviceDependentsResponseObject, error)
+	// GetDeviceImpact Every device that would be suppressed if this one failed
+	// (GET /devices/{device_id}/impact)
+	GetDeviceImpact(ctx context.Context, request GetDeviceImpactRequestObject) (GetDeviceImpactResponseObject, error)
+	// TestDevice Run every enabled check of the device once
+	// (POST /devices/{device_id}/test)
+	TestDevice(ctx context.Context, request TestDeviceRequestObject) (TestDeviceResponseObject, error)
+	// ListIncidents List incidents, newest first
+	// (GET /incidents)
+	ListIncidents(ctx context.Context, request ListIncidentsRequestObject) (ListIncidentsResponseObject, error)
+	// GetIncident One incident with its comments
+	// (GET /incidents/{incident_id})
+	GetIncident(ctx context.Context, request GetIncidentRequestObject) (GetIncidentResponseObject, error)
+	// AcknowledgeIncident Acknowledge an incident
+	// (POST /incidents/{incident_id}/ack)
+	AcknowledgeIncident(ctx context.Context, request AcknowledgeIncidentRequestObject) (AcknowledgeIncidentResponseObject, error)
+	// CommentIncident Add a comment to an incident
+	// (POST /incidents/{incident_id}/comments)
+	CommentIncident(ctx context.Context, request CommentIncidentRequestObject) (CommentIncidentResponseObject, error)
+	// ResolveIncident Resolve an incident by hand
+	// (POST /incidents/{incident_id}/resolve)
+	ResolveIncident(ctx context.Context, request ResolveIncidentRequestObject) (ResolveIncidentResponseObject, error)
 	// GetMe The resolved caller
 	// (GET /me)
 	GetMe(ctx context.Context, request GetMeRequestObject) (GetMeResponseObject, error)
@@ -2122,6 +7854,24 @@ type StrictServerInterface interface {
 	// GetPlugin One plugin's manifest
 	// (GET /plugins/{type})
 	GetPlugin(ctx context.Context, request GetPluginRequestObject) (GetPluginResponseObject, error)
+	// ListSites List sites
+	// (GET /sites)
+	ListSites(ctx context.Context, request ListSitesRequestObject) (ListSitesResponseObject, error)
+	// CreateSite Add a site
+	// (POST /sites)
+	CreateSite(ctx context.Context, request CreateSiteRequestObject) (CreateSiteResponseObject, error)
+	// UpsertSite Create or replace a site by its external ID
+	// (PUT /sites/by-external-id/{external_id})
+	UpsertSite(ctx context.Context, request UpsertSiteRequestObject) (UpsertSiteResponseObject, error)
+	// DeleteSite Delete a site without devices
+	// (DELETE /sites/{site_id})
+	DeleteSite(ctx context.Context, request DeleteSiteRequestObject) (DeleteSiteResponseObject, error)
+	// GetSite One site
+	// (GET /sites/{site_id})
+	GetSite(ctx context.Context, request GetSiteRequestObject) (GetSiteResponseObject, error)
+	// UpdateSite Replace a site
+	// (PUT /sites/{site_id})
+	UpdateSite(ctx context.Context, request UpdateSiteRequestObject) (UpdateSiteResponseObject, error)
 	// GetTenant The caller's tenant, with its limits
 	// (GET /tenant)
 	GetTenant(ctx context.Context, request GetTenantRequestObject) (GetTenantResponseObject, error)
@@ -2149,6 +7899,36 @@ type StrictServerInterface interface {
 	// PatchUser Disable or rename a user everywhere (platform only)
 	// (PATCH /users/by-external-id/{external_id})
 	PatchUser(ctx context.Context, request PatchUserRequestObject) (PatchUserResponseObject, error)
+	// ListWebhooks List webhook endpoints
+	// (GET /webhooks)
+	ListWebhooks(ctx context.Context, request ListWebhooksRequestObject) (ListWebhooksResponseObject, error)
+	// CreateWebhook Add a webhook endpoint
+	// (POST /webhooks)
+	CreateWebhook(ctx context.Context, request CreateWebhookRequestObject) (CreateWebhookResponseObject, error)
+	// UpsertWebhook Create or replace a webhook endpoint by its external ID
+	// (PUT /webhooks/by-external-id/{external_id})
+	UpsertWebhook(ctx context.Context, request UpsertWebhookRequestObject) (UpsertWebhookResponseObject, error)
+	// DeleteWebhook Delete a webhook endpoint no route uses
+	// (DELETE /webhooks/{webhook_id})
+	DeleteWebhook(ctx context.Context, request DeleteWebhookRequestObject) (DeleteWebhookResponseObject, error)
+	// GetWebhook One webhook endpoint
+	// (GET /webhooks/{webhook_id})
+	GetWebhook(ctx context.Context, request GetWebhookRequestObject) (GetWebhookResponseObject, error)
+	// UpdateWebhook Replace a webhook endpoint
+	// (PUT /webhooks/{webhook_id})
+	UpdateWebhook(ctx context.Context, request UpdateWebhookRequestObject) (UpdateWebhookResponseObject, error)
+	// ListWebhookDeliveries The endpoint's delivery log, newest first
+	// (GET /webhooks/{webhook_id}/deliveries)
+	ListWebhookDeliveries(ctx context.Context, request ListWebhookDeliveriesRequestObject) (ListWebhookDeliveriesResponseObject, error)
+	// ReplayWebhookDelivery Send a delivery again
+	// (POST /webhooks/{webhook_id}/deliveries/{delivery_id}/replay)
+	ReplayWebhookDelivery(ctx context.Context, request ReplayWebhookDeliveryRequestObject) (ReplayWebhookDeliveryResponseObject, error)
+	// RotateWebhookSecret Replace the signing secret
+	// (POST /webhooks/{webhook_id}/rotate-secret)
+	RotateWebhookSecret(ctx context.Context, request RotateWebhookSecretRequestObject) (RotateWebhookSecretResponseObject, error)
+	// TestWebhook Send a signed monitoring.webhook.test event now
+	// (POST /webhooks/{webhook_id}/test)
+	TestWebhook(ctx context.Context, request TestWebhookRequestObject) (TestWebhookResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -2188,6 +7968,180 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// ListAlertRoutes operation middleware
+func (sh *strictHandler) ListAlertRoutes(w http.ResponseWriter, r *http.Request) {
+	var request ListAlertRoutesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAlertRoutes(ctx, request.(ListAlertRoutesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAlertRoutes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAlertRoutesResponseObject); ok {
+		if err := validResponse.VisitListAlertRoutesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAlertRoute operation middleware
+func (sh *strictHandler) CreateAlertRoute(w http.ResponseWriter, r *http.Request) {
+	var request CreateAlertRouteRequestObject
+
+	var body CreateAlertRouteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAlertRoute(ctx, request.(CreateAlertRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAlertRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAlertRouteResponseObject); ok {
+		if err := validResponse.VisitCreateAlertRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertAlertRoute operation middleware
+func (sh *strictHandler) UpsertAlertRoute(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertAlertRouteParams) {
+	var request UpsertAlertRouteRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertAlertRouteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertAlertRoute(ctx, request.(UpsertAlertRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertAlertRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertAlertRouteResponseObject); ok {
+		if err := validResponse.VisitUpsertAlertRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteAlertRoute operation middleware
+func (sh *strictHandler) DeleteAlertRoute(w http.ResponseWriter, r *http.Request, routeId RouteID) {
+	var request DeleteAlertRouteRequestObject
+
+	request.RouteId = routeId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteAlertRoute(ctx, request.(DeleteAlertRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteAlertRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteAlertRouteResponseObject); ok {
+		if err := validResponse.VisitDeleteAlertRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAlertRoute operation middleware
+func (sh *strictHandler) GetAlertRoute(w http.ResponseWriter, r *http.Request, routeId RouteID) {
+	var request GetAlertRouteRequestObject
+
+	request.RouteId = routeId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAlertRoute(ctx, request.(GetAlertRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAlertRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAlertRouteResponseObject); ok {
+		if err := validResponse.VisitGetAlertRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateAlertRoute operation middleware
+func (sh *strictHandler) UpdateAlertRoute(w http.ResponseWriter, r *http.Request, routeId RouteID) {
+	var request UpdateAlertRouteRequestObject
+
+	request.RouteId = routeId
+
+	var body UpdateAlertRouteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateAlertRoute(ctx, request.(UpdateAlertRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateAlertRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateAlertRouteResponseObject); ok {
+		if err := validResponse.VisitUpdateAlertRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListAPIKeys operation middleware
@@ -2299,6 +8253,934 @@ func (sh *strictHandler) ListAuditEvents(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// ListChecks operation middleware
+func (sh *strictHandler) ListChecks(w http.ResponseWriter, r *http.Request, params ListChecksParams) {
+	var request ListChecksRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChecks(ctx, request.(ListChecksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChecks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChecksResponseObject); ok {
+		if err := validResponse.VisitListChecksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCheck operation middleware
+func (sh *strictHandler) DeleteCheck(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request DeleteCheckRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCheck(ctx, request.(DeleteCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCheckResponseObject); ok {
+		if err := validResponse.VisitDeleteCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCheck operation middleware
+func (sh *strictHandler) GetCheck(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request GetCheckRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCheck(ctx, request.(GetCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCheckResponseObject); ok {
+		if err := validResponse.VisitGetCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCheck operation middleware
+func (sh *strictHandler) UpdateCheck(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request UpdateCheckRequestObject
+
+	request.CheckId = checkId
+
+	var body UpdateCheckJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCheck(ctx, request.(UpdateCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCheckResponseObject); ok {
+		if err := validResponse.VisitUpdateCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RunCheckNow operation middleware
+func (sh *strictHandler) RunCheckNow(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request RunCheckNowRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RunCheckNow(ctx, request.(RunCheckNowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RunCheckNow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RunCheckNowResponseObject); ok {
+		if err := validResponse.VisitRunCheckNowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCheckState operation middleware
+func (sh *strictHandler) GetCheckState(w http.ResponseWriter, r *http.Request, checkId CheckID) {
+	var request GetCheckStateRequestObject
+
+	request.CheckId = checkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCheckState(ctx, request.(GetCheckStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCheckState")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCheckStateResponseObject); ok {
+		if err := validResponse.VisitGetCheckStateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCredentialTypes operation middleware
+func (sh *strictHandler) ListCredentialTypes(w http.ResponseWriter, r *http.Request) {
+	var request ListCredentialTypesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCredentialTypes(ctx, request.(ListCredentialTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCredentialTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCredentialTypesResponseObject); ok {
+		if err := validResponse.VisitListCredentialTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCredentials operation middleware
+func (sh *strictHandler) ListCredentials(w http.ResponseWriter, r *http.Request, params ListCredentialsParams) {
+	var request ListCredentialsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCredentials(ctx, request.(ListCredentialsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCredentials")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCredentialsResponseObject); ok {
+		if err := validResponse.VisitListCredentialsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCredential operation middleware
+func (sh *strictHandler) CreateCredential(w http.ResponseWriter, r *http.Request) {
+	var request CreateCredentialRequestObject
+
+	var body CreateCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCredential(ctx, request.(CreateCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCredentialResponseObject); ok {
+		if err := validResponse.VisitCreateCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertCredential operation middleware
+func (sh *strictHandler) UpsertCredential(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertCredentialParams) {
+	var request UpsertCredentialRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertCredential(ctx, request.(UpsertCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertCredentialResponseObject); ok {
+		if err := validResponse.VisitUpsertCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCredential operation middleware
+func (sh *strictHandler) DeleteCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID) {
+	var request DeleteCredentialRequestObject
+
+	request.CredentialId = credentialId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCredential(ctx, request.(DeleteCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCredentialResponseObject); ok {
+		if err := validResponse.VisitDeleteCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCredential operation middleware
+func (sh *strictHandler) GetCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID) {
+	var request GetCredentialRequestObject
+
+	request.CredentialId = credentialId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCredential(ctx, request.(GetCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCredentialResponseObject); ok {
+		if err := validResponse.VisitGetCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCredential operation middleware
+func (sh *strictHandler) UpdateCredential(w http.ResponseWriter, r *http.Request, credentialId CredentialID) {
+	var request UpdateCredentialRequestObject
+
+	request.CredentialId = credentialId
+
+	var body UpdateCredentialJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCredential(ctx, request.(UpdateCredentialRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCredential")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCredentialResponseObject); ok {
+		if err := validResponse.VisitUpdateCredentialResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDevices operation middleware
+func (sh *strictHandler) ListDevices(w http.ResponseWriter, r *http.Request, params ListDevicesParams) {
+	var request ListDevicesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDevices(ctx, request.(ListDevicesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDevices")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDevicesResponseObject); ok {
+		if err := validResponse.VisitListDevicesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDevice operation middleware
+func (sh *strictHandler) CreateDevice(w http.ResponseWriter, r *http.Request) {
+	var request CreateDeviceRequestObject
+
+	var body CreateDeviceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDevice(ctx, request.(CreateDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDeviceResponseObject); ok {
+		if err := validResponse.VisitCreateDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertDevice operation middleware
+func (sh *strictHandler) UpsertDevice(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertDeviceParams) {
+	var request UpsertDeviceRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertDeviceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertDevice(ctx, request.(UpsertDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertDeviceResponseObject); ok {
+		if err := validResponse.VisitUpsertDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDevice operation middleware
+func (sh *strictHandler) DeleteDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params DeleteDeviceParams) {
+	var request DeleteDeviceRequestObject
+
+	request.DeviceId = deviceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDevice(ctx, request.(DeleteDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteDeviceResponseObject); ok {
+		if err := validResponse.VisitDeleteDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDevice operation middleware
+func (sh *strictHandler) GetDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request GetDeviceRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDevice(ctx, request.(GetDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDeviceResponseObject); ok {
+		if err := validResponse.VisitGetDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDevice operation middleware
+func (sh *strictHandler) UpdateDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request UpdateDeviceRequestObject
+
+	request.DeviceId = deviceId
+
+	var body UpdateDeviceJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDevice(ctx, request.(UpdateDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDeviceResponseObject); ok {
+		if err := validResponse.VisitUpdateDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceChecks operation middleware
+func (sh *strictHandler) ListDeviceChecks(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChecksParams) {
+	var request ListDeviceChecksRequestObject
+
+	request.DeviceId = deviceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceChecks(ctx, request.(ListDeviceChecksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceChecks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceChecksResponseObject); ok {
+		if err := validResponse.VisitListDeviceChecksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCheck operation middleware
+func (sh *strictHandler) CreateCheck(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request CreateCheckRequestObject
+
+	request.DeviceId = deviceId
+
+	var body CreateCheckJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCheck(ctx, request.(CreateCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCheckResponseObject); ok {
+		if err := validResponse.VisitCreateCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceChildren operation middleware
+func (sh *strictHandler) ListDeviceChildren(w http.ResponseWriter, r *http.Request, deviceId DeviceID, params ListDeviceChildrenParams) {
+	var request ListDeviceChildrenRequestObject
+
+	request.DeviceId = deviceId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceChildren(ctx, request.(ListDeviceChildrenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceChildren")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceChildrenResponseObject); ok {
+		if err := validResponse.VisitListDeviceChildrenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceDependencies operation middleware
+func (sh *strictHandler) ListDeviceDependencies(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request ListDeviceDependenciesRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceDependencies(ctx, request.(ListDeviceDependenciesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceDependencies")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceDependenciesResponseObject); ok {
+		if err := validResponse.VisitListDeviceDependenciesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddDeviceDependency operation middleware
+func (sh *strictHandler) AddDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request AddDeviceDependencyRequestObject
+
+	request.DeviceId = deviceId
+
+	var body AddDeviceDependencyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddDeviceDependency(ctx, request.(AddDeviceDependencyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddDeviceDependency")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddDeviceDependencyResponseObject); ok {
+		if err := validResponse.VisitAddDeviceDependencyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveDeviceDependency operation middleware
+func (sh *strictHandler) RemoveDeviceDependency(w http.ResponseWriter, r *http.Request, deviceId DeviceID, dependsOnId openapi_types.UUID) {
+	var request RemoveDeviceDependencyRequestObject
+
+	request.DeviceId = deviceId
+	request.DependsOnId = dependsOnId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveDeviceDependency(ctx, request.(RemoveDeviceDependencyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveDeviceDependency")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveDeviceDependencyResponseObject); ok {
+		if err := validResponse.VisitRemoveDeviceDependencyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDeviceDependents operation middleware
+func (sh *strictHandler) ListDeviceDependents(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request ListDeviceDependentsRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDeviceDependents(ctx, request.(ListDeviceDependentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDeviceDependents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDeviceDependentsResponseObject); ok {
+		if err := validResponse.VisitListDeviceDependentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDeviceImpact operation middleware
+func (sh *strictHandler) GetDeviceImpact(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request GetDeviceImpactRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDeviceImpact(ctx, request.(GetDeviceImpactRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDeviceImpact")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDeviceImpactResponseObject); ok {
+		if err := validResponse.VisitGetDeviceImpactResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TestDevice operation middleware
+func (sh *strictHandler) TestDevice(w http.ResponseWriter, r *http.Request, deviceId DeviceID) {
+	var request TestDeviceRequestObject
+
+	request.DeviceId = deviceId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestDevice(ctx, request.(TestDeviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestDevice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestDeviceResponseObject); ok {
+		if err := validResponse.VisitTestDeviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIncidents operation middleware
+func (sh *strictHandler) ListIncidents(w http.ResponseWriter, r *http.Request, params ListIncidentsParams) {
+	var request ListIncidentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListIncidents(ctx, request.(ListIncidentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIncidents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIncidentsResponseObject); ok {
+		if err := validResponse.VisitListIncidentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetIncident operation middleware
+func (sh *strictHandler) GetIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request GetIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetIncident(ctx, request.(GetIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetIncidentResponseObject); ok {
+		if err := validResponse.VisitGetIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcknowledgeIncident operation middleware
+func (sh *strictHandler) AcknowledgeIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request AcknowledgeIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcknowledgeIncident(ctx, request.(AcknowledgeIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcknowledgeIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcknowledgeIncidentResponseObject); ok {
+		if err := validResponse.VisitAcknowledgeIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CommentIncident operation middleware
+func (sh *strictHandler) CommentIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request CommentIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	var body CommentIncidentJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CommentIncident(ctx, request.(CommentIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CommentIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CommentIncidentResponseObject); ok {
+		if err := validResponse.VisitCommentIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResolveIncident operation middleware
+func (sh *strictHandler) ResolveIncident(w http.ResponseWriter, r *http.Request, incidentId IncidentID) {
+	var request ResolveIncidentRequestObject
+
+	request.IncidentId = incidentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResolveIncident(ctx, request.(ResolveIncidentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResolveIncident")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResolveIncidentResponseObject); ok {
+		if err := validResponse.VisitResolveIncidentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMe operation middleware
 func (sh *strictHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 	var request GetMeRequestObject
@@ -2366,6 +9248,182 @@ func (sh *strictHandler) GetPlugin(w http.ResponseWriter, r *http.Request, pType
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetPluginResponseObject); ok {
 		if err := validResponse.VisitGetPluginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSites operation middleware
+func (sh *strictHandler) ListSites(w http.ResponseWriter, r *http.Request, params ListSitesParams) {
+	var request ListSitesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSites(ctx, request.(ListSitesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSites")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSitesResponseObject); ok {
+		if err := validResponse.VisitListSitesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSite operation middleware
+func (sh *strictHandler) CreateSite(w http.ResponseWriter, r *http.Request) {
+	var request CreateSiteRequestObject
+
+	var body CreateSiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSite(ctx, request.(CreateSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSiteResponseObject); ok {
+		if err := validResponse.VisitCreateSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertSite operation middleware
+func (sh *strictHandler) UpsertSite(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertSiteParams) {
+	var request UpsertSiteRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertSiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertSite(ctx, request.(UpsertSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertSiteResponseObject); ok {
+		if err := validResponse.VisitUpsertSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteSite operation middleware
+func (sh *strictHandler) DeleteSite(w http.ResponseWriter, r *http.Request, siteId SiteID) {
+	var request DeleteSiteRequestObject
+
+	request.SiteId = siteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteSite(ctx, request.(DeleteSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteSiteResponseObject); ok {
+		if err := validResponse.VisitDeleteSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSite operation middleware
+func (sh *strictHandler) GetSite(w http.ResponseWriter, r *http.Request, siteId SiteID) {
+	var request GetSiteRequestObject
+
+	request.SiteId = siteId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSite(ctx, request.(GetSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSiteResponseObject); ok {
+		if err := validResponse.VisitGetSiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSite operation middleware
+func (sh *strictHandler) UpdateSite(w http.ResponseWriter, r *http.Request, siteId SiteID) {
+	var request UpdateSiteRequestObject
+
+	request.SiteId = siteId
+
+	var body UpdateSiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSite(ctx, request.(UpdateSiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSiteResponseObject); ok {
+		if err := validResponse.VisitUpdateSiteResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -2641,74 +9699,459 @@ func (sh *strictHandler) PatchUser(w http.ResponseWriter, r *http.Request, exter
 	}
 }
 
+// ListWebhooks operation middleware
+func (sh *strictHandler) ListWebhooks(w http.ResponseWriter, r *http.Request) {
+	var request ListWebhooksRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWebhooks(ctx, request.(ListWebhooksRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWebhooks")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWebhooksResponseObject); ok {
+		if err := validResponse.VisitListWebhooksResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateWebhook operation middleware
+func (sh *strictHandler) CreateWebhook(w http.ResponseWriter, r *http.Request) {
+	var request CreateWebhookRequestObject
+
+	var body CreateWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateWebhook(ctx, request.(CreateWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateWebhookResponseObject); ok {
+		if err := validResponse.VisitCreateWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertWebhook operation middleware
+func (sh *strictHandler) UpsertWebhook(w http.ResponseWriter, r *http.Request, externalId ExternalID, params UpsertWebhookParams) {
+	var request UpsertWebhookRequestObject
+
+	request.ExternalId = externalId
+	request.Params = params
+
+	var body UpsertWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpsertWebhook(ctx, request.(UpsertWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertWebhookResponseObject); ok {
+		if err := validResponse.VisitUpsertWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteWebhook operation middleware
+func (sh *strictHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID) {
+	var request DeleteWebhookRequestObject
+
+	request.WebhookId = webhookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteWebhook(ctx, request.(DeleteWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteWebhookResponseObject); ok {
+		if err := validResponse.VisitDeleteWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWebhook operation middleware
+func (sh *strictHandler) GetWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID) {
+	var request GetWebhookRequestObject
+
+	request.WebhookId = webhookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWebhook(ctx, request.(GetWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWebhookResponseObject); ok {
+		if err := validResponse.VisitGetWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateWebhook operation middleware
+func (sh *strictHandler) UpdateWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID) {
+	var request UpdateWebhookRequestObject
+
+	request.WebhookId = webhookId
+
+	var body UpdateWebhookJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateWebhook(ctx, request.(UpdateWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateWebhookResponseObject); ok {
+		if err := validResponse.VisitUpdateWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWebhookDeliveries operation middleware
+func (sh *strictHandler) ListWebhookDeliveries(w http.ResponseWriter, r *http.Request, webhookId WebhookID, params ListWebhookDeliveriesParams) {
+	var request ListWebhookDeliveriesRequestObject
+
+	request.WebhookId = webhookId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWebhookDeliveries(ctx, request.(ListWebhookDeliveriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWebhookDeliveries")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWebhookDeliveriesResponseObject); ok {
+		if err := validResponse.VisitListWebhookDeliveriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReplayWebhookDelivery operation middleware
+func (sh *strictHandler) ReplayWebhookDelivery(w http.ResponseWriter, r *http.Request, webhookId WebhookID, deliveryId openapi_types.UUID) {
+	var request ReplayWebhookDeliveryRequestObject
+
+	request.WebhookId = webhookId
+	request.DeliveryId = deliveryId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReplayWebhookDelivery(ctx, request.(ReplayWebhookDeliveryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReplayWebhookDelivery")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReplayWebhookDeliveryResponseObject); ok {
+		if err := validResponse.VisitReplayWebhookDeliveryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RotateWebhookSecret operation middleware
+func (sh *strictHandler) RotateWebhookSecret(w http.ResponseWriter, r *http.Request, webhookId WebhookID) {
+	var request RotateWebhookSecretRequestObject
+
+	request.WebhookId = webhookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RotateWebhookSecret(ctx, request.(RotateWebhookSecretRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RotateWebhookSecret")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RotateWebhookSecretResponseObject); ok {
+		if err := validResponse.VisitRotateWebhookSecretResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// TestWebhook operation middleware
+func (sh *strictHandler) TestWebhook(w http.ResponseWriter, r *http.Request, webhookId WebhookID) {
+	var request TestWebhookRequestObject
+
+	request.WebhookId = webhookId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.TestWebhook(ctx, request.(TestWebhookRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "TestWebhook")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(TestWebhookResponseObject); ok {
+		if err := validResponse.VisitTestWebhookResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"+tP6fwcA",
+	"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",
+	"dG8/3f7/AQA=",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

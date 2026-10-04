@@ -24,28 +24,38 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/api/gen"
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/credential"
+	"github.com/plusclouds/monitoring.server/internal/crypto"
+	"github.com/plusclouds/monitoring.server/internal/execute"
 	"github.com/plusclouds/monitoring.server/internal/store"
 	"github.com/plusclouds/monitoring.server/internal/tenancy"
 	"github.com/plusclouds/monitoring.server/internal/tlsconf"
+	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
 
 // Options configure the API server.
 type Options struct {
 	Config   config.Config
 	DB       *pgxpool.Pool // the app role, subject to RLS
+	Keys     *crypto.Keyring
 	Logger   *slog.Logger
 	Registry prometheus.Registerer
 }
 
 // Server implements gen.StrictServerInterface.
 type Server struct {
-	cfg            config.API
-	tls            config.TLSPolicy
-	db             *pgxpool.Pool
-	log            *slog.Logger
-	tenants        *tenancy.Service
-	identitySource string
-	platformRate   int
+	cfg             config.API
+	tls             config.TLSPolicy
+	db              *pgxpool.Pool
+	log             *slog.Logger
+	tenants         *tenancy.Service
+	creds           *credential.Store
+	exec            *execute.Executor
+	hooks           *webhook.Store
+	sender          *webhook.Sender
+	rotationOverlap time.Duration
+	identitySource  string
+	platformRate    int
 
 	authFailures *prometheus.CounterVec
 	rateLimited  prometheus.Counter
@@ -60,13 +70,26 @@ var _ gen.StrictServerInterface = (*Server)(nil)
 
 // New builds the server and registers its metrics.
 func New(o Options) (*Server, error) {
+	if o.Keys == nil {
+		return nil, errors.New("api: the credential keyring is required")
+	}
+	creds := &credential.Store{Keys: o.Keys}
+	exec, err := execute.New(o.Config, creds, o.Logger)
+	if err != nil {
+		return nil, err
+	}
 	s := &Server{
-		cfg:            o.Config.API,
-		tls:            o.Config.TLS,
-		db:             o.DB,
-		log:            o.Logger,
-		identitySource: o.Config.Platform.IdentitySource,
-		platformRate:   o.Config.API.PlatformRatePerMinute,
+		creds:           creds,
+		exec:            exec,
+		hooks:           &webhook.Store{Keys: o.Keys},
+		sender:          webhook.NewSender(o.Config),
+		rotationOverlap: o.Config.Notifier.SecretRotationOverlap.D(),
+		cfg:             o.Config.API,
+		tls:             o.Config.TLS,
+		db:              o.DB,
+		log:             o.Logger,
+		identitySource:  o.Config.Platform.IdentitySource,
+		platformRate:    o.Config.API.PlatformRatePerMinute,
 		tenants: &tenancy.Service{
 			DB: o.DB, IdentitySource: o.Config.Platform.IdentitySource,
 			Defaults: o.Config.Platform.TenantDefaults, JIT: o.Config.Platform.JIT,

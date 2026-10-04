@@ -52,6 +52,10 @@ As in [ADR-0009](../adr/0009-webhook-delivery.md): outbox, Standard Webhooks sig
 
 `/v1/webhooks` (CRUD, `by-external-id/{external_id}`, `{id}/test`, `{id}/deliveries`, `{id}/deliveries/{d}/replay`, `{id}/rotate-secret`), `/v1/alert-routes` (CRUD, `by-external-id/{external_id}`, `test` with a sample incident to show which routes match), `/v1/schedules` (phase 2).
 
+## Implementation status
+
+M2 implements endpoints, rotation, ordered routes with `continue`, signed delivery with retries, ordering and the delivery log. Grouping (`group_by`, `group_wait`) and `repeat_interval` are not implemented yet; until then every event is delivered on its own. See [progress](../progress.md#deferred-from-m2).
+
 ## Acceptance criteria
 
 - An n8n flow using a Standard Webhooks verification step accepts every event.

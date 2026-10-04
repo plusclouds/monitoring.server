@@ -3,6 +3,7 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -18,6 +19,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/admin"
 	"github.com/plusclouds/monitoring.server/internal/api"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/crypto"
 	"github.com/plusclouds/monitoring.server/internal/dbtest"
 	_ "github.com/plusclouds/monitoring.server/plugins/all"
 )
@@ -44,7 +46,8 @@ func setup(t *testing.T, standalone bool) *env {
 	if err != nil {
 		t.Fatal(err)
 	}
-	srv, err := api.New(api.Options{Config: cfg, DB: db.App, Logger: slog.New(slog.DiscardHandler), Registry: prometheus.NewRegistry()})
+	srv, err := api.New(api.Options{Config: cfg, DB: db.App, Keys: testKeys(t), Logger: slog.New(slog.DiscardHandler),
+		Registry: prometheus.NewRegistry()})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,6 +59,22 @@ func setup(t *testing.T, standalone bool) *env {
 	t.Cleanup(ts.Close)
 	return &env{t: t, url: ts.URL, platformKey: res.PlatformKey, adminKey: res.AdminKey}
 }
+
+// sharedKeys is the keyring of every server and pipeline in these tests, so
+// secrets stored through the API can be read by the runner and notifier.
+var sharedKeys = func() *crypto.Keyring {
+	k := make([]byte, crypto.KeySize)
+	if _, err := rand.Read(k); err != nil {
+		panic(err)
+	}
+	keys, err := crypto.NewKeyring("test", map[string][]byte{"test": k})
+	if err != nil {
+		panic(err)
+	}
+	return keys
+}()
+
+func testKeys(*testing.T) *crypto.Keyring { return sharedKeys }
 
 type resp struct {
 	status int

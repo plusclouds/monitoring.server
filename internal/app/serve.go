@@ -19,9 +19,15 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/api"
 	"github.com/plusclouds/monitoring.server/internal/buildinfo"
 	"github.com/plusclouds/monitoring.server/internal/config"
+	"github.com/plusclouds/monitoring.server/internal/credential"
+	"github.com/plusclouds/monitoring.server/internal/crypto"
+	"github.com/plusclouds/monitoring.server/internal/engine"
+	"github.com/plusclouds/monitoring.server/internal/execute"
 	"github.com/plusclouds/monitoring.server/internal/logging"
+	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
+	"github.com/plusclouds/monitoring.server/internal/webhook"
 )
 
 // ServeOptions is what `monitor serve` resolved from flags and the config.
@@ -36,7 +42,7 @@ type ServeOptions struct {
 
 // implementedRoles grows as milestones land; the others are accepted in the
 // config but not started yet.
-var implementedRoles = []string{config.RoleAPI}
+var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine, config.RoleNotifier}
 
 // Serve runs until ctx is cancelled.
 func Serve(ctx context.Context, o ServeOptions) error {
@@ -105,8 +111,57 @@ func Serve(ctx context.Context, o ServeOptions) error {
 	log.Info("monitor starting", "node_id", o.Config.Node.ID, "roles", o.Roles, "version", buildinfo.Version)
 	g, gctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return status.Run(gctx) })
-	if slices.Contains(o.Roles, config.RoleAPI) {
-		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Logger: log.Logger, Registry: reg})
+	has := func(r string) bool { return slices.Contains(o.Roles, r) }
+	var keys *crypto.Keyring
+	if has(config.RoleAPI) || has(config.RoleRunner) || has(config.RoleNotifier) {
+		if keys, err = crypto.Load(o.Config.Crypto); err != nil {
+			return err
+		}
+	}
+	// The runner and the engine share a process in the MVP: results pass
+	// through a channel (ADR-0001).
+	if has(config.RoleRunner) || has(config.RoleEngine) {
+		results := make(chan runner.Result, max(o.Config.Runner.ResultBuffer, 1))
+		eng, err := engine.New(engine.Options{System: pools.system, Results: results,
+			Writers: o.Config.Engine.StateWriters, Logger: log.Logger, Registry: reg})
+		if err != nil {
+			return err
+		}
+		g.Go(func() error { return eng.Run(gctx) })
+		if has(config.RoleRunner) {
+			listen, err := config.ReadSecret("database.listen_dsn", o.Config.Database.ListenDSN, o.Config.Database.ListenDSNFile)
+			if err == nil && listen == "" {
+				listen, err = config.ReadSecret("database.system.dsn", o.Config.Database.System.DSN, o.Config.Database.System.DSNFile)
+			}
+			if err != nil {
+				return err
+			}
+			exec, err := execute.New(o.Config, &credential.Store{Keys: keys}, log.Logger)
+			if err != nil {
+				return err
+			}
+			run, err := runner.New(runner.Options{Config: o.Config.Runner, System: pools.system, ListenDSN: listen,
+				Executor: exec, Sink: results, Logger: log.Logger, Registry: reg})
+			if err != nil {
+				return err
+			}
+			g.Go(func() error { return run.Run(gctx) })
+		}
+	}
+	if has(config.RoleNotifier) {
+		exec, err := execute.New(o.Config, &credential.Store{Keys: keys}, log.Logger) // for the deny list
+		if err != nil {
+			return err
+		}
+		n, err := webhook.New(webhook.Options{System: pools.system, Store: &webhook.Store{Keys: keys},
+			Sender: webhook.NewSender(o.Config), Config: o.Config.Notifier, Deny: exec.Deny, Logger: log.Logger, Registry: reg})
+		if err != nil {
+			return err
+		}
+		g.Go(func() error { return n.Run(gctx) })
+	}
+	if has(config.RoleAPI) {
+		srv, err := api.New(api.Options{Config: o.Config, DB: pools.app, Keys: keys, Logger: log.Logger, Registry: reg})
 		if err != nil {
 			return err
 		}
