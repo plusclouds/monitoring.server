@@ -150,6 +150,9 @@ api:
   idempotency_ttl: 24h
   # Rate limit for platform keys. Tenant keys use the tenant's api_rate_per_minute.
   platform_rate_per_minute: 6000
+  # API reference at /docs and the spec at /v1/openapi.json and
+  # /v1/openapi.yaml, without authentication (the spec is public).
+  docs: true
   events:
     replay_window: 10m     # SSE Last-Event-ID replay
     telemetry_tick_interval: 5s

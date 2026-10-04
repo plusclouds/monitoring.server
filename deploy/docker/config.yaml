@@ -1,0 +1,35 @@
+# Configuration for the monitor container in deploy/docker-compose.yml.
+# Local development only: inline DSNs with the placeholder passwords from
+# deploy/postgres/init-roles.sql, and plain HTTP. Never use inline secrets
+# or these passwords anywhere else; production reads DSNs from *_file
+# secrets and serves the API over TLS.
+logging:
+  format: json
+  level: info
+database:
+  owner:  { dsn: "postgres://monitor_owner:change-me-owner@postgres:5432/monitor?sslmode=disable" }
+  app:    { dsn: "postgres://monitor_app:change-me-app@postgres:5432/monitor?sslmode=disable" }
+  system: { dsn: "postgres://monitor_system:change-me-system@postgres:5432/monitor?sslmode=disable" }
+  migrate_on_start: true
+crypto:
+  file:
+    active: dev
+    keys: [{ id: dev, env: MONITOR_DEV_KEK }]
+api:
+  listen: ":8443"
+  public_url: "http://127.0.0.1:8443"
+  tls: { cert_file: "", key_file: "" }
+  # Docker's port forwarding stands in for the TLS-terminating proxy that
+  # production requires for plain HTTP. Requests arrive from the bridge
+  # gateway, so these are the private ranges Docker networks use.
+  trusted_proxies: ["172.16.0.0/12", "192.168.0.0/16", "10.0.0.0/8"]
+probe_service:
+  enabled: false
+ingest:
+  http: { enabled: false }
+  mqtt: { enabled: false }
+self_monitoring:
+  # Loopback inside the container; Docker's health check probes it with
+  # `monitor health`. Publish it only with TLS and a status token.
+  listen: "127.0.0.1:9090"
+  status_token_file: ""

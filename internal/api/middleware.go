@@ -340,13 +340,12 @@ func (s *Server) keyLimiter(id uuid.UUID, perMinute int) *rate.Limiter {
 	defer s.mu.Unlock()
 	limit := rate.Limit(float64(perMinute) / 60)
 	burst := max(perMinute/6, 1) // ten seconds' worth
+	// A changed limit (the tenant's plan changed) starts a fresh bucket, so a
+	// raised limit applies at once instead of after the old bucket refills.
 	l, ok := s.keyLimits[id]
-	if !ok {
+	if !ok || l.Limit() != limit {
 		l = rate.NewLimiter(limit, burst)
 		s.keyLimits[id] = l
-	} else if l.Limit() != limit {
-		l.SetLimit(limit)
-		l.SetBurst(burst)
 	}
 	return l
 }

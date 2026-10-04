@@ -1,23 +1,61 @@
-# Local development database. Creates the three roles from
-# postgres/init-roles.sql on first start.
-#   docker compose -f deploy/docker-compose.yml up -d
-#   monitor migrate up --config deploy/dev/config.yaml
+# Local development stack: PostgreSQL 18 and the monitor engine built from
+# source. For a deployment from the published image, use deploy/compose.
+#
+#   docker compose -f deploy/docker-compose.yml up -d --build --wait
+#   (stamp the build: MONITOR_VERSION=$(git describe --tags --always) MONITOR_COMMIT=$(git rev-parse HEAD))
+#   docker compose -f deploy/docker-compose.yml run --rm monitor admin bootstrap   # prints the platform key once
+#   open http://127.0.0.1:8443/docs
+#
+# The database is on a private network only and is not published, so it
+# never collides with other PostgreSQL servers on the host. To run the engine
+# from source on the host instead, publish it on 127.0.0.1:55432 with the
+# override file:
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.db-port.yml up -d --wait postgres
+#   ./bin/monitor serve --config deploy/dev/config.yaml
+name: monitor-dev
+
 services:
   postgres:
     image: postgres:18-alpine
     environment:
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "127.0.0.1:55432:5432"
     volumes:
       - ./postgres/init-roles.sql:/docker-entrypoint-initdb.d/init-roles.sql:ro
       - pgdata:/var/lib/postgresql
+    networks: [backend]
     # Ready only once the init script has created the monitor database.
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres", "-d", "monitor", "-h", "127.0.0.1"]
       interval: 1s
       timeout: 3s
       retries: 30
+
+  monitor:
+    build:
+      context: ..
+      args:
+        VERSION: ${MONITOR_VERSION:-dev}
+        COMMIT: ${MONITOR_COMMIT:-}
+    image: monitor:local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MONITOR_CONFIG: /etc/monitor/config.yaml
+    volumes:
+      - ./docker/config.yaml:/etc/monitor/config.yaml:ro
+    # backend for the database; frontend for the published API port and for
+    # outgoing connections to monitored targets.
+    networks: [backend, frontend]
+    ports:
+      - "127.0.0.1:8443:8443"
+    restart: unless-stopped
+    stop_grace_period: 40s   # node.shutdown_grace is 30s
+
+networks:
+  backend:
+    internal: true   # no route to the host or the internet
+  frontend: {}
 
 volumes:
   pgdata:

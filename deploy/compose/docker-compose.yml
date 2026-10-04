@@ -1,0 +1,181 @@
+# Monitoring engine with its PostgreSQL database. Self-contained: this file
+# and a .env next to it are all a server needs.
+#
+#   cp .env.example .env        # then fill in the passwords and the key (see the file)
+#   docker compose up -d
+#   docker compose logs bootstrap   # first start only: the platform key, shown once
+#
+# Use `up -d` without --wait: --wait reports the one-shot bootstrap service's
+# normal exit as a failure. Needs Docker Compose 2.23 or newer (inline configs).
+#
+# On every start: PostgreSQL comes up; the one-shot db-init service creates
+# the engine's roles and database if they are missing and sets their
+# passwords from .env; the engine applies migrations and starts; the one-shot
+# bootstrap service creates the installation and its platform key if they do
+# not exist yet. A database volume from an earlier, failed start is repaired
+# the same way.
+#
+# Networks: the project gets its own two networks (monitoring_backend,
+# monitoring_frontend), isolated from other compose projects on the host. The
+# database sits only on the internal backend network: no route out, and only
+# the engine can reach it. The project name must be unique on the host.
+name: monitoring
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      # Applies only when the volume is first created; afterwards the
+      # superuser keeps the password it was created with.
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    networks: [backend]
+    # Not published: only the engine reaches the database.
+    healthcheck:
+      # Over TCP: during first-time initialization the server listens on its
+      # socket only, so this passes once the real server accepts connections.
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres", "-h", "127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Runs once per `up`: creates the engine's database roles and database when
+  # they are missing and sets the role passwords from .env (ADR-0008).
+  db-init:
+    image: postgres:18-alpine
+    command: ["sh", "/monitor-db-init.sh"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      MONITOR_OWNER_PASSWORD: ${MONITOR_OWNER_PASSWORD:?set MONITOR_OWNER_PASSWORD in .env}
+      MONITOR_APP_PASSWORD: ${MONITOR_APP_PASSWORD:?set MONITOR_APP_PASSWORD in .env}
+      MONITOR_SYSTEM_PASSWORD: ${MONITOR_SYSTEM_PASSWORD:?set MONITOR_SYSTEM_PASSWORD in .env}
+    configs:
+      - source: monitor-db-init
+        target: /monitor-db-init.sh
+    networks: [backend]
+
+  monitor:
+    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
+    restart: unless-stopped
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    environment: &monitor-env
+      MONITOR_CONFIG: /etc/monitor/config.yaml
+      # Passwords must be URL-safe (letters and digits), as .env.example suggests.
+      MONITOR_DATABASE__OWNER__DSN: postgres://monitor_owner:${MONITOR_OWNER_PASSWORD}@postgres:5432/monitor?sslmode=disable
+      MONITOR_DATABASE__APP__DSN: postgres://monitor_app:${MONITOR_APP_PASSWORD}@postgres:5432/monitor?sslmode=disable
+      MONITOR_DATABASE__SYSTEM__DSN: postgres://monitor_system:${MONITOR_SYSTEM_PASSWORD}@postgres:5432/monitor?sslmode=disable
+      MONITOR_KEK: ${MONITOR_KEK:?set MONITOR_KEK in .env}
+      MONITOR_API__PUBLIC_URL: ${MONITOR_PUBLIC_URL:-http://localhost:8443}
+      MONITOR_API__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
+      MONITOR_PLATFORM__IDENTITY_SOURCE: ${MONITOR_IDENTITY_SOURCE:-plusclouds}
+    configs:
+      - source: monitor-config
+        target: /etc/monitor/config.yaml
+    # backend for the database; frontend for the published API port and for
+    # outgoing connections to monitored targets.
+    networks: [backend, frontend]
+    ports:
+      - "${MONITOR_API_BIND:-127.0.0.1}:${MONITOR_API_PORT:-8443}:8443"
+    stop_grace_period: 40s   # node.shutdown_grace is 30s
+
+  # Runs once per `up`: creates the installation ID, the platform tenant and
+  # the platform key on the first start, and does nothing afterwards.
+  bootstrap:
+    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
+    command: ["admin", "bootstrap", "--if-needed"]
+    restart: "no"
+    depends_on:
+      monitor:
+        condition: service_healthy   # migrations applied, database reachable
+    environment: *monitor-env
+    configs:
+      - source: monitor-config
+        target: /etc/monitor/config.yaml
+    networks: [backend]
+
+configs:
+  # Engine settings. Secrets are not here: the environment above supplies the
+  # database DSNs, the key-encryption key and the public URL from .env.
+  # Reference for every key: deploy/config.example.yaml in the repository.
+  monitor-config:
+    content: |
+      logging:
+        format: json
+        level: info
+      database:
+        migrate_on_start: true
+      crypto:
+        file:
+          active: main
+          keys:
+            - id: main
+              env: MONITOR_KEK
+      api:
+        listen: ":8443"
+        # Plain HTTP inside the stack; TLS is terminated by the reverse proxy
+        # in front (see deploy/nginx). Client addresses are taken from
+        # X-Forwarded-For only for requests from MONITOR_TRUSTED_PROXIES.
+        tls: { cert_file: "", key_file: "" }
+      probe_service:
+        enabled: false   # not implemented in this release
+      ingest:
+        http: { enabled: false }
+        mqtt: { enabled: false }
+      self_monitoring:
+        # Loopback inside the container; Docker's health check probes it
+        # with `monitor health`.
+        listen: "127.0.0.1:9090"
+        status_token_file: ""
+
+  # Idempotent: creates each role and the database only when missing, and
+  # sets the role passwords from .env on every run, so a changed password in
+  # .env applies at the next `up`. Passwords are passed as psql variables and
+  # quoted with %L, never pasted into the SQL. ($$ is how Compose writes a
+  # literal $.)
+  #   monitor_owner   owns the schema; used only to run migrations
+  #   monitor_app     subject to row-level security; used by the api role
+  #   monitor_system  BYPASSRLS; used by background roles and admin commands
+  monitor-db-init:
+    content: |
+      set -eu
+      psql -v ON_ERROR_STOP=1 -q --dbname postgres \
+        -v owner_pw="$$MONITOR_OWNER_PASSWORD" \
+        -v app_pw="$$MONITOR_APP_PASSWORD" \
+        -v system_pw="$$MONITOR_SYSTEM_PASSWORD" <<'SQL'
+      SELECT format('CREATE ROLE %I LOGIN', r) FROM unnest(ARRAY['monitor_owner', 'monitor_app', 'monitor_system']) AS r
+       WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = r) \gexec
+      ALTER ROLE monitor_system BYPASSRLS;
+      SELECT format('ALTER ROLE monitor_owner PASSWORD %L', :'owner_pw') \gexec
+      SELECT format('ALTER ROLE monitor_app PASSWORD %L', :'app_pw') \gexec
+      SELECT format('ALTER ROLE monitor_system PASSWORD %L', :'system_pw') \gexec
+      SELECT 'CREATE DATABASE monitor OWNER monitor_owner'
+       WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'monitor') \gexec
+      \connect monitor
+      REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+      GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system;
+      SQL
+      echo "monitor database roles and database are in place"
+
+networks:
+  backend:
+    internal: true   # no route to the host or the internet
+  frontend: {}
+  # To serve the API through a reverse proxy that runs in another compose
+  # project (Traefik, nginx), join its network: uncomment this, add `proxy`
+  # to the monitor service's networks, and drop the published port.
+  # proxy:
+  #   external: true
+  #   name: proxy   # the proxy project's network name
+
+volumes:
+  pgdata:

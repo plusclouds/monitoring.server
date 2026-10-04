@@ -15,6 +15,9 @@ info:
       Without an actor it acts as the platform with full rights in that
       tenant. Unknown tenants and users are created just in time.
 
+    **Reference.** This document is served at `/v1/openapi.json` and
+    `/v1/openapi.yaml`, and rendered at `/docs`, without authentication.
+
     **Errors** are RFC 9457 problem details (`application/problem+json`).
     **Timestamps** are RFC 3339 in UTC. **Lists** use cursor pagination.
   license:

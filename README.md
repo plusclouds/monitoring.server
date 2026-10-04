@@ -66,21 +66,46 @@ flowchart LR
 | **Phase 2** | Scale and noise control: remote probes with failover, dependencies, maintenance, traps/syslog, templates and discovery, VMware and Proxmox, escalation, LLM endpoints and trace metrics | Stable on remote sites |
 | **Phase 3** | Customer-facing: PlusClouds panel integration, SLA reports, status pages, NetFlow, Terraform provider, ClickHouse backend, LLM quality evaluation | Offered to customers |
 
-## Development
+## Deployment with Docker Compose
 
-Requirements: Go 1.27, Docker (for PostgreSQL and the integration tests).
+[deploy/compose](deploy/compose) runs the published image with its own PostgreSQL. The database is not exposed, passwords and the key-encryption key come from `.env`, and the first start bootstraps the installation by itself.
 
 ```sh
-# PostgreSQL 18 with the three database roles (deploy/postgres/init-roles.sql)
-docker compose -f deploy/docker-compose.yml up -d --wait
+cd deploy/compose
+cp .env.example .env          # fill in the passwords (openssl rand -hex 24) and MONITOR_KEK (openssl rand -base64 32)
+docker compose up -d
+docker compose logs bootstrap # the platform key, printed on the first start only
+```
 
+Every later `up` applies new migrations and leaves the installation as it is. The API listens on `127.0.0.1:8443` by default; put a TLS-terminating proxy in front before exposing it. Back up the PostgreSQL volume and `MONITOR_KEK`: without the key, stored device credentials cannot be decrypted.
+
+## Development
+
+Requirements: Docker. Go 1.27 only to build and test from source.
+
+**Run in Docker** (PostgreSQL 18 and the engine; migrations run on start):
+
+```sh
+docker compose -f deploy/docker-compose.yml up -d --build --wait
+docker compose -f deploy/docker-compose.yml run --rm monitor admin bootstrap   # prints the platform key once
+
+curl http://127.0.0.1:8443/healthz
+curl -H "Authorization: Bearer <key>" http://127.0.0.1:8443/v1/tenants
+open http://127.0.0.1:8443/docs
+```
+
+The container uses [deploy/docker/config.yaml](deploy/docker/config.yaml) (development only: inline passwords, plain HTTP). Its health check runs `monitor health` against the status server on loopback. `docker compose … down -v` removes the database.
+
+**Run from source** against the same database. The database is on a private network by default; the override file publishes it on `127.0.0.1:55432` for the host:
+
+```sh
+docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.db-port.yml up -d --wait postgres
 make build
 ./bin/monitor migrate up --config deploy/dev/config.yaml
 ./bin/monitor admin bootstrap --config deploy/dev/config.yaml --standalone --tenant "Dev"   # prints an admin key once
 ./bin/monitor serve --config deploy/dev/config.yaml
 
 curl -H "Authorization: Bearer <key>" http://127.0.0.1:8443/v1/me
-curl -H "Authorization: Bearer <key>" http://127.0.0.1:8443/v1/plugins
 curl http://127.0.0.1:9090/readyz
 ```
 
@@ -94,6 +119,7 @@ Without `--standalone`, bootstrap prints the platform key that the PlusClouds AP
 | `monitor admin verify-audit [--tenant ID]` | Check the audit log hash chain |
 | `monitor admin gen-token` | Random token for status and preshared enrollment tokens |
 | `monitor config validate\|print [--probe]` | Check a config file, or print the effective config with secrets redacted |
+| `monitor health [--url …]` | Exit 0 when the readiness endpoint answers 200 (container health checks) |
 
 | Make target | What it runs |
 | --- | --- |
@@ -101,8 +127,16 @@ Without `--standalone`, bootstrap prints the platform key that the PlusClouds AP
 | `make lint` | golangci-lint, including gosec |
 | `make generate` | Regenerates the API server from `api/openapi.yaml` |
 | `make check` | Everything CI runs: tidy, generated code, lint, tests, govulncheck, license allowlist |
+| `scripts/ci.sh lint\|test\|security` | The CI steps exactly as the runner runs them, inside the Go toolchain image (needs only Docker) |
 
-Configuration reference: [deploy/config.example.yaml](deploy/config.example.yaml) and [deploy/probe.example.yaml](deploy/probe.example.yaml). API reference: [api/openapi.yaml](api/openapi.yaml).
+Configuration reference: [deploy/config.example.yaml](deploy/config.example.yaml) and [deploy/probe.example.yaml](deploy/probe.example.yaml). API reference: [api/openapi.yaml](api/openapi.yaml), rendered at `/docs` on a running server.
+
+**Postman:** import [api/postman/monitoring.postman_collection.json](api/postman/monitoring.postman_collection.json) and [api/postman/local.postman_environment.json](api/postman/local.postman_environment.json), put the platform key from `monitor admin bootstrap` in `platformKey`, and run the folders in order. From the command line:
+
+```sh
+npx newman run api/postman/monitoring.postman_collection.json \
+  -e api/postman/local.postman_environment.json --env-var platformKey=mon_...
+```
 
 ## Contributing
 

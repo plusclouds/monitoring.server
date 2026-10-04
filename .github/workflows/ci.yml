@@ -1,46 +1,130 @@
 name: ci
 
+# Follows plusclouds.api.v4's production build: jobs run on PlusClouds'
+# shared self-hosted runner, check out with plain git (actions/checkout was
+# unreliable there, api.v4 commit d83e07d4) and push with the registry login
+# stored on the runner. Go steps run in Docker through scripts/ci.sh, so the
+# runner needs only Docker.
+#
+# The repository is public, so pull requests from forks run on GitHub-hosted
+# runners instead: code from outside must never run on the shared runner,
+# which holds the registry login and sits inside PlusClouds' network.
+
 on:
   push:
     branches: [master]
+    # A version tag runs the checks, then builds and pushes the image.
+    tags: ['v*']
   pull_request:
 
 permissions:
   contents: read
 
+env:
+  # Docker stores credentials per host, so login, image tags and push must all use this same name.
+  REGISTRY: registry.plusclouds.com
+  IMAGE: monitoring
+
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'self-hosted' }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-      - run: go mod tidy -diff
-      - run: make generate-check
-      - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
-        with:
-          version: v2.14.0
+      - name: Checkout
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init -q .
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git 2>/dev/null || \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git fetch -q --depth=1 origin ${{ github.sha }}
+          git checkout -q --force FETCH_HEAD
+          git clean -qffdx
+      - name: Lint, tidy and generated code
+        run: scripts/ci.sh lint
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'self-hosted' }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-      # Integration tests start PostgreSQL with testcontainers; fail instead of skipping.
-      - run: make test
-        env:
-          MONITOR_REQUIRE_DB: "1"
-      - run: make build
+      - name: Checkout
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init -q .
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git 2>/dev/null || \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git fetch -q --depth=1 origin ${{ github.sha }}
+          git checkout -q --force FETCH_HEAD
+          git clean -qffdx
+      - name: Tests (with PostgreSQL integration tests) and build
+        run: scripts/ci.sh test
 
   security:
-    runs-on: ubuntu-latest
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || 'self-hosted' }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: go.mod
-      - run: make vuln
-      - run: make licenses
+      - name: Checkout
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init -q .
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git 2>/dev/null || \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git fetch -q --depth=1 origin ${{ github.sha }}
+          git checkout -q --force FETCH_HEAD
+          git clean -qffdx
+      - name: Vulnerabilities and licenses
+        run: scripts/ci.sh security
+
+  # Builds registry.plusclouds.com/monitoring for version tags, after every
+  # check has passed. Tags need write access, so this always runs on the
+  # self-hosted runner.
+  image:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [lint, test, security]
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git init -q .
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git 2>/dev/null || \
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+          git fetch -q --depth=1 origin ${{ github.sha }}
+          git checkout -q --force FETCH_HEAD
+          git clean -qffdx
+
+      # v1.2.3 -> 1.2.3. Every version tag, pre-releases included, also
+      # moves :latest, so :latest is always the most recent tagged build.
+      - name: Image tags
+        id: tags
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tags=-t $REGISTRY/$IMAGE:$version -t $REGISTRY/$IMAGE:latest" >> "$GITHUB_OUTPUT"
+
+      # Building needs no credentials (public base images), so it uses its own
+      # Docker config: ~/.docker/buildx on the shared runner is root-owned
+      # (other repositories build with sudo). Push below keeps the default
+      # config, which holds the registry login.
+      - name: Build
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-build
+        run: |
+          docker build --pull \
+            --build-arg VERSION=${{ github.ref_name }} \
+            --build-arg COMMIT=${{ github.sha }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            ${{ steps.tags.outputs.tags }} .
+
+      - name: Check the image runs
+        run: docker run --rm "$REGISTRY/$IMAGE:${{ steps.tags.outputs.version }}" version
+
+      # Uses the registry login stored on the self-hosted runner. If a push
+      # fails with "no basic auth credentials", another job logged the runner
+      # out (see plusclouds.api.v4 commit 8105c9dc): log it in again.
+      - name: Push
+        run: docker image push --all-tags "$REGISTRY/$IMAGE"
+
+      # Remove only this build's images: a full prune would also delete
+      # other repositories' images and build cache on the shared runner.
+      - name: Cleanup
+        if: always()
+        run: |
+          docker image ls --format '{{.Repository}}:{{.Tag}}' "$REGISTRY/$IMAGE" | xargs -r docker image rm -f
+          docker image prune -f

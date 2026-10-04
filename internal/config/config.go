@@ -141,6 +141,7 @@ type API struct {
 	RequestTimeout        Duration    `yaml:"request_timeout"`
 	IdempotencyTTL        Duration    `yaml:"idempotency_ttl"`
 	PlatformRatePerMinute int         `yaml:"platform_rate_per_minute"`
+	Docs                  bool        `yaml:"docs"`
 	Events                APIEvents   `yaml:"events"`
 }
 

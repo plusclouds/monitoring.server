@@ -48,6 +48,7 @@ func Default() Config {
 			RequestTimeout:        dur(90 * time.Second),
 			IdempotencyTTL:        dur(24 * time.Hour),
 			PlatformRatePerMinute: 6000,
+			Docs:                  true,
 			Events: APIEvents{
 				ReplayWindow:          dur(10 * time.Minute),
 				TelemetryTickInterval: dur(5 * time.Second),
