@@ -15,7 +15,7 @@ This page records which milestones are done and what comes next. The milestone d
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
-| Unassigned | F13 usage metering (MVP scope) | Not started | Only checks are billed, each with its plugin's weight from the config file (`usage.weights`); usage per device is check-hours × weights (decided 2026-10-04). Milestone waits for PlusClouds billing to say how usage reaches it |
+| Unassigned | F13 usage metering (MVP scope) | Not started | Only checks are billed: weighted check-seconds per tenant and closed hour, weights from the config file, pulled by billing through `GET /v1/usage/tenants` (agreed 2026-10-04). Milestone to be assigned |
 
 ## Done
 
@@ -117,4 +117,4 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 
 1. Deploy `v0.3.1` and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
 2. M4: alert grouping, repeat notifications and dependency suppression first, then the F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.
-3. F13 (usage metering: weighted checks per device): assign a milestone once PlusClouds billing has said how usage should reach it.
+3. F13 (usage metering, pull API for PlusClouds billing): assign a milestone.
