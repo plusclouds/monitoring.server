@@ -8,10 +8,12 @@
 # Use `up -d` without --wait: --wait reports the one-shot bootstrap service's
 # normal exit as a failure. Needs Docker Compose 2.23 or newer (inline configs).
 #
-# On every start PostgreSQL comes up first (creating the engine's roles and
-# database on its very first start), the engine applies migrations and
-# starts, and the one-shot bootstrap service creates the installation and its
-# platform key if they do not exist yet.
+# On every start: PostgreSQL comes up; the one-shot db-init service creates
+# the engine's roles and database if they are missing and sets their
+# passwords from .env; the engine applies migrations and starts; the one-shot
+# bootstrap service creates the installation and its platform key if they do
+# not exist yet. A database volume from an earlier, failed start is repaired
+# the same way.
 #
 # Networks: the project gets its own two networks (monitoring_backend,
 # monitoring_frontend), isolated from other compose projects on the host. The
@@ -24,31 +26,48 @@ services:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
+      # Applies only when the volume is first created; afterwards the
+      # superuser keeps the password it was created with.
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD:?set POSTGRES_SUPERUSER_PASSWORD in .env}
-      # Read by the monitor-roles init script on the first start only.
-      MONITOR_OWNER_PASSWORD: ${MONITOR_OWNER_PASSWORD:?set MONITOR_OWNER_PASSWORD in .env}
-      MONITOR_APP_PASSWORD: ${MONITOR_APP_PASSWORD:?set MONITOR_APP_PASSWORD in .env}
-      MONITOR_SYSTEM_PASSWORD: ${MONITOR_SYSTEM_PASSWORD:?set MONITOR_SYSTEM_PASSWORD in .env}
-    configs:
-      - source: monitor-roles
-        target: /docker-entrypoint-initdb.d/10-monitor-roles.sh
-        mode: 0555
     volumes:
       - pgdata:/var/lib/postgresql
     networks: [backend]
     # Not published: only the engine reaches the database.
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "monitor", "-h", "127.0.0.1"]
+      # Over TCP: during first-time initialization the server listens on its
+      # socket only, so this passes once the real server accepts connections.
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "postgres", "-h", "127.0.0.1"]
       interval: 2s
       timeout: 3s
       retries: 30
+
+  # Runs once per `up`: creates the engine's database roles and database when
+  # they are missing and sets the role passwords from .env (ADR-0008).
+  db-init:
+    image: postgres:18-alpine
+    command: ["sh", "/monitor-db-init.sh"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      MONITOR_OWNER_PASSWORD: ${MONITOR_OWNER_PASSWORD:?set MONITOR_OWNER_PASSWORD in .env}
+      MONITOR_APP_PASSWORD: ${MONITOR_APP_PASSWORD:?set MONITOR_APP_PASSWORD in .env}
+      MONITOR_SYSTEM_PASSWORD: ${MONITOR_SYSTEM_PASSWORD:?set MONITOR_SYSTEM_PASSWORD in .env}
+    configs:
+      - source: monitor-db-init
+        target: /monitor-db-init.sh
+    networks: [backend]
 
   monitor:
     image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     environment: &monitor-env
       MONITOR_CONFIG: /etc/monitor/config.yaml
       # Passwords must be URL-safe (letters and digits), as .env.example suggests.
@@ -118,29 +137,34 @@ configs:
         listen: "127.0.0.1:9090"
         status_token_file: ""
 
-  # Creates the engine's three database roles and its database (ADR-0008) on
-  # PostgreSQL's first start. Passwords are passed as psql variables, so psql
-  # quotes them and they are never pasted into the SQL. ($$ is how Compose
-  # writes a literal $.)
+  # Idempotent: creates each role and the database only when missing, and
+  # sets the role passwords from .env on every run, so a changed password in
+  # .env applies at the next `up`. Passwords are passed as psql variables and
+  # quoted with %L, never pasted into the SQL. ($$ is how Compose writes a
+  # literal $.)
   #   monitor_owner   owns the schema; used only to run migrations
   #   monitor_app     subject to row-level security; used by the api role
   #   monitor_system  BYPASSRLS; used by background roles and admin commands
-  monitor-roles:
+  monitor-db-init:
     content: |
-      #!/bin/sh
       set -eu
-      psql -v ON_ERROR_STOP=1 --username "$$POSTGRES_USER" --dbname postgres \
+      psql -v ON_ERROR_STOP=1 -q --dbname postgres \
         -v owner_pw="$$MONITOR_OWNER_PASSWORD" \
         -v app_pw="$$MONITOR_APP_PASSWORD" \
         -v system_pw="$$MONITOR_SYSTEM_PASSWORD" <<'SQL'
-      CREATE ROLE monitor_owner  LOGIN PASSWORD :'owner_pw';
-      CREATE ROLE monitor_app    LOGIN PASSWORD :'app_pw';
-      CREATE ROLE monitor_system LOGIN BYPASSRLS PASSWORD :'system_pw';
-      CREATE DATABASE monitor OWNER monitor_owner;
+      SELECT format('CREATE ROLE %I LOGIN', r) FROM unnest(ARRAY['monitor_owner', 'monitor_app', 'monitor_system']) AS r
+       WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = r) \gexec
+      ALTER ROLE monitor_system BYPASSRLS;
+      SELECT format('ALTER ROLE monitor_owner PASSWORD %L', :'owner_pw') \gexec
+      SELECT format('ALTER ROLE monitor_app PASSWORD %L', :'app_pw') \gexec
+      SELECT format('ALTER ROLE monitor_system PASSWORD %L', :'system_pw') \gexec
+      SELECT 'CREATE DATABASE monitor OWNER monitor_owner'
+       WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'monitor') \gexec
       \connect monitor
       REVOKE CREATE ON SCHEMA public FROM PUBLIC;
       GRANT USAGE ON SCHEMA public TO monitor_app, monitor_system;
       SQL
+      echo "monitor database roles and database are in place"
 
 networks:
   backend:
