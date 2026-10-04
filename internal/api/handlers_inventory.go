@@ -204,6 +204,17 @@ func (s *Server) DeleteSite(ctx context.Context, req gen.DeleteSiteRequestObject
 
 // ---- devices ----
 
+func availability(in *[]gen.Availability) []string {
+	if in == nil {
+		return nil
+	}
+	out := make([]string, len(*in))
+	for i, a := range *in {
+		out[i] = string(a)
+	}
+	return out
+}
+
 func parseTags(in *[]string) (map[string]string, error) {
 	if in == nil {
 		return nil, nil
@@ -256,7 +267,7 @@ func (s *Server) ListDevices(ctx context.Context, req gen.ListDevicesRequestObje
 		return nil, err
 	}
 	out, err := s.listDevices(ctx, inventory.DeviceFilter{
-		Type: q.Type, SiteID: q.SiteId, ParentID: q.ParentId, Tags: tags,
+		Type: q.Type, SiteID: q.SiteId, ParentID: q.ParentId, Tags: tags, Availability: availability(q.Availability),
 		External: filterKey(q.ExternalSource, q.ExternalType, q.ExternalId),
 	}, q.Cursor, q.Limit)
 	if err != nil {
@@ -280,7 +291,10 @@ func (s *Server) CreateDevice(ctx context.Context, req gen.CreateDeviceRequestOb
 	}
 	var d inventory.Device
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
-		d, err = inventory.CreateDevice(ctx, tx, p.Actor, t.ID, t.Limits.MaxDevices, deviceInput(*req.Body))
+		if d, err = inventory.CreateDevice(ctx, tx, p.Actor, t.ID, t.Limits.MaxDevices, deviceInput(*req.Body)); err != nil {
+			return err
+		}
+		d, err = withStatus(ctx, tx, d)
 		return err
 	})
 	if err != nil {
@@ -309,6 +323,10 @@ func (s *Server) UpsertDevice(ctx context.Context, req gen.UpsertDeviceRequestOb
 			in.External = keepType(cur.External, k)
 			d, err = inventory.UpdateDevice(ctx, tx, p.Actor, cur.ID, in)
 		}
+		if err != nil {
+			return err
+		}
+		d, err = withStatus(ctx, tx, d)
 		return err
 	})
 	if err != nil {
@@ -327,7 +345,10 @@ func (s *Server) GetDevice(ctx context.Context, req gen.GetDeviceRequestObject) 
 	}
 	var d inventory.Device
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
-		d, err = inventory.GetDevice(ctx, tx, req.DeviceId)
+		if d, err = inventory.GetDevice(ctx, tx, req.DeviceId); err != nil {
+			return err
+		}
+		d, err = withStatus(ctx, tx, d)
 		return err
 	})
 	if err != nil {
@@ -343,7 +364,10 @@ func (s *Server) UpdateDevice(ctx context.Context, req gen.UpdateDeviceRequestOb
 	}
 	var d inventory.Device
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
-		d, err = inventory.UpdateDevice(ctx, tx, p.Actor, req.DeviceId, deviceInput(*req.Body))
+		if d, err = inventory.UpdateDevice(ctx, tx, p.Actor, req.DeviceId, deviceInput(*req.Body)); err != nil {
+			return err
+		}
+		d, err = withStatus(ctx, tx, d)
 		return err
 	})
 	if err != nil {
@@ -363,6 +387,13 @@ func (s *Server) DeleteDevice(ctx context.Context, req gen.DeleteDeviceRequestOb
 		return nil, err
 	}
 	return gen.DeleteDevice204Response{}, nil
+}
+
+// withStatus adds the rolled-up status to one device.
+func withStatus(ctx context.Context, tx pgx.Tx, d inventory.Device) (inventory.Device, error) {
+	devs := []inventory.Device{d}
+	err := inventory.FillStatus(ctx, tx, devs)
+	return devs[0], err
 }
 
 // ---- dependencies ----
@@ -453,8 +484,20 @@ func (s *Server) GetDeviceImpact(ctx context.Context, req gen.GetDeviceImpactReq
 	}
 	var items []inventory.Impacted
 	err = s.tx(ctx, t, func(tx pgx.Tx) error {
-		items, err = inventory.Impact(ctx, tx, req.DeviceId)
-		return err
+		if items, err = inventory.Impact(ctx, tx, req.DeviceId); err != nil {
+			return err
+		}
+		devs := make([]inventory.Device, len(items))
+		for i := range items {
+			devs[i] = items[i].Device
+		}
+		if err := inventory.FillStatus(ctx, tx, devs); err != nil {
+			return err
+		}
+		for i := range items {
+			items[i].Device = devs[i]
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err

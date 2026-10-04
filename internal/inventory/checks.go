@@ -182,6 +182,11 @@ func GetCheck(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Check, error) {
 	return scanCheck(tx.QueryRow(ctx, `SELECT `+checkCols+` FROM checks c WHERE c.id = $1`, id))
 }
 
+// LockCheck reads a check for update (PATCH).
+func LockCheck(ctx context.Context, tx pgx.Tx, id uuid.UUID) (Check, error) {
+	return scanCheck(tx.QueryRow(ctx, `SELECT `+checkCols+` FROM checks c WHERE c.id = $1 FOR UPDATE OF c`, id))
+}
+
 // CheckFilter narrows ListChecks.
 type CheckFilter struct {
 	DeviceID *uuid.UUID

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -51,8 +52,14 @@ func toAPIDevice(d inventory.Device) gen.Device {
 	if tags == nil {
 		tags = map[string]string{}
 	}
+	st := gen.DeviceStatus{Availability: gen.AvailabilityUnmonitored, Health: gen.DeviceStatusHealthOk}
+	if d.Status != nil {
+		st = gen.DeviceStatus{Availability: gen.Availability(d.Status.Availability), Since: utcPtr(d.Status.Since),
+			Health: gen.DeviceStatusHealth(d.Status.Health), OpenIncidents: d.Status.OpenIncidents}
+	}
 	return gen.Device{
-		Id: d.ID, Name: d.Name, Address: d.Address, Type: gen.DeviceType(d.Type), Tags: tags, Notes: d.Notes,
+		Status: &st,
+		Id:     d.ID, Name: d.Name, Address: d.Address, Type: gen.DeviceType(d.Type), Tags: tags, Notes: d.Notes,
 		ParentId: d.ParentID, SiteId: d.SiteID, PhysicalPeerId: d.PhysicalPeerID, Inventory: inv,
 		ManagedBy: d.ManagedBy, External: toAPIExternal(d.External),
 		CreatedAt: d.CreatedAt.UTC(), UpdatedAt: d.UpdatedAt.UTC(),
@@ -187,4 +194,12 @@ func toAPICheckRun(c inventory.Check, r plugin.Result) gen.CheckRun {
 		Output: r.Output, DurationMs: float64(r.Duration.Microseconds()) / 1000, Metrics: metrics,
 		Time: r.Time.UTC(),
 	}
+}
+
+func utcPtr(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+	u := t.UTC()
+	return &u
 }
