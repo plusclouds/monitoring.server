@@ -375,8 +375,12 @@ func TestPlugins(t *testing.T) {
 			t.Errorf("%s: config_schema is not an object schema", p["type"])
 		}
 	}
-	if strings.Join(types, ",") != "http,icmp" {
-		t.Errorf("plugins = %v, want http and icmp", types)
+	if strings.Join(types, ",") != "http,icmp,snmp.get,snmp.system,snmp.ups" {
+		t.Errorf("plugins = %v, want the built-in plugins sorted by type", types)
+	}
+	snmp := e.must(e.do("GET", "/v1/plugins/snmp.system", e.adminKey, nil), 200)
+	if ct, _ := snmp.body["credential_types"].([]any); len(ct) != 2 || ct[0] != "snmp_v3" {
+		t.Errorf("snmp.system credential types: %s", snmp.raw)
 	}
 	icmp := e.must(e.do("GET", "/v1/plugins/icmp", e.adminKey, nil), 200)
 	if icmp.body["billing_class"] != "basic" || icmp.body["min_interval_seconds"] != float64(5) {

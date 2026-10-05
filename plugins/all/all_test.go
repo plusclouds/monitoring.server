@@ -33,15 +33,19 @@ func TestManifestsHaveValidSchemas(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid JSON Schema: %v", err)
 			}
-			if err := sch.Validate(map[string]any{}); err != nil {
-				t.Errorf("empty config rejected: %v", err)
-			}
-			if err := sch.Validate(map[string]any{"no_such_field": 1}); err == nil {
-				t.Error("schema should reject unknown fields")
-			}
 			var probe map[string]any
 			if err := json.Unmarshal(m.ConfigSchema, &probe); err != nil || probe["type"] != "object" {
 				t.Errorf("schema should describe an object: %s", m.ConfigSchema)
+			}
+			// Plugins without required settings (snmp.get needs an OID) run
+			// with an empty config.
+			if _, required := probe["required"]; !required {
+				if err := sch.Validate(map[string]any{}); err != nil {
+					t.Errorf("empty config rejected: %v", err)
+				}
+			}
+			if err := sch.Validate(map[string]any{"no_such_field": 1}); err == nil {
+				t.Error("schema should reject unknown fields")
 			}
 		})
 	}

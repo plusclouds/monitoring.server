@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-04 · **Latest release tag:** `v0.3.5-m3.5`
+**Last updated:** 2026-10-05 · **Latest release tag:** `v0.4.1`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -12,7 +12,7 @@ This page records which milestones are done and what comes next. The milestone d
 | M2 — first loop | F02, F04, F05, F06 (single node) | **Done** | Merged in PRs #3 and #4; released as `v0.2.0-m2`, client fixes in `v0.2.1`. Deferred items below |
 | M3 — metrics | F07, Grafana data source and first dashboards | **Done** | Merged in PR #6; released as `v0.3.0-m3`, client decisions in `v0.3.1`. Deferred items below |
 | M3.5 — usage metering | F13: check periods, hourly close, `GET /v1/usage/tenants` for PlusClouds billing (pull only) | **Done** | Released as `v0.3.5-m3.5`. Counting rules await PlusClouds' confirmation |
-| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | **In progress**: alert noise done (not merged yet), target plugins next. Grouping comes first (decided 2026-10-04) so an outage does not send one notification per host |
+| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | **In progress**: alert noise done (`v0.4.0-m4a`), webhooks completed (`v0.4.1`), SNMP checks built; multi-object collectors (interfaces, PDU, sensors, Redfish, XCP-ng) and RTSP next |
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
@@ -116,6 +116,18 @@ Escalation steps with schedules (`monitoring.incident.escalated`), `POST /v1/ale
 
 Migrations `00012` and `00013`. Verified by `TestEscalationSteps`, `TestAlertRouteTest`, `TestBulkReplay`, `TestScheduleNext`, `TestWebhookLimits`, `TestWebhookURLPolicy` and `TestDeliveryRetention`. F06 is complete except the tenant device-limit and heartbeat events (heartbeat comes with F11 in M5).
 
+### M4, part 2a — SNMP checks (F10)
+
+| Plugin | What it does |
+| --- | --- |
+| `snmp.system` | Uptime, CPU and memory from vendor profiles (HOST-RESOURCES, Net-SNMP, Cisco, Juniper, MikroTik, Fortinet, HPE), picked from `sysObjectID`, with fallback to HOST-RESOURCES. Reports restarts |
+| `snmp.get` | One OID as a gauge or a counter rate, with scale and an optional expected value |
+| `snmp.ups` | UPS-MIB (RFC 1628) and APC PowerNet: charge, runtime, load, voltages, on battery, battery replacement |
+
+Shared: SNMPv3 (`authPriv`, SHA-256/AES by default) and v2c credentials, the network policy checked on the resolved address, and counter rates with 32-bit wrap, restart and glitch handling. Verified against snmpsim fixtures over v2c and v3.
+
+Not built yet: the plugins that report many objects per run (`snmp.interfaces`, `snmp.pdu`, `snmp.sensor`, `redfish.health`, `xapi.*`) need collector support in the runner, engine and metrics writer; the restart inventory event comes with it.
+
 ### M3.5 — usage metering (F13)
 
 | Area | What exists |
@@ -149,5 +161,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 
 ## Next steps
 
-1. Deploy M3.5 and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: alert grouping, repeat notifications and dependency suppression first, then the F10 target plugins (SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU) with their dashboards.
+1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
+2. M4: collector support (per-object metrics and state), then `snmp.interfaces`, `snmp.pdu`, `snmp.sensor`, `redfish.health`, `rtsp.stream` and the XCP-ng collectors, with their dashboards.
