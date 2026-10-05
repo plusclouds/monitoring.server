@@ -59,18 +59,23 @@ func (p *NetPolicy) Check(ip netip.Addr) error {
 
 // Dialer returns a dialer that enforces the policy on each resolved address.
 func (p *NetPolicy) Dialer(timeout time.Duration, local net.Addr) *net.Dialer {
-	d := &net.Dialer{Timeout: timeout, LocalAddr: local}
+	return &net.Dialer{Timeout: timeout, LocalAddr: local, Control: p.Control()}
+}
+
+// Control returns a net.Dialer Control function that enforces the policy on
+// the resolved address of each connection, for libraries that dial on their
+// own (SNMP). It returns nil when there is no policy.
+func (p *NetPolicy) Control() func(network, address string, c syscall.RawConn) error {
 	if p == nil {
-		return d
+		return nil
 	}
-	d.Control = func(_, address string, _ syscall.RawConn) error {
+	return func(_, address string, _ syscall.RawConn) error {
 		ap, err := netip.ParseAddrPort(address)
 		if err != nil {
 			return err
 		}
 		return p.Check(ap.Addr())
 	}
-	return d
 }
 
 // DialContext is Dialer(...).DialContext, for http.Transport.

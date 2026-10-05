@@ -43,7 +43,8 @@ func init() {
 			{Name: "security_level", Enum: []string{"noAuthNoPriv", "authNoPriv", "authPriv"}, Default: "authPriv"},
 			{Name: "auth_protocol", Enum: []string{"SHA", "SHA-224", "SHA-256", "SHA-384", "SHA-512", "MD5"}, Default: "SHA-256"},
 			{Name: "auth_password", Secret: true},
-			{Name: "priv_protocol", Enum: []string{"AES", "AES-192", "AES-256", "DES"}, Default: "AES"},
+			{Name: "priv_protocol", Enum: []string{"AES", "AES-192", "AES-256", "AES-192-C", "AES-256-C", "DES"}, Default: "AES",
+				Help: "AES-192 and AES-256 follow draft-blumenthal (Net-SNMP); the -C variants follow draft-reeder (Cisco)"},
 			{Name: "priv_password", Secret: true},
 			{Name: "context_name"},
 		}})

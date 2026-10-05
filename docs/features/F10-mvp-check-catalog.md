@@ -24,7 +24,7 @@ The MVP covers every requested target type at a basic level. This spec lists eac
 | --- | --- | --- |
 | `snmp.system` | `uptime_seconds`, `cpu_percent`, `memory_used_percent` | CPU/memory OIDs from a vendor profile table (HOST-RESOURCES-MIB, Cisco, Juniper, MikroTik, Fortinet, HPE/Aruba to start). Reboot detected from `sysUpTime` going backwards; emits an inventory change event. |
 | `snmp.interfaces` (collector) | per interface: `in_bps`, `out_bps`, `in_errors_rate`, `out_errors_rate`, `in_discards_rate`, `out_discards_rate`, `oper_status`, `speed_bps` | Uses `ifXTable` 64-bit HC counters with GETBULK; falls back to 32-bit only when HC is missing. Interfaces become child objects keyed by `ifIndex` plus `ifName` (re-mapped when `ifIndex` changes after reboot). Interface filters (by name regex, type, admin status) to skip unused ports. |
-| `snmp.get` | user-defined OIDs | Generic OID-to-metric mapping with gauge or counter semantics; the escape hatch for devices without a profile. |
+| `snmp.get` | `value` (gauge) or `rate` (counter) | One OID per check, with gauge or counter semantics, a scale factor and an optional expected value (`equals`, `contains`, `regex`); the escape hatch for devices without a profile. A plugin has a fixed metric layout, so several OIDs are several checks. |
 
 Counter handling for every counter-based metric (design section 9):
 
@@ -33,6 +33,14 @@ Counter handling for every counter-based metric (design section 9):
 - Rates above interface speed × 1.1 are discarded as glitches.
 
 Defaults: SNMPv3 `authPriv` (SHA-256/AES-128 or stronger where supported); v2c only when set explicitly per credential. Timeout 5 s for v3 (engine discovery costs a round trip), 2 retries; table walks run in the slow pool with minimum interval 60 s.
+
+As built (M4):
+
+- Library `gosnmp/gosnmp` (BSD-2-Clause). Every SNMP plugin takes one credential in the `auth` role, `snmp_v3` or `snmp_v2c`. The `snmp_v3` privacy protocols include `AES-192-C` and `AES-256-C` (draft-reeder, as Cisco implements them) next to `AES-192` and `AES-256` (draft-blumenthal, as Net-SNMP does).
+- `snmp.system` profiles: `host-resources`, `net-snmp` (memory from UCD-SNMP-MIB, because hrStorage counts the page cache as used), `cisco`, `juniper`, `mikrotik` (HOST-RESOURCES), `fortinet` and `hpe` (ArubaOS-Switch; Aruba CX uses HOST-RESOURCES). `auto` picks by the longest matching `sysObjectID` prefix; a vendor profile whose objects are missing falls back to HOST-RESOURCES. CPU is the average over processors for HOST-RESOURCES and the busiest module for vendor tables. Uptime is `hrSystemUptime`, else `sysUpTime`. A restart (uptime going backwards, not the 497-day TimeTicks wrap) is reported in the output; the inventory change event waits for collectors.
+- Results: no answer is CRITICAL (an agent also stays silent on a wrong v2c community); an SNMPv3 authentication failure, a missing object or a refused address is UNKNOWN.
+- `snmp.ups` status: battery low or depleted and output off are CRITICAL; on battery, on bypass and battery replacement are WARNING. Thresholds on runtime and load are set on the check.
+- Tests run against snmpsim with recorded fixtures for Net-SNMP, Cisco, FortiGate, a UPS-MIB UPS and an APC UPS, over v2c and SNMPv3 `authPriv` (SHA-256, AES).
 
 ## Server hardware
 
