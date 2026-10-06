@@ -16,12 +16,15 @@ type OpenInput struct {
 	DeviceID   uuid.UUID
 	ObjectKey  *string // collectors: the object the incident is about
 	ObjectName *string
-	Severity   string
-	Summary    string
-	LastOutput string
-	RuleID     *string
-	RuleName   *string
-	Flapping   bool
+	// Availability: the incident says its device is down (a host check, or
+	// an availability object); it can suppress what depends on the device.
+	Availability bool
+	Severity     string
+	Summary      string
+	LastOutput   string
+	RuleID       *string
+	RuleName     *string
+	Flapping     bool
 }
 
 // Open creates an incident and its opened event.
@@ -31,7 +34,7 @@ func Open(ctx context.Context, tx pgx.Tx, in OpenInput) (Incident, error) {
 		return Incident{}, err
 	}
 	// A failure explained by an upstream one is opened suppressed (F05).
-	root, err := FindRoot(ctx, tx, in.DeviceID, in.CheckID)
+	root, err := FindRoot(ctx, tx, in.DeviceID, in.CheckID, in.ObjectKey)
 	if err != nil {
 		return Incident{}, err
 	}
@@ -42,10 +45,10 @@ func Open(ctx context.Context, tx pgx.Tx, in OpenInput) (Incident, error) {
 	inc, err := scan(tx.QueryRow(ctx, `
 		INSERT INTO incidents (id, tenant_id, check_id, device_id, severity, status, summary, last_output,
 		                       rule_id, rule_name, flapping, suppressed, root_incident_id, root_device_id, opened_at,
-		                       object_key, object_name)
-		VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10, $11, $12, $13, now(), $14, $15) RETURNING `+cols,
+		                       object_key, object_name, availability)
+		VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10, $11, $12, $13, now(), $14, $15, $16) RETURNING `+cols,
 		id, in.TenantID, in.CheckID, in.DeviceID, in.Severity, in.Summary, in.LastOutput, in.RuleID,
-		in.RuleName, in.Flapping, root != nil, rootIncident, rootDevice, in.ObjectKey, in.ObjectName))
+		in.RuleName, in.Flapping, root != nil, rootIncident, rootDevice, in.ObjectKey, in.ObjectName, in.Availability))
 	if err != nil {
 		return Incident{}, err
 	}

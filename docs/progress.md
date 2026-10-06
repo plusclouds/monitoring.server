@@ -156,6 +156,17 @@ Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs
 
 `monitor admin rotate-platform-key [--keep-old]`, `monitor admin revoke-platform-keys --keep ID` and `monitor admin create-admin-key --tenant ID`. Bootstrap prints keys once and stores only their hashes, so a lost key is replaced, not recovered. Each command writes an audit event. Verified by `TestAdminKeyCommands`.
 
+### M4, part 2e — XCP-ng and discovered devices
+
+| Area | What exists |
+| --- | --- |
+| `xapi.pool` | One collector for an XCP-ng / XenServer pool: inventory through the master's JSON-RPC API (following `HOST_IS_SLAVE`), performance from every host's `rrd_updates`. Objects for hosts, VMs and storage repositories with state, CPU, memory, network, disk, SR use and snapshot metrics |
+| Discovered devices | Collectors' inventory creates child devices (hosts, VMs) keyed by UUID; migrations move a VM, renames keep its device; gone devices are removed after 7 days or with the collector; they do not count toward `max_devices`. VM incidents and metrics belong to the VM's device. Migration `00016` |
+
+Suppression: a pool host that goes down suppresses its VMs' incidents and the checks on those VMs (availability incidents, migration `00017`); maintenance mode does not.
+
+Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
+
 ### Whoopsy! and metric statistics (2026-10-07)
 
 | Area | What exists |
@@ -199,5 +210,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: the XCP-ng collectors (with child devices), `rtsp.stream`, and dashboards for interfaces, server hardware, PDUs and XCP-ng.
+2. M4: cameras (`rtsp.stream`, and `camera.snapshot` with blur, brightness, frozen/covered and moved-camera checks for Hikvision, Dahua, Axis and ONVIF), then dashboards for interfaces, server hardware, PDUs and XCP-ng.
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.

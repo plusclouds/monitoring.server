@@ -115,4 +115,5 @@ Whoopsy! alerts when a check's metric leaves its own recent band instead of a fi
 - **When the root resolves.** Its suppressed incidents are released, host-check incidents first:
   - an incident that another open root still explains is linked to that root;
   - otherwise it stops being suppressed and is announced with `monitoring.incident.opened` (`object.unsuppressed: true`).
+- **Availability incidents (M4, 2026-10-07).** A root is any open *availability incident*: a host check's incident, or a CRITICAL incident of a collector object marked `Availability` (an XCP-ng host or VM, on its discovered device). So a pool host that goes down suppresses its VMs' incidents and the incidents of checks on those VMs, and a VM that is down suppresses the checks on it. The flag is stored on the incident when it opens (migration `00017`); on release, availability incidents are re-evaluated first, so a VM still down after its host recovers becomes the root of the checks on it.
 - **No retroactive suppression.** Incidents that were already notified are not suppressed when a root opens after the grace.

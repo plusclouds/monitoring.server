@@ -93,7 +93,7 @@ func (s *Server) ListCheckObjects(ctx context.Context, req gen.ListCheckObjectsR
 		}
 		rows, err := tx.Query(ctx, `
 			SELECT object_key, name, labels, phase, status, since, last_status, last_output, last_metrics,
-			       incident_id, first_seen_at, last_seen_at, gone_at
+			       incident_id, device_id, first_seen_at, last_seen_at, gone_at
 			  FROM check_objects
 			 WHERE check_id = $1 AND ($2::text IS NULL OR status = $2) AND ($3 OR gone_at IS NULL)
 			 ORDER BY object_key`, req.CheckId, status, includeGone)
@@ -104,7 +104,7 @@ func (s *Server) ListCheckObjects(ctx context.Context, req gen.ListCheckObjectsR
 			var o gen.CheckObject
 			var metrics map[string]float64
 			err := r.Scan(&o.Key, &o.Name, &o.Labels, &o.Phase, &o.Status, &o.Since, &o.LastStatus, &o.LastOutput,
-				&metrics, &o.IncidentId, &o.FirstSeenAt, &o.LastSeenAt, &o.GoneAt)
+				&metrics, &o.IncidentId, &o.DeviceId, &o.FirstSeenAt, &o.LastSeenAt, &o.GoneAt)
 			o.LastMetrics = metrics
 			if o.LastMetrics == nil {
 				o.LastMetrics = map[string]float64{}

@@ -57,13 +57,15 @@ func toAPIDevice(d inventory.Device) gen.Device {
 		st = gen.DeviceStatus{Availability: gen.Availability(d.Status.Availability), Since: utcPtr(d.Status.Since),
 			Health: gen.DeviceStatusHealth(d.Status.Health), OpenIncidents: d.Status.OpenIncidents}
 	}
-	return gen.Device{
+	out := gen.Device{
 		Status: &st,
 		Id:     d.ID, Name: d.Name, Address: d.Address, Type: gen.DeviceType(d.Type), Tags: tags, Notes: d.Notes,
 		ParentId: d.ParentID, SiteId: d.SiteID, PhysicalPeerId: d.PhysicalPeerID, Inventory: inv,
 		ManagedBy: d.ManagedBy, External: toAPIExternal(d.External),
 		CreatedAt: d.CreatedAt.UTC(), UpdatedAt: d.UpdatedAt.UTC(),
 	}
+	withDiscovered(&out, d)
+	return out
 }
 
 func deviceInput(b gen.DeviceWrite) inventory.DeviceInput {
@@ -237,4 +239,19 @@ func utcPtr(t *time.Time) *time.Time {
 	}
 	u := t.UTC()
 	return &u
+}
+
+// withDiscovered sets out.Discovered for a device a collector discovered.
+func withDiscovered(out *gen.Device, d inventory.Device) {
+	if d.CollectorKey == nil {
+		return
+	}
+	check, err := uuid.Parse(d.ManagedBy)
+	if err != nil {
+		return
+	}
+	if v, err := via[gen.Device](map[string]any{"discovered": map[string]any{"check_id": check, "key": *d.CollectorKey,
+		"gone_at": utcPtr(d.CollectorGoneAt)}}); err == nil {
+		out.Discovered = v.Discovered
+	}
 }

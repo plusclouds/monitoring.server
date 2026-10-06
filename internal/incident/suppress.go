@@ -9,18 +9,20 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// Root is the incident that explains another one: an open incident of a
-// host check on the device itself or on a device it depends on (F05).
+// Root is the incident that explains another one: an open availability
+// incident (a host check's, or an availability object's such as an XCP-ng
+// host) of the device itself or of a device it depends on (F05).
 type Root struct {
 	IncidentID uuid.UUID
 	DeviceID   uuid.UUID
 }
 
-// FindRoot returns the nearest open host-check incident upstream of a
-// device: its own host check (unless check is that host check), then its
-// containers and the devices it depends on, transitively. A suppressed
-// root is followed to its own root while that one is open.
-func FindRoot(ctx context.Context, tx pgx.Tx, device, check uuid.UUID) (*Root, error) {
+// FindRoot returns the nearest open availability incident upstream of a
+// device: on the device itself (unless it is the caller's own: the same
+// check and object), then on its containers and the devices it depends
+// on, transitively. An availability object counts once it is CRITICAL. A
+// suppressed root is followed to its own root while that one is open.
+func FindRoot(ctx context.Context, tx pgx.Tx, device, check uuid.UUID, object *string) (*Root, error) {
 	var r Root
 	err := tx.QueryRow(ctx, `
 		WITH RECURSIVE up(id, depth, path) AS (
@@ -36,12 +38,12 @@ func FindRoot(ctx context.Context, tx pgx.Tx, device, check uuid.UUID) (*Root, e
 		SELECT CASE WHEN r.status <> 'resolved' THEN r.id ELSE i.id END,
 		       CASE WHEN r.status <> 'resolved' THEN r.device_id ELSE i.device_id END
 		  FROM up
-		  JOIN checks hc ON hc.device_id = up.id AND hc.is_host_check
-		  JOIN incidents i ON i.check_id = hc.id AND i.object_key IS NULL AND i.status <> 'resolved'
+		  JOIN incidents i ON i.device_id = up.id AND i.availability AND i.status <> 'resolved'
+		                  AND (i.object_key IS NULL OR i.severity = 'critical')
 		  LEFT JOIN incidents r ON r.id = i.root_incident_id
-		 WHERE up.depth > 0 OR hc.id <> $2
+		 WHERE up.depth > 0 OR i.check_id IS DISTINCT FROM $2 OR coalesce(i.object_key, '') <> coalesce($3, '')
 		 ORDER BY up.depth, i.opened_at
-		 LIMIT 1`, device, check).Scan(&r.IncidentID, &r.DeviceID)
+		 LIMIT 1`, device, check, object).Scan(&r.IncidentID, &r.DeviceID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -69,7 +71,7 @@ func Suppress(ctx context.Context, tx pgx.Tx, id uuid.UUID) (bool, error) {
 	if inc.Suppressed {
 		return true, nil
 	}
-	root, err := FindRoot(ctx, tx, *inc.DeviceID, *inc.CheckID)
+	root, err := FindRoot(ctx, tx, *inc.DeviceID, *inc.CheckID, inc.ObjectKey)
 	if err != nil || root == nil || root.IncidentID == inc.ID {
 		return false, err
 	}
@@ -82,11 +84,11 @@ func Suppress(ctx context.Context, tx pgx.Tx, id uuid.UUID) (bool, error) {
 // links to another root that still explains it, or stops being suppressed
 // and is announced with a fresh opened event.
 func release(ctx context.Context, tx pgx.Tx, root uuid.UUID) error {
-	// Host-check incidents first: the other incidents of their devices then
-	// find them as their new root.
-	rows, err := tx.Query(ctx, `SELECT `+prefixed("i.")+` FROM incidents i LEFT JOIN checks c ON c.id = i.check_id
+	// Availability incidents first: the other incidents of their devices
+	// then find them as their new root.
+	rows, err := tx.Query(ctx, `SELECT `+prefixed("i.")+` FROM incidents i
 		WHERE i.root_incident_id = $1 AND i.status <> 'resolved'
-		ORDER BY coalesce(c.is_host_check, false) DESC, i.opened_at FOR UPDATE OF i`, root)
+		ORDER BY i.availability DESC, i.opened_at FOR UPDATE OF i`, root)
 	if err != nil {
 		return err
 	}
@@ -97,7 +99,7 @@ func release(ctx context.Context, tx pgx.Tx, root uuid.UUID) error {
 	for _, c := range children {
 		var next *Root
 		if c.CheckID != nil && c.DeviceID != nil {
-			if next, err = FindRoot(ctx, tx, *c.DeviceID, *c.CheckID); err != nil {
+			if next, err = FindRoot(ctx, tx, *c.DeviceID, *c.CheckID, c.ObjectKey); err != nil {
 				return err
 			}
 		}

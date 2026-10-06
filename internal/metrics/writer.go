@@ -404,13 +404,19 @@ func (w *Writer) group(ctx context.Context, r runner.Result, object string, clas
 	if id, ok := w.groups[k]; ok {
 		return id, nil
 	}
+	// A discovered device's object (a VM) is stored under that device, so
+	// its metrics are found by the VM's device_id.
+	device := r.DeviceID
+	if d, ok := r.ObjectDevices[object]; ok {
+		device = d
+	}
 	var id int64
 	err := pgx.BeginFunc(ctx, w.o.System, func(tx pgx.Tx) error {
 		err := tx.QueryRow(ctx, `
 			INSERT INTO metric_groups (tenant_id, retention_class, layout_version, device_id, source_id, plugin, object_key)
 			VALUES ($1, $2, $3, $4, $5, $6, $7)
 			ON CONFLICT (source_id, object_key, retention_class, layout_version) DO NOTHING RETURNING id`,
-			r.TenantID, class, k.layout, r.DeviceID, r.CheckID, r.Plugin, k.object).Scan(&id)
+			r.TenantID, class, k.layout, device, r.CheckID, r.Plugin, k.object).Scan(&id)
 		if errors.Is(err, pgx.ErrNoRows) {
 			return tx.QueryRow(ctx, `SELECT id FROM metric_groups
 				WHERE source_id = $1 AND object_key = $2 AND retention_class = $3 AND layout_version = $4`,

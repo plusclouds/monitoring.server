@@ -64,6 +64,8 @@ type Object struct {
     Status  Status            // protocol facts: interface down, PSU failed
     Output  string            // max 1 KB
     Metrics []float64         // aligned with Manifest.Metrics: a collector's layout is per object
+    Device  string            // key of a discovered child device it belongs to (a VM); "" = the collector's device
+    Availability bool         // its status is its device's up/down: a CRITICAL incident suppresses dependents
 }
 
 type Inventory struct {

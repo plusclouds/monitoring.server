@@ -27,7 +27,8 @@ type objectRow struct {
 // collector run (F05: per-object state and incidents), in the run's
 // transaction. Objects missing from the run are marked gone and their
 // incidents resolve.
-func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, device uuid.UUID, cfg Config) error {
+func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, device uuid.UUID,
+	devices map[string]uuid.UUID, cfg Config) error {
 	rows, err := tx.Query(ctx, `SELECT object_key, machine, incident_id, gone_at IS NOT NULL
 		FROM check_objects WHERE check_id = $1 FOR UPDATE`, r.CheckID)
 	if err != nil {
@@ -72,7 +73,11 @@ func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, d
 		if out.Action != ActionNone {
 			out.Summary = obj.Name + ": " + out.Summary
 		}
-		inc, err := e.act(ctx, tx, r, device, obj, p.incident, out)
+		objDevice := device
+		if d, ok := devices[obj.Key]; ok {
+			objDevice = d // a VM's incidents belong to the VM
+		}
+		inc, err := e.act(ctx, tx, r, objDevice, obj, false, p.incident, out)
 		if err != nil {
 			return err
 		}
@@ -81,15 +86,17 @@ func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, d
 		}
 		batch.Queue(`
 			INSERT INTO check_objects (check_id, object_key, tenant_id, name, labels, phase, status, since, machine,
-			                           last_status, last_output, last_metrics, incident_id, last_seen_at, gone_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL)
+			                           last_status, last_output, last_metrics, incident_id, last_seen_at, gone_at, device_id)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, $15)
 			ON CONFLICT (check_id, object_key) DO UPDATE SET
 			       name = excluded.name, labels = excluded.labels, phase = excluded.phase, status = excluded.status,
 			       since = excluded.since, machine = excluded.machine, last_status = excluded.last_status,
 			       last_output = excluded.last_output, last_metrics = excluded.last_metrics,
-			       incident_id = excluded.incident_id, last_seen_at = excluded.last_seen_at, gone_at = NULL`,
+			       incident_id = excluded.incident_id, last_seen_at = excluded.last_seen_at, gone_at = NULL,
+			       device_id = excluded.device_id`,
 			r.CheckID, obj.Key, r.TenantID, obj.Name, nonNilLabels(obj.Labels), out.State.Phase, out.State.Status,
-			out.State.Since, out.State, obj.Status.String(), obj.Output, metricMap(cfg.Metrics, obj.Metrics), inc, r.Time)
+			out.State.Since, out.State, obj.Status.String(), obj.Output, metricMap(cfg.Metrics, obj.Metrics), inc, r.Time,
+			nullDevice(devices, obj.Key))
 	}
 	if err := tx.SendBatch(ctx, batch).Close(); err != nil {
 		return err
@@ -134,4 +141,11 @@ func nonNilLabels(l map[string]string) map[string]string {
 		return map[string]string{}
 	}
 	return l
+}
+
+func nullDevice(devices map[string]uuid.UUID, key string) *uuid.UUID {
+	if d, ok := devices[key]; ok {
+		return &d
+	}
+	return nil
 }

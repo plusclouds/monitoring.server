@@ -79,3 +79,7 @@ Grouping for routes, maintenance windows and template application stays tag and 
 - The `site` tag used in examples ([F06](../features/F06-notifications.md)) becomes a real field; route matching gains `site_ids`.
 - Probe failover groups (phase 2) are per site by default.
 - Still open: tenant hierarchy for resellers ([F01](../features/F01-tenancy-auth-audit.md)). A CSP's end customers are not sites and not devices; they would be sub-tenants.
+
+## Implementation note: discovered devices (M4, 2026-10-07)
+
+Collectors create child devices through their inventory (`xapi.pool`: hosts and VMs). A discovered device has `managed_by` = the collector check's ID and `collector_key` (the collector's own key, a UUID), unique per collector, so renames and migrations update the device instead of creating one. Parents resolve from the inventory (a VM under its host, else under the collector's device). Names stay unique per tenant: a clash gets the key's start in brackets. A device the collector stops reporting gets `collector_gone_at` and is removed after 7 days; deleting the collector check removes them all. They do not count toward `max_devices` and are not billed (F13 rule 10); checks a user adds on them count and bill normally. Every creation is audited (`device.discover`, actor `system`). The API shows `discovered: {check_id, key, gone_at}` on such devices. Migration `00016`.
