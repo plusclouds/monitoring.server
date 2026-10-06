@@ -66,4 +66,12 @@ Current status of each milestone: [implementation progress](../progress.md).
 
 ## Phase 2 and later
 
+**Planned, requested 2026-10-05: replication between monitoring servers.** Several monitoring server installations keep the same devices and hosts (sites, devices, dependencies, checks and credentials) in sync, so one inventory is monitored from more than one place. Not built and not yet specified. Open questions for the spec:
+- Direction: one primary that others follow, or changes accepted on any server.
+- Scope: whether state, incidents and metrics are replicated or only the configuration.
+- Identity: which ID is shared across servers (external IDs already exist per ADR-0012).
+- Credentials: secrets are encrypted per installation (ADR-0006), so replication needs re-encryption or a shared key.
+- Relation to remote probes (F09), which already run checks from other locations against one server.
+
+
 Specs will be written when phase 2 starts: dependency suppression and maintenance windows beyond the MVP basics, SNMP traps and syslog, templates and discovery (subnet, ONVIF, LLDP/CDP topology), VMware and Proxmox collectors, escalation schedules and on-call, BMC event logs and inventory change events, TimescaleDB acceleration, exec plugins, probe failover groups.
