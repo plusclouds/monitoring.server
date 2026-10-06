@@ -132,30 +132,56 @@ type Target struct {
 	Log         *slog.Logger
 }
 
-// Result of one check run.
+// Result of one check or collector run.
 type Result struct {
 	Status   Status
 	Output   string    // human-readable, at most 4 KiB
-	Metrics  []float64 // aligned with Manifest.Metrics; NaN when not collected
+	Metrics  []float64 // checks: aligned with Manifest.Metrics; NaN when not collected
 	Duration time.Duration
 	Time     time.Time
+	// Objects are a collector's per-object results. Nil means the
+	// collection failed (the run's Status says why) and says nothing about
+	// the objects; an empty slice means the device has no objects now.
+	Objects []Object
+}
+
+// Object is one part of a device reported by a collector: an interface, a
+// fan, a disk (ADR-0014). It has its own metrics, thresholds, state and
+// incidents, but no checks, credentials or billing of its own.
+type Object struct {
+	// Key identifies the object across runs; it must stay the same when
+	// the device renumbers its parts (an interface by name, not ifIndex).
+	// At most 200 bytes.
+	Key    string
+	Name   string            // shown to people; may change
+	Labels map[string]string // descriptive: alias, type, speed
+	Status Status            // protocol facts (interface down, PSU failed)
+	Output string            // at most 1 KiB
+	// Metrics are aligned with Manifest.Metrics: a collector's metric
+	// layout is per object.
+	Metrics []float64
 }
 
 // MaxOutput is the longest Result.Output kept.
 const MaxOutput = 4 << 10
 
-// Check tests one thing and returns a status and metrics.
-type Check interface {
+// Plugin is what every check and collector has: a manifest and config
+// validation beyond the JSON Schema.
+type Plugin interface {
 	Manifest() Manifest
 	Validate(cfg json.RawMessage) error // rules the JSON Schema cannot express
+}
+
+// Check tests one thing and returns a status and metrics.
+type Check interface {
+	Plugin
 	Run(ctx context.Context, target Target) (Result, error)
 }
 
-// Collector makes one connection and returns many metrics plus inventory.
-// Its types are completed with the first collector (phase: F10).
+// Collector makes one connection and returns the state and metrics of many
+// objects (interfaces, fans, VMs), plus inventory.
 type Collector interface {
-	Manifest() Manifest
-	Validate(cfg json.RawMessage) error
+	Plugin
 	Collect(ctx context.Context, target Target) (Batch, Inventory, error)
 }
 
@@ -165,20 +191,19 @@ type Ingester interface {
 	Start(ctx context.Context, sink ResultSink) error
 }
 
-// Batch holds per-object metrics of a collector run.
+// Batch is a collector run: the device-level status and output (a summary
+// such as "48 interfaces, 2 down") and every object found. Objects nil
+// means the collection failed (device unreachable: Status CRITICAL); an
+// error from Collect is UNKNOWN, a problem of the monitoring itself.
 type Batch struct {
-	Objects []ObjectMetrics
-}
-
-// ObjectMetrics are the metrics of one child object (interface, VM, fan).
-type ObjectMetrics struct {
-	Key     string
-	Metrics []float64
 	Status  Status
 	Output  string
+	Objects []Object
 }
 
 // Inventory is what a collector learned about a device and its children.
+// The engine does not apply it yet; collectors that create child devices
+// (XCP-ng) complete it.
 type Inventory struct {
 	Device   *DeviceInfo
 	Children []ChildDevice

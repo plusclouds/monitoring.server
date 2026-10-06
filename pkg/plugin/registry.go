@@ -9,16 +9,22 @@ import (
 
 var (
 	mu       sync.RWMutex
-	registry = map[string]Check{}
+	registry = map[string]Plugin{}
 )
 
-// Register adds a check plugin. Call it from the plugin package's init. It
-// panics on an invalid manifest or a duplicate type, so mistakes fail at
-// start-up, never at run time.
-func Register(c Check) {
+// Register adds a check or collector. Call it from the plugin package's
+// init. It panics on an invalid manifest, a kind that does not match the
+// plugin's interface, or a duplicate type, so mistakes fail at start-up,
+// never at run time.
+func Register(c Plugin) {
 	m := c.Manifest()
 	if err := validManifest(m); err != nil {
 		panic(fmt.Sprintf("plugin %q: %v", m.Type, err))
+	}
+	_, isCheck := c.(Check)
+	_, isCollector := c.(Collector)
+	if (m.Kind == KindCheck && !isCheck) || (m.Kind == KindCollector && !isCollector) || m.Kind == KindIngester {
+		panic(fmt.Sprintf("plugin %q: kind %s does not match its interface", m.Type, m.Kind))
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -28,23 +34,23 @@ func Register(c Check) {
 	registry[m.Type] = c
 }
 
-// Lookup returns the check plugin of a type.
-func Lookup(typ string) (Check, bool) {
+// Lookup returns the plugin of a type.
+func Lookup(typ string) (Plugin, bool) {
 	mu.RLock()
 	defer mu.RUnlock()
 	c, ok := registry[typ]
 	return c, ok
 }
 
-// All returns every registered check, sorted by type.
-func All() []Check {
+// All returns every registered plugin, sorted by type.
+func All() []Plugin {
 	mu.RLock()
 	defer mu.RUnlock()
-	out := make([]Check, 0, len(registry))
+	out := make([]Plugin, 0, len(registry))
 	for _, c := range registry {
 		out = append(out, c)
 	}
-	slices.SortFunc(out, func(a, b Check) int { return strings.Compare(a.Manifest().Type, b.Manifest().Type) })
+	slices.SortFunc(out, func(a, b Plugin) int { return strings.Compare(a.Manifest().Type, b.Manifest().Type) })
 	return out
 }
 

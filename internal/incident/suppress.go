@@ -37,7 +37,7 @@ func FindRoot(ctx context.Context, tx pgx.Tx, device, check uuid.UUID) (*Root, e
 		       CASE WHEN r.status <> 'resolved' THEN r.device_id ELSE i.device_id END
 		  FROM up
 		  JOIN checks hc ON hc.device_id = up.id AND hc.is_host_check
-		  JOIN incidents i ON i.check_id = hc.id AND i.status <> 'resolved'
+		  JOIN incidents i ON i.check_id = hc.id AND i.object_key IS NULL AND i.status <> 'resolved'
 		  LEFT JOIN incidents r ON r.id = i.root_incident_id
 		 WHERE up.depth > 0 OR hc.id <> $2
 		 ORDER BY up.depth, i.opened_at

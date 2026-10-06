@@ -128,7 +128,7 @@ func (e *Executor) Run(ctx context.Context, q Querier, j Job) plugin.Result {
 	}
 	runCtx, cancel := context.WithTimeout(ctx, e.Timeout(j))
 	defer cancel()
-	return plugin.SafeRun(runCtx, p, plugin.Target{
+	target := plugin.Target{
 		DeviceID:    j.DeviceID.String(),
 		Address:     j.Address,
 		Config:      j.Config,
@@ -136,7 +136,14 @@ func (e *Executor) Run(ctx context.Context, q Querier, j Job) plugin.Result {
 		State:       state,
 		Network:     e.Policy(j.Tenant),
 		Log:         e.Log.With("check_id", j.CheckID, "plugin", j.Plugin),
-	})
+	}
+	switch p := p.(type) {
+	case plugin.Check:
+		return plugin.SafeRun(runCtx, p, target)
+	case plugin.Collector:
+		return plugin.SafeCollect(runCtx, p, target)
+	}
+	return unknown(start, "plugin %q cannot be run as a check or collector", j.Plugin)
 }
 
 // Decrypt returns the job's credentials by role.

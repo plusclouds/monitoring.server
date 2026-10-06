@@ -1119,6 +1119,39 @@ paths:
               schema: { $ref: "#/components/schemas/CheckState" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /checks/{check_id}/objects:
+    get:
+      operationId: listCheckObjects
+      tags: [incidents]
+      summary: The objects of a collector check and their state
+      description: |
+        A collector (such as `snmp.interfaces`) reports objects: interfaces,
+        fans, disks. Each has its own status, metrics, thresholds and
+        incidents. Objects the device stopped reporting have `gone_at` and
+        are listed for 30 days, unless `include_gone=false`. A check that is
+        not a collector has no objects.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+        - name: status
+          in: query
+          schema: { type: string, enum: [OK, WARNING, CRITICAL, UNKNOWN] }
+        - name: include_gone
+          in: query
+          schema: { type: boolean, default: true }
+      responses:
+        "200":
+          description: Objects, by key
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/CheckObject" }
+        default: { $ref: "#/components/responses/Problem" }
+
   /checks/{check_id}/run-now:
     post:
       operationId: runCheckNow
@@ -1151,6 +1184,10 @@ paths:
           in: query
           description: "`false` lists only incidents that were notified; `true` only those an upstream failure explains."
           schema: { type: boolean }
+        - name: object_key
+          in: query
+          description: Incidents of one object of a collector check (an interface, a fan).
+          schema: { type: string, maxLength: 200 }
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
       responses:
@@ -2427,9 +2464,48 @@ components:
         duration_ms: { type: number, format: double }
         metrics:
           type: object
-          description: Metric values by name; null when not collected.
+          description: Metric values by name; null when not collected. Empty for collectors, whose metrics are per object.
           additionalProperties: { type: [number, "null"], format: double }
         time: { type: string, format: date-time }
+        objects:
+          type: array
+          description: Collectors only. Null when the collection failed.
+          items:
+            type: object
+            required: [key, name, status, output, metrics]
+            properties:
+              key: { type: string }
+              name: { type: string }
+              labels: { type: object, additionalProperties: { type: string } }
+              status: { type: string, enum: [OK, WARNING, CRITICAL, UNKNOWN] }
+              output: { type: string }
+              metrics:
+                type: object
+                additionalProperties: { type: [number, "null"], format: double }
+
+    CheckObject:
+      type: object
+      required: [key, name, labels, phase, status, since, last_status, last_output, last_metrics, incident_id,
+                 first_seen_at, last_seen_at, gone_at]
+      properties:
+        key: { type: string, description: "Stable identifier within the check, e.g. the interface name" }
+        name: { type: string }
+        labels:
+          type: object
+          description: Descriptive values from the device, such as an interface's alias, type and speed.
+          additionalProperties: { type: string }
+        phase: { type: string, enum: [OK, PENDING, PROBLEM] }
+        status: { type: string, enum: [OK, WARNING, CRITICAL, UNKNOWN], description: "Effective status: plugin and thresholds" }
+        since: { type: string, format: date-time }
+        last_status: { type: [string, "null"], description: "The plugin's own status of the object" }
+        last_output: { type: [string, "null"] }
+        last_metrics:
+          type: object
+          additionalProperties: { type: number, format: double }
+        incident_id: { type: [string, "null"], format: uuid }
+        first_seen_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        gone_at: { type: [string, "null"], format: date-time, description: "When the device stopped reporting it" }
 
     CheckState:
       type: object
@@ -2454,13 +2530,17 @@ components:
 
     Incident:
       type: object
-      required: [id, check_id, device_id, severity, status, summary, last_output, rule_id, rule_name, flapping,
-                 suppressed, root_incident_id, root_device_id, opened_at, acknowledged_at, acknowledged_by,
-                 acknowledged_by_external_id, resolved_at, resolved_by, updated_at]
+      required: [id, check_id, device_id, object_key, object_name, severity, status, summary, last_output, rule_id,
+                 rule_name, flapping, suppressed, root_incident_id, root_device_id, opened_at, acknowledged_at,
+                 acknowledged_by, acknowledged_by_external_id, resolved_at, resolved_by, updated_at]
       properties:
         id: { type: string, format: uuid }
         check_id: { type: [string, "null"], format: uuid }
         device_id: { type: [string, "null"], format: uuid }
+        object_key:
+          type: [string, "null"]
+          description: For a collector check, the object the incident is about (an interface, a fan); null for the check itself
+        object_name: { type: [string, "null"], description: "The object's name when the incident opened" }
         severity: { type: string, enum: [warning, critical] }
         status: { type: string, enum: [open, acknowledged, resolved] }
         summary: { type: string }
@@ -2488,7 +2568,7 @@ components:
         acknowledged_by: { type: [string, "null"], format: uuid, description: "User ID" }
         acknowledged_by_external_id: { type: [string, "null"] }
         resolved_at: { type: [string, "null"], format: date-time }
-        resolved_by: { type: [string, "null"], enum: [recovery, manual, check-deleted, check-disabled, null] }
+        resolved_by: { type: [string, "null"], enum: [recovery, manual, check-deleted, check-disabled, object-gone, null] }
         updated_at: { type: string, format: date-time }
 
     IncidentComment:

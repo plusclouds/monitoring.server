@@ -52,6 +52,81 @@ func SafeRun(ctx context.Context, c Check, t Target) Result {
 	return normalize(r, c.Manifest(), start)
 }
 
+// MaxObjects is the most objects one collector run keeps; MaxObjectOutput
+// the longest object output.
+const (
+	MaxObjects      = 5000
+	MaxObjectOutput = 1 << 10
+	maxObjectKey    = 200
+)
+
+// SafeCollect runs a collector like SafeRun runs a check and returns its
+// batch as a Result with Objects. A failed collection (error, panic,
+// timeout, or a batch without objects) has nil Objects.
+func SafeCollect(ctx context.Context, c Collector, t Target) Result {
+	start := time.Now()
+	type outcome struct {
+		b   Batch
+		err error
+	}
+	done := make(chan outcome, 1)
+	go func() {
+		defer func() {
+			if v := recover(); v != nil {
+				done <- outcome{err: fmt.Errorf("plugin panicked: %v\n%s", v, debug.Stack())}
+			}
+		}()
+		b, _, err := c.Collect(ctx, t)
+		done <- outcome{b, err}
+	}()
+	var o outcome
+	select {
+	case o = <-done:
+	case <-ctx.Done():
+		select {
+		case o = <-done:
+		case <-time.After(100 * time.Millisecond):
+			o.err = fmt.Errorf("plugin did not stop at its timeout (%w)", ctx.Err())
+		}
+	}
+	m := c.Manifest()
+	if o.err != nil {
+		return normalize(Result{Status: Unknown, Output: o.err.Error()}, Manifest{}, start)
+	}
+	r := Result{Status: o.b.Status, Output: o.b.Output}
+	if o.b.Objects != nil {
+		r.Objects = normalizeObjects(o.b.Objects, len(m.Metrics))
+	}
+	// A collector has no device-level metrics: its layout is per object.
+	return normalize(r, Manifest{}, start)
+}
+
+// normalizeObjects drops objects without a key or with a duplicate key,
+// caps their number and output, and aligns their metrics with the layout.
+func normalizeObjects(in []Object, slots int) []Object {
+	out := make([]Object, 0, min(len(in), MaxObjects))
+	seen := make(map[string]bool, len(in))
+	for _, o := range in {
+		if o.Key == "" || len(o.Key) > maxObjectKey || seen[o.Key] || len(out) == MaxObjects {
+			continue
+		}
+		seen[o.Key] = true
+		if len(o.Output) > MaxObjectOutput {
+			o.Output = o.Output[:MaxObjectOutput]
+		}
+		if o.Name == "" {
+			o.Name = o.Key
+		}
+		if len(o.Metrics) != slots {
+			fixed := NaNs(slots)
+			copy(fixed, o.Metrics)
+			o.Metrics = fixed
+		}
+		out = append(out, o)
+	}
+	return out
+}
+
 func normalize(r Result, m Manifest, start time.Time) Result {
 	if r.Time.IsZero() {
 		r.Time = start.UTC()

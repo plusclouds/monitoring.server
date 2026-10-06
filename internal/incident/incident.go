@@ -29,6 +29,8 @@ type Incident struct {
 	TenantID          uuid.UUID  `json:"-"`
 	CheckID           *uuid.UUID `json:"check_id"`
 	DeviceID          *uuid.UUID `json:"device_id"`
+	ObjectKey         *string    `json:"object_key"`  // collectors: the object (interface, fan) the incident is about
+	ObjectName        *string    `json:"object_name"` // its name when the incident opened
 	Severity          string     `json:"severity"`
 	Status            string     `json:"status"`
 	Summary           string     `json:"summary"`
@@ -48,13 +50,13 @@ type Incident struct {
 	UpdatedAt         time.Time  `json:"updated_at"`
 }
 
-const cols = `id, tenant_id, check_id, device_id, severity, status, summary, last_output, rule_id, rule_name,
+const cols = `id, tenant_id, check_id, device_id, object_key, object_name, severity, status, summary, last_output, rule_id, rule_name,
 	flapping, suppressed, root_incident_id, root_device_id, opened_at, acknowledged_at, acknowledged_by, acknowledged_by_ext, resolved_at,
 	resolved_by, updated_at`
 
 func scan(row pgx.Row) (Incident, error) {
 	var i Incident
-	err := row.Scan(&i.ID, &i.TenantID, &i.CheckID, &i.DeviceID, &i.Severity, &i.Status, &i.Summary,
+	err := row.Scan(&i.ID, &i.TenantID, &i.CheckID, &i.DeviceID, &i.ObjectKey, &i.ObjectName, &i.Severity, &i.Status, &i.Summary,
 		&i.LastOutput, &i.RuleID, &i.RuleName, &i.Flapping, &i.Suppressed, &i.RootIncidentID, &i.RootDeviceID, &i.OpenedAt, &i.AcknowledgedAt,
 		&i.AcknowledgedBy, &i.AcknowledgedByExt, &i.ResolvedAt, &i.ResolvedBy, &i.UpdatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -91,6 +93,7 @@ type Filter struct {
 	DeviceID   *uuid.UUID
 	CheckID    *uuid.UUID
 	Suppressed *bool
+	ObjectKey  *string
 	Before     *uuid.UUID // cursor: incidents with a smaller (older) ID
 	Limit      int
 }
@@ -104,7 +107,8 @@ func List(ctx context.Context, tx pgx.Tx, f Filter) ([]Incident, error) {
 		   AND ($4::uuid IS NULL OR check_id = $4)
 		   AND ($5::uuid IS NULL OR id < $5)
 		   AND ($7::boolean IS NULL OR suppressed = $7)
-		 ORDER BY id DESC LIMIT $6`, f.Status, f.Severity, f.DeviceID, f.CheckID, f.Before, f.Limit, f.Suppressed)
+		   AND ($8::text IS NULL OR object_key = $8)
+		 ORDER BY id DESC LIMIT $6`, f.Status, f.Severity, f.DeviceID, f.CheckID, f.Before, f.Limit, f.Suppressed, f.ObjectKey)
 	if err != nil {
 		return nil, err
 	}

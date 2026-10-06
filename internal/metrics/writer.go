@@ -125,10 +125,13 @@ func NewWriter(o WriterOptions) (*Writer, error) {
 
 // Add queues the metrics of a result. It does not block.
 func (w *Writer) Add(r runner.Result) {
-	if !slices.ContainsFunc(r.Metrics, usable) {
+	if !slices.ContainsFunc(r.Metrics, usable) && !slices.ContainsFunc(r.Objects, func(o plugin.Object) bool {
+		return slices.ContainsFunc(o.Metrics, usable)
+	}) {
 		return
 	}
 	r.Metrics = slices.Clone(r.Metrics)
+	r.Objects = slices.Clone(r.Objects) // the engine keeps using the result
 	select {
 	case w.in <- r:
 	default:
@@ -277,6 +280,24 @@ func (w *Writer) samples(ctx context.Context, r runner.Result) ([]sample, error)
 	if err != nil {
 		return nil, err
 	}
+	// A check's metrics are one set; a collector's are one set per object.
+	if p.Manifest().Kind != plugin.KindCollector {
+		return w.split(ctx, r, "", r.Metrics, defs, allowed)
+	}
+	var out []sample
+	for _, o := range r.Objects {
+		ss, err := w.split(ctx, r, o.Key, o.Metrics, defs, allowed)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, ss...)
+	}
+	return out, nil
+}
+
+// split turns one set of metric values into one sample per retention class.
+func (w *Writer) split(ctx context.Context, r runner.Result, object string, values []float64,
+	defs []plugin.MetricDef, allowed []string) ([]sample, error) {
 	byClass := map[string][]int{}
 	var order []string
 	for i := range defs {
@@ -293,8 +314,8 @@ func (w *Writer) samples(ctx context.Context, r runner.Result) ([]sample, error)
 		have := false
 		for j, i := range slots {
 			vals[j] = math.NaN()
-			if i < len(r.Metrics) && usable(r.Metrics[i]) {
-				vals[j], have = r.Metrics[i], true
+			if i < len(values) && usable(values[i]) {
+				vals[j], have = values[i], true
 			}
 		}
 		if !have {
@@ -304,7 +325,7 @@ func (w *Writer) samples(ctx context.Context, r runner.Result) ([]sample, error)
 		if err != nil {
 			return nil, err
 		}
-		group, err := w.group(ctx, r, class, name, defs, slots)
+		group, err := w.group(ctx, r, object, class, name, defs, slots)
 		if err != nil {
 			return nil, err
 		}
@@ -377,9 +398,9 @@ func layoutVersion(class string, defs []plugin.MetricDef, slots []int) int32 {
 
 // group returns the group ID of a result's metrics in one class, creating
 // the group and its series on first use.
-func (w *Writer) group(ctx context.Context, r runner.Result, class int16, className string,
+func (w *Writer) group(ctx context.Context, r runner.Result, object string, class int16, className string,
 	defs []plugin.MetricDef, slots []int) (int64, error) {
-	k := groupKey{source: r.CheckID, class: class, layout: layoutVersion(className, defs, slots)}
+	k := groupKey{source: r.CheckID, object: object, class: class, layout: layoutVersion(className, defs, slots)}
 	if id, ok := w.groups[k]; ok {
 		return id, nil
 	}
