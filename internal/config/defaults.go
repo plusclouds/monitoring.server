@@ -140,7 +140,7 @@ func Default() Config {
 			UsageRetention:   dur(9504 * time.Hour),
 			UsageCloseDelay:  dur(5 * time.Minute),
 		},
-		Usage: Usage{Weights: map[string]float64{"icmp": 1, "http": 2}, DefaultWeight: 1},
+		Usage: Usage{Weights: map[string]float64{"icmp": 1, "http": 2}, DefaultWeight: 1, WhoopsyMultiplier: 5},
 		SelfMonitoring: SelfMonitoring{
 			Listen:             "127.0.0.1:9090",
 			TLS:                ListenerTLS{Disabled: true},

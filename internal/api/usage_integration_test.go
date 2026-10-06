@@ -92,8 +92,9 @@ func TestUsageHours(t *testing.T) {
 	e.tenantKey("bcc")
 	now := time.Now().UTC()
 	h := now.Truncate(time.Hour).Add(-3 * time.Hour)
-	cfg := config.Usage{Weights: map[string]float64{"icmp": 1, "http": 2}, DefaultWeight: 1}
-	if changes, err := usage.SyncWeights(ctx, db.System, cfg, now); err != nil || len(changes) != 3 {
+	cfg := config.Usage{Weights: map[string]float64{"icmp": 1, "http": 2}, DefaultWeight: 1, WhoopsyMultiplier: 5}
+	// icmp, http, the default and the Whoopsy! multiplier.
+	if changes, err := usage.SyncWeights(ctx, db.System, cfg, now); err != nil || len(changes) != 4 {
 		t.Fatalf("first weights: %v, %v", changes, err)
 	}
 
@@ -181,8 +182,8 @@ func TestUsageHours(t *testing.T) {
 	if again, _ := usage.SyncWeights(ctx, db.System, cfg, now); len(again) != 0 {
 		t.Errorf("unchanged config recorded %v", again)
 	}
-	if n := auditCount(t, "usage.weight.update"); n != 4 {
-		t.Errorf("usage.weight.update events = %d, want 4", n)
+	if n := auditCount(t, "usage.weight.update"); n != 5 {
+		t.Errorf("usage.weight.update events = %d, want 5", n)
 	}
 	w := e.must(e.do("GET", "/v1/usage/weights", acc, nil), 200)
 	if w.body["weights"].(map[string]any)["http"] != float64(2) {

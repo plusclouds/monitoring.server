@@ -38,6 +38,7 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
   - Closed hours keep the weight they were computed with, so a weight change never revises a past hour.
 - **History.** The database keeps every weight with the time it took effect. Every usage row carries the weights it was computed with.
 - **Which node.** The maintenance node (one at a time) records the weights from its own config at start and every hour. Give every node the same `usage` section.
+- **Whoopsy!** (2026-10-07): a check with Whoopsy! on is billed as `<plugin>+whoopsy` at the plugin's weight times `usage.whoopsy_multiplier` (default 5), unless `usage.weights` names `<plugin>+whoopsy`. The multiplier is recorded with the weights (`*whoopsy`) and follows the same history rules. See [F05](F05-state-and-incidents.md#whoopsy-premium-alerting-decided-2026-10-07).
 - **Companion checks** exist only to support another check, such as `mqtt.connection` next to a push check. The plugin manifest marks them (`Billable: false`, replacing `BillingClass`), and they are never billed, whatever the config says.
 
 ### What counts

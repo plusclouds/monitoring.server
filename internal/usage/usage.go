@@ -24,6 +24,13 @@ import (
 // DefaultPlugin is the weight row of plugins without their own weight.
 const DefaultPlugin = "*"
 
+// WhoopsyMultiplier is the weight row of the Whoopsy! multiplier, and
+// WhoopsySuffix marks a check's usage with Whoopsy! on ("http+whoopsy").
+const (
+	WhoopsyMultiplier = "*whoopsy"
+	WhoopsySuffix     = "+whoopsy"
+)
+
 // WeightChange is a weight recorded by SyncWeights. A nil Weight means the
 // plugin falls back to the default weight.
 type WeightChange struct {
@@ -38,7 +45,7 @@ type WeightChange struct {
 // deploy is billed with the configured weights. Each change is audited in
 // the platform tenant.
 func SyncWeights(ctx context.Context, db *pgxpool.Pool, cfg config.Usage, now time.Time) ([]WeightChange, error) {
-	want := map[string]*float64{DefaultPlugin: ptr(cfg.DefaultWeight)}
+	want := map[string]*float64{DefaultPlugin: ptr(cfg.DefaultWeight), WhoopsyMultiplier: ptr(cfg.WhoopsyMultiplier)}
 	for p, w := range cfg.Weights {
 		want[p] = ptr(w)
 	}

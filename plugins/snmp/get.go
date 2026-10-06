@@ -56,6 +56,7 @@ func (*Get) Manifest() plugin.Manifest {
 		DefaultInterval: time.Minute,
 		MinInterval:     10 * time.Second,
 		BillingClass:    plugin.BillingStandard,
+		WhoopsyMetric:   "value",
 	}
 }
 

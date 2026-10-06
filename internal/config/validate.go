@@ -22,6 +22,9 @@ func (c *Config) Validate(roles []string) error {
 	if c.Usage.DefaultWeight < 0 {
 		v.add("usage.default_weight: must not be negative")
 	}
+	if c.Usage.WhoopsyMultiplier < 0 || c.Usage.WhoopsyMultiplier > 1000 {
+		v.add("usage.whoopsy_multiplier: must be between 0 and 1000")
+	}
 	for plugin, w := range c.Usage.Weights {
 		if w < 0 || w > 1e6 {
 			v.add("usage.weights.%s: must be between 0 and 1000000", plugin)

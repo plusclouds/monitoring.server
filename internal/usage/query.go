@@ -129,6 +129,27 @@ func Weights(ctx context.Context, q interface {
 	return out, def, err
 }
 
+// Weight is a check's weight, as the hourly close computes it: with
+// Whoopsy! on, the "<plugin>+whoopsy" weight when set, else the plugin's
+// weight times the multiplier (default 5).
+func Weight(weights map[string]float64, def float64, plugin string, whoopsy bool) float64 {
+	base, ok := weights[plugin]
+	if !ok {
+		base = def
+	}
+	if !whoopsy {
+		return base
+	}
+	if w, ok := weights[plugin+WhoopsySuffix]; ok {
+		return w
+	}
+	mult, ok := weights[WhoopsyMultiplier]
+	if !ok {
+		mult = 5
+	}
+	return base * mult
+}
+
 // Current is what a tenant is billed for right now.
 type Current struct {
 	Checks         int
@@ -149,17 +170,18 @@ func CurrentUsage(ctx context.Context, tx pgx.Tx, now time.Time) (Current, error
 	if err != nil {
 		return Current{}, err
 	}
-	rows, err := tx.Query(ctx, `SELECT plugin, count(*) FROM check_periods WHERE ended_at IS NULL GROUP BY 1`)
+	rows, err := tx.Query(ctx, `SELECT plugin, whoopsy, count(*) FROM check_periods WHERE ended_at IS NULL GROUP BY 1, 2`)
 	if err != nil {
 		return Current{}, err
 	}
 	out := Current{ByPlugin: map[string]PluginCount{}}
 	var p string
+	var whoopsy bool
 	var n int
-	_, err = pgx.ForEachRow(rows, []any{&p, &n}, func() error {
-		w, ok := weights[p]
-		if !ok {
-			w = def
+	_, err = pgx.ForEachRow(rows, []any{&p, &whoopsy, &n}, func() error {
+		w := Weight(weights, def, p, whoopsy)
+		if whoopsy {
+			p += WhoopsySuffix
 		}
 		out.ByPlugin[p] = PluginCount{Checks: n, Weight: w}
 		out.Checks += n

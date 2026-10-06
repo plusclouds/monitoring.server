@@ -156,6 +156,15 @@ Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs
 
 `monitor admin rotate-platform-key [--keep-old]`, `monitor admin revoke-platform-keys --keep ID` and `monitor admin create-admin-key --tenant ID`. Bootstrap prints keys once and stores only their hashes, so a lost key is replaced, not recovered. Each command writes an audit event. Verified by `TestAdminKeyCommands`.
 
+### Whoopsy! and metric statistics (2026-10-07)
+
+| Area | What exists |
+| --- | --- |
+| Statistics | `agg=stddev` and `agg=p<n>` on `/v1/metrics/query`, `moving_window=N`, and `/v1/metrics/summary` (count, min, max, avg, stddev, p50, p95, p99, more percentiles, last, and the band of the last N samples). Raw samples only, exact; older windows get 422 |
+| Whoopsy! | Premium band alerting per check: moving average ± N standard deviations over the last N results, N results in a row. `GET/PUT/DELETE /v1/checks/{id}/whoopsy` and `POST .../whoopsy/reset`; the band is frozen while results break it. Billed as `<plugin>+whoopsy` at 5× the plugin's weight. Migration `00015` |
+
+Verified by `TestMetricStatistics`, `TestWhoopsy`, `TestWhoopsyBand` and `TestWhoopsyCheck` (API, incident, webhook, band, current and closed-hour billing).
+
 ### M3.5 — usage metering (F13)
 
 | Area | What exists |

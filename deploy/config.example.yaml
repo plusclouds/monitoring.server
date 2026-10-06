@@ -375,6 +375,10 @@ usage:
     icmp: 1
     http: 2
   default_weight: 1   # plugins not listed
+  # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
+  # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry
+  # such as "http+whoopsy: 8" overrides it for one plugin.
+  whoopsy_multiplier: 5
 
 # ---------------------------------------------------------------------------
 # Monitoring the monitor (F11)

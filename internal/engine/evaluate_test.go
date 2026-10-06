@@ -2,6 +2,7 @@ package engine
 
 import (
 	"math"
+	"strings"
 	"testing"
 	"time"
 
@@ -181,5 +182,89 @@ func TestNaNKeepsLevel(t *testing.T) {
 	s.step(plugin.OK, 5)
 	if out := s.step(plugin.OK, math.NaN()); out.Action != ActionNone || s.state.Phase != PhaseProblem {
 		t.Fatalf("NaN: %+v", out)
+	}
+}
+
+// Whoopsy!: with a band of 500 ms ± 1 standard deviation over 7 results,
+// three results in a row above it open an incident; the first result back
+// inside the band (and recovery_count) resolves it.
+func TestWhoopsy(t *testing.T) {
+	w := &threshold.Whoopsy{Metric: "total_ms", Window: 7, Deviations: 1, Consecutive: 3, Direction: "above", Severity: "critical"}
+	s := newSim(t, Config{FailureCount: 3, RecoveryCount: 1, Metrics: []string{"total_ms"}, Whoopsy: w})
+	// 400, 500, 600 repeated: mean 500, sample deviation about 81.6.
+	base := []float64{400, 500, 600, 400, 500, 600, 500}
+	for _, v := range base {
+		if out := s.step(plugin.OK, v); out.Action != ActionNone {
+			t.Fatalf("learning the band: %+v", out)
+		}
+	}
+	if s.state.Whoopsy == nil || len(s.state.Whoopsy.Values) != 7 || s.state.Whoopsy.Band != nil {
+		t.Fatalf("after 7 results: %+v", s.state.Whoopsy)
+	}
+	s.step(plugin.OK, 575) // inside: the upper edge is 500 + 81.6
+	if s.state.Whoopsy.Hits != 0 || s.state.Whoopsy.Band == nil {
+		t.Fatalf("575 is inside: %+v", s.state.Whoopsy)
+	}
+	s.step(plugin.OK, 900)
+	s.step(plugin.OK, 950)
+	if s.count(ActionOpen) != 0 {
+		t.Fatal("opened before three in a row")
+	}
+	out := s.step(plugin.OK, 1000)
+	if out.Action != ActionOpen || out.Severity != SeverityCritical || out.Cause.Rule.ID != "whoopsy" ||
+		!strings.HasPrefix(out.Summary, "Whoopsy!: total_ms = 1000, above ") {
+		t.Fatalf("third hit: %+v %q", out.Action, out.Summary)
+	}
+	// The band is frozen while values break it: a lasting slowdown keeps
+	// the incident open; values back in the band resolve it.
+	for range 20 {
+		s.step(plugin.OK, 1000)
+	}
+	if s.count(ActionResolve) != 0 || s.state.Whoopsy.Band.Upper > 600 || s.state.Whoopsy.Last != 1000 {
+		t.Fatalf("the band moved: %+v %v", s.state.Whoopsy, s.acts)
+	}
+	s.step(plugin.OK, 500)
+	if s.count(ActionResolve) != 1 {
+		t.Errorf("back in the band: %v", s.acts)
+	}
+	// A reset (the API clears the state) learns a new normal.
+	s.state.Whoopsy = nil
+	for range 7 {
+		s.step(plugin.OK, 1000)
+	}
+	if out := s.step(plugin.OK, 1000); out.Action != ActionNone || s.state.Whoopsy.Hits != 0 {
+		t.Errorf("after a reset 1000 is normal: %+v %+v", out, s.state.Whoopsy)
+	}
+
+	// NaN results do not enter the window; a metric change starts over.
+	s.step(plugin.OK, math.NaN())
+	if len(s.state.Whoopsy.Values) != 7 {
+		t.Errorf("NaN entered the window: %v", s.state.Whoopsy.Values)
+	}
+	s.cfg.Whoopsy = &threshold.Whoopsy{Metric: "other", Window: 7, Deviations: 1, Consecutive: 3, Direction: "above", Severity: "warning"}
+	s.cfg.Metrics = []string{"total_ms", "other"}
+	s.step(plugin.OK, 1, 2)
+	if s.state.Whoopsy.Metric != "other" || len(s.state.Whoopsy.Values) != 1 {
+		t.Errorf("metric change: %+v", s.state.Whoopsy)
+	}
+	s.cfg.Whoopsy = nil
+	s.step(plugin.OK, 1, 2)
+	if s.state.Whoopsy != nil {
+		t.Error("state kept after Whoopsy! was turned off")
+	}
+}
+
+func TestWhoopsyBand(t *testing.T) {
+	w := threshold.Whoopsy{Deviations: 2, MinDelta: 50, Direction: "both"}
+	b := w.BandOf([]float64{100, 100, 100})
+	if b.Mean != 100 || b.StdDev != 0 || b.Lower != 50 || b.Upper != 150 {
+		t.Errorf("min_delta band: %+v", b)
+	}
+	if w.Outside(b, 150) || !w.Outside(b, 151) || !w.Outside(b, 49) {
+		t.Error("edges")
+	}
+	w.Direction = "below"
+	if w.Outside(b, 1000) || !w.Outside(b, 10) {
+		t.Error("below only")
 	}
 }

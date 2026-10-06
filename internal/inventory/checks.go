@@ -41,6 +41,7 @@ type Check struct {
 	UnknownIsCritical bool
 	RunbookURL        *string
 	Credentials       map[string]uuid.UUID // role -> credential
+	Whoopsy           *threshold.Whoopsy   // premium band alerting; nil when off
 	ManagedBy         string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -154,7 +155,7 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 
 const checkCols = `c.id, c.tenant_id, c.device_id, c.name, c.plugin, c.config, c.interval_seconds, c.timeout_seconds,
 	c.enabled, c.thresholds, c.failure_count, c.recovery_count, c.is_host_check, c.unknown_is_critical,
-	c.runbook_url, c.managed_by, c.created_at, c.updated_at,
+	c.runbook_url, c.managed_by, c.created_at, c.updated_at, c.whoopsy,
 	coalesce((SELECT jsonb_object_agg(cc.role, cc.credential_id) FROM check_credentials cc WHERE cc.check_id = c.id), '{}')`
 
 var checkConstraints = map[string]string{
@@ -167,7 +168,7 @@ func scanCheck(row pgx.Row) (Check, error) {
 	var creds map[string]uuid.UUID
 	err := row.Scan(&c.ID, &c.TenantID, &c.DeviceID, &c.Name, &c.Plugin, &c.Config, &c.IntervalSeconds,
 		&c.TimeoutSeconds, &c.Enabled, &c.Thresholds, &c.FailureCount, &c.RecoveryCount, &c.IsHostCheck,
-		&c.UnknownIsCritical, &c.RunbookURL, &c.ManagedBy, &c.CreatedAt, &c.UpdatedAt, &creds)
+		&c.UnknownIsCritical, &c.RunbookURL, &c.ManagedBy, &c.CreatedAt, &c.UpdatedAt, &c.Whoopsy, &creds)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return c, errs.ErrNotFound
 	}
@@ -181,8 +182,56 @@ func (c Check) snapshot() map[string]any {
 		"interval_seconds": c.IntervalSeconds, "timeout_seconds": c.TimeoutSeconds, "enabled": c.Enabled,
 		"thresholds": c.Thresholds, "failure_count": c.FailureCount, "recovery_count": c.RecoveryCount,
 		"is_host_check": c.IsHostCheck, "unknown_is_critical": c.UnknownIsCritical,
-		"runbook_url": c.RunbookURL, "credentials": c.Credentials,
+		"runbook_url": c.RunbookURL, "credentials": c.Credentials, "whoopsy": c.Whoopsy,
 	}
+}
+
+// SetWhoopsy turns Whoopsy! on (with settings) or off (nil) for a check.
+// It is separate from UpdateCheck, so a client replacing a check without
+// knowing Whoopsy! never turns it off (it changes billing).
+func SetWhoopsy(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID, w *threshold.Whoopsy) (Check, error) {
+	cur, err := scanCheck(tx.QueryRow(ctx, `SELECT `+checkCols+` FROM checks c WHERE c.id = $1 FOR UPDATE`, id))
+	if err != nil {
+		return Check{}, err
+	}
+	if w != nil {
+		p, ok := plugin.Lookup(cur.Plugin)
+		if !ok {
+			return Check{}, errs.Invalidf("plugin", "plugin %q is not built into this engine", cur.Plugin)
+		}
+		m := p.Manifest()
+		if m.Kind != plugin.KindCheck {
+			return Check{}, errs.Invalidf("whoopsy", "Whoopsy! watches a check's metric; %s is a collector", m.Type)
+		}
+		names := make([]string, len(m.Metrics))
+		for i, d := range m.Metrics {
+			names[i] = d.Name
+		}
+		v, err := threshold.ValidateWhoopsy(*w, names, m.WhoopsyMetric)
+		if err != nil {
+			return Check{}, err
+		}
+		w = &v
+	}
+	if reflect.DeepEqual(cur.Whoopsy, w) {
+		return cur, nil
+	}
+	if _, err := tx.Exec(ctx, `UPDATE checks SET whoopsy = $2, updated_at = now() WHERE id = $1`, id, w); err != nil {
+		return Check{}, err
+	}
+	action := "check.whoopsy.enable"
+	switch {
+	case w == nil:
+		action = "check.whoopsy.disable"
+	case cur.Whoopsy != nil:
+		action = "check.whoopsy.update"
+	}
+	out, err := GetCheck(ctx, tx, id)
+	if err != nil {
+		return Check{}, err
+	}
+	return out, audit.Write(ctx, tx, actor.Event(cur.TenantID, action, "check", id.String(),
+		map[string]any{"whoopsy": cur.Whoopsy}, map[string]any{"whoopsy": w}))
 }
 
 // GetCheck returns one check.

@@ -304,6 +304,9 @@ type Platform struct {
 type Usage struct {
 	Weights       map[string]float64 `yaml:"weights"`
 	DefaultWeight float64            `yaml:"default_weight"`
+	// WhoopsyMultiplier multiplies a plugin's weight for checks with
+	// Whoopsy! on ("<plugin>+whoopsy"), unless weights names that key.
+	WhoopsyMultiplier float64 `yaml:"whoopsy_multiplier"`
 }
 
 type JIT struct {

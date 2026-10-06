@@ -67,6 +67,9 @@ func validManifest(m Manifest) error {
 	case !slices.Contains([]string{BillingBasic, BillingStandard, BillingPush, BillingAdvanced, BillingFree}, m.BillingClass):
 		return fmt.Errorf("unknown billing class %q", m.BillingClass)
 	}
+	if m.WhoopsyMetric != "" && !slices.ContainsFunc(m.Metrics, func(d MetricDef) bool { return d.Name == m.WhoopsyMetric }) {
+		return fmt.Errorf("whoopsy metric %q is not in the layout", m.WhoopsyMetric)
+	}
 	seen := map[string]bool{}
 	for _, d := range m.Metrics {
 		if d.Name == "" || seen[d.Name] {
