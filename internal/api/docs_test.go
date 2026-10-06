@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/plusclouds/monitoring.server/internal/buildinfo"
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/crypto"
 )
@@ -66,6 +67,22 @@ func TestDocsEndpoints(t *testing.T) {
 	yaml := getPath(h, "/v1/openapi.yaml")
 	if yaml.Code != http.StatusOK || !strings.HasPrefix(yaml.Body.String(), "openapi: 3.1.0") {
 		t.Errorf("/v1/openapi.yaml = %d", yaml.Code)
+	}
+}
+
+// The published spec reports the running release, not the file's placeholder.
+func TestSpecReportsVersion(t *testing.T) {
+	old := buildinfo.Version
+	buildinfo.Version = "v9.8.7"
+	t.Cleanup(func() { buildinfo.Version = old })
+	h := docsHandler(t, true)
+	var doc struct{ Info struct{ Version string } }
+	if err := json.Unmarshal(getPath(h, "/v1/openapi.json").Body.Bytes(), &doc); err != nil || doc.Info.Version != "9.8.7" {
+		t.Errorf("json info.version = %q (%v)", doc.Info.Version, err)
+	}
+	yaml := getPath(h, "/v1/openapi.yaml").Body.String()
+	if !strings.Contains(yaml, "\n  version: 9.8.7\n") || strings.Count(yaml, "version: 9.8.7") != 1 {
+		t.Errorf("yaml info.version not replaced exactly once")
 	}
 }
 

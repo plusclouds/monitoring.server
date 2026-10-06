@@ -52,6 +52,17 @@ As built (M4):
 
 SEL/event log reading is phase 2.
 
+As built (M4), `redfish.health`:
+
+- A small Redfish client of our own (read-only GETs over a session), not `gofish`: monitoring needs a login, reads and a logout, and owning the client keeps the network policy, timeouts and vendor quirks in our hands. Login opens a session (`X-Auth-Token`), logged out after every run even when the run timed out; a BMC without a session service gets basic authentication.
+- Credential: `redfish` in the `auth` role; use a read-only BMC account. HTTPS only. The BMC's certificate is not verified by default, because most BMCs ship a self-signed one (decided 2026-10-07); `verify_certificate: true` turns verification on, and an untrusted certificate is then UNKNOWN with the reason.
+- Objects (keys `kind:id`; with several systems or chassis, `kind:scope:id`): `system` (labels vendor, model, serial, BIOS, power state, BMC firmware), `cpu`, `memory` (populated DIMMs only), `storage` (controllers), `drive`, `volume`, `temperature`, `fan`, `psu` and `power` (consumed watts). Absent and disabled components (empty slots) are not objects. `skip` drops kinds.
+- Status per object is the BMC's own health (OK, Warning, Critical). A temperature without health is judged by the BMC's own upper thresholds. Metrics per object: `health` (0, 1, 2), `temperature_celsius`, `fan_rpm` or `fan_percent`, `power_watts`; thresholds on them are set on the check, per object if needed.
+- Collections are read member by member, two at a time; members a BMC already expands are used as they are. Minimum interval 60 s (default 2 min), slow pool, one run per BMC at a time.
+- Uses the `Thermal` and `Power` resources, which current Dell iDRAC 9, HPE iLO 5/6 and AMI MegaRAC (ASUS ASMB) BMCs still serve. Their successors (`ThermalSubsystem`, `PowerSubsystem`) wait until a BMC we run drops the old ones.
+- Tested against the DMTF Redfish mockup server over HTTPS with `testdata/dell-r740`: the DMTF rackmount sample trimmed and made into a Dell PowerEdge with a PSU in warning, a failed DIMM, an empty slot, a failed disk and a degraded volume.
+- Not yet verified on real iDRAC, iLO and ASUS BMCs (Gate 1 compatibility table).
+
 ## Cameras
 
 | Type | Library | What it checks |
@@ -79,6 +90,12 @@ Credentials: a read-only XAPI user (`read-only` RBAC role in XenServer/XCP-ng). 
 
 MQTT and HTTP push sensors are covered by [F08](F08-push-ingestion.md).
 
+As built (M4), APC first, because APC is the facility vendor in our datacenter. OIDs and value meanings were checked against APC's PowerNet-MIB (2025):
+
+- `snmp.pdu` (collector): rPDU2 (AP8xxx and later) with fallback to rPDU (AP78xx, AP79xx). Objects: `pdu:<module>` (power in W, energy in kWh, the PDU's load state), `phase:<n>` (current, voltage, power), `bank:<n>` (current), `outlet:<n>` (on/off for switched outlets, current and power for metered ones). Daisy-chained PDUs: keys of modules other than 1 carry the module (`phase:2.1`), so adding a second PDU keeps the first one's keys. Status is the PDU's own load state: near overload is WARNING, overload CRITICAL. A switched outlet that is off is `outlet_off_status` (default OK). `outlets: false` leaves outlets out. A non-APC device is UNKNOWN for now (Raritan and Eaton profiles when we run them).
+- `snmp.sensor` (collector): probes attached to rPDU2 PDUs (temperature and humidity with the PDU's own high/max thresholds; door, smoke, motion, vibration, dry contact and leak sensors) and to network management cards (universal I/O: AP9631 and NMC3 with AP9335T/TH probes, input contacts). Objects `probe:<index>` and `contact:<index>` (`uio.` for NMC sensors). Status follows the device's alarm state; a probe that lost communication is UNKNOWN; sensors not installed or disabled are not objects. Older environmental monitoring units (EMU, `mem*` tables) and NetBotz are not covered.
+- Tested against snmpsim fixtures of an AP8853 (rPDU2), an AP7920 (rPDU) and an AP9631 card with a probe and a leak contact. Not yet verified on our own APC units.
+
 ## Built-in templates using these plugins
 
 Listed in [F02](F02-devices-credentials-templates.md).
@@ -91,4 +108,4 @@ Listed in [F02](F02-devices-credentials-templates.md).
 
 ## Open questions
 
-- Which switch, BMC, UPS and PDU vendors do we run in our datacenter? The vendor profile list above should start with exactly those.
+- Which switch, BMC, UPS and PDU vendors do we run in our datacenter? Answered 2026-10-07: Dell, HPE and ASUS servers; APC for PDUs, UPSs and other facility devices. Switch vendors are still open.

@@ -1,0 +1,34 @@
+{
+ "@odata.id": "/redfish/v1/Systems/437XR1138R2/Storage/RAID.Integrated.1-1",
+ "@odata.type": "#Storage.v1_13_0.Storage",
+ "Id": "RAID.Integrated.1-1",
+ "Name": "PERC H730P Mini",
+ "Status": {
+  "State": "Enabled",
+  "Health": "Critical",
+  "HealthRollup": "Critical"
+ },
+ "StorageControllers": [
+  {
+   "@odata.id": "/redfish/v1/Systems/437XR1138R2/Storage/RAID.Integrated.1-1#/StorageControllers/0",
+   "MemberId": "RAID.Integrated.1-1",
+   "Name": "PERC H730P Mini",
+   "Model": "PERC H730P Mini",
+   "Status": {
+    "State": "Enabled",
+    "Health": "OK"
+   }
+  }
+ ],
+ "Drives": [
+  {
+   "@odata.id": "/redfish/v1/Systems/437XR1138R2/Storage/RAID.Integrated.1-1/Drives/Disk.Bay.0"
+  },
+  {
+   "@odata.id": "/redfish/v1/Systems/437XR1138R2/Storage/RAID.Integrated.1-1/Drives/Disk.Bay.1"
+  }
+ ],
+ "Volumes": {
+  "@odata.id": "/redfish/v1/Systems/437XR1138R2/Storage/RAID.Integrated.1-1/Volumes"
+ }
+}

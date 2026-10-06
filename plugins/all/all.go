@@ -5,5 +5,6 @@ package all
 import (
 	_ "github.com/plusclouds/monitoring.server/plugins/http"
 	_ "github.com/plusclouds/monitoring.server/plugins/icmp"
+	_ "github.com/plusclouds/monitoring.server/plugins/redfish"
 	_ "github.com/plusclouds/monitoring.server/plugins/snmp"
 )

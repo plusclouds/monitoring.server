@@ -28,8 +28,19 @@ const (
 	EventEscalated = "monitoring.incident.escalated"
 )
 
+// Tenant event types: an account reached a plan limit (F06). The event is
+// written when the create that reaches the limit succeeds, so the account
+// and PlusClouds learn about it before the next create is refused.
+const (
+	EventDeviceLimitReached = "monitoring.tenant.device_limit_reached"
+	EventCheckLimitReached  = "monitoring.tenant.check_limit_reached"
+)
+
 // ObjectType is data.object_type of incident events, in PlusClouds' style.
 const ObjectType = `Monitoring\Incidents`
+
+// TenantObjectType is data.object_type of tenant events.
+const TenantObjectType = `Monitoring\Tenants`
 
 // Envelope is a CloudEvents 1.0 event, the shape PlusClouds' own event
 // pushers use (ADR-0009).
@@ -144,6 +155,36 @@ func write(ctx context.Context, tx pgx.Tx, typ string, inc Incident, actor *Acto
 		VALUES ($1, $2, $3, $4, $5, $6, CASE WHEN $7 THEN now() END) RETURNING seq`,
 		id, inc.TenantID, typ, env.Subject, now, env, routed).Scan(&seq)
 	return id, seq, err
+}
+
+// LimitReached writes a tenant limit event: resource is "devices" or
+// "checks". data.object carries the limit and the count; device and check
+// are null. The subject is tenant:<id>.
+func LimitReached(ctx context.Context, tx pgx.Tx, tenant uuid.UUID, resource string, limit, count int) error {
+	typ := EventDeviceLimitReached
+	if resource == "checks" {
+		typ = EventCheckLimitReached
+	}
+	id, err := uuid.NewV7()
+	if err != nil {
+		return err
+	}
+	var installation uuid.UUID
+	var account *string
+	if err := tx.QueryRow(ctx, `SELECT (SELECT id FROM installation),
+		       (SELECT external_id FROM tenant_by_id($1))`, tenant).Scan(&installation, &account); err != nil {
+		return err
+	}
+	now := time.Now().UTC()
+	env := Envelope{
+		SpecVersion: "1.0", ID: id, Source: "/monitoring/" + installation.String() + "/" + tenant.String(),
+		Type: typ, Time: now, DataContentType: "application/json", Subject: "tenant:" + tenant.String(),
+		Data: Data{AccountID: account, ObjectType: TenantObjectType, Route: json.RawMessage("null"),
+			Object: map[string]any{"tenant_id": tenant, "resource": resource, "limit": limit, "count": count}},
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO events (id, tenant_id, type, subject, time, envelope) VALUES ($1, $2, $3, $4, $5, $6)`,
+		id, tenant, typ, env.Subject, now, env)
+	return err
 }
 
 func deviceRef(ctx context.Context, tx pgx.Tx, id *uuid.UUID) (*DeviceRef, error) {

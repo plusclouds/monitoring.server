@@ -257,6 +257,11 @@ func CreateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 	if err != nil {
 		return Check{}, err
 	}
+	if n+1 == lim.MaxChecks {
+		if err := incident.LimitReached(ctx, tx, d.TenantID, "checks", lim.MaxChecks, n+1); err != nil {
+			return Check{}, err
+		}
+	}
 	return c, audit.Write(ctx, tx, actor.Event(d.TenantID, "check.create", "check", id.String(), nil, c.snapshot()))
 }
 

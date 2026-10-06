@@ -19,7 +19,7 @@ The engine is MIT-licensed and will be embedded in the PlusClouds panel and run 
 | --- | --- | --- |
 | PostgreSQL | `jackc/pgx` | MIT |
 | SNMP | `gosnmp/gosnmp` | BSD-2-Clause |
-| Redfish | `stmcginnis/gofish` | BSD-3-Clause |
+| Redfish | `stmcginnis/gofish` | BSD-3-Clause. Not adopted: `redfish.health` uses its own small read-only client (M4) |
 | ICMP | `prometheus-community/pro-bing` | MIT |
 | DNS | `miekg/dns` | BSD-3-Clause |
 | RTSP | `bluenviron/gortsplib` | MIT |

@@ -138,7 +138,19 @@ Shared: SNMPv3 (`authPriv`, SHA-256/AES by default) and v2c credentials, the net
 
 Verified by `TestCollectorObjects` (engine, incidents, webhooks, metrics and Grafana views end to end), `TestInterfaces` against snmpsim, and `TestSafeCollect`.
 
-Not built yet: `snmp.pdu`, `snmp.sensor`, `redfish.health`, `xapi.*` and `rtsp.stream`; applying collector inventory (child devices, the restart event); an interfaces dashboard.
+Not built yet: `snmp.pdu`, `snmp.sensor`, `xapi.*` and `rtsp.stream`; applying collector inventory (child devices, the restart event); an interfaces dashboard.
+
+### M4, part 2c — `redfish.health`
+
+Server hardware health from the BMC (Dell iDRAC, HPE iLO, ASUS and other AMI BMCs): system, processors, memory, storage controllers, drives, volumes, temperatures, fans, power supplies and power use, each an object with the BMC's health and its readings. Session login and logout per run, HTTPS; BMC certificates are not verified unless `verify_certificate` is set, since BMCs ship self-signed ones. Verified against the DMTF Redfish mockup server (`TestHealth`). The published API spec now reports the running release as its version.
+
+Also: `monitoring.tenant.device_limit_reached` and `monitoring.tenant.check_limit_reached` webhook events when a create reaches the account's limit (`TestLimitReachedEvents`).
+
+Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs and UPSs.
+
+### M4, part 2d — APC facility
+
+`snmp.pdu` (PDU, phases, banks, outlets; rPDU2 and rPDU) and `snmp.sensor` (temperature, humidity, door, leak and other contacts on PDUs and network management cards), checked against PowerNet-MIB and tested with snmpsim fixtures (`TestPDU`, `TestSensor`). UPS monitoring was already covered by `snmp.ups` (APC PowerNet).
 
 ### v0.4.3 — replacing lost keys
 
@@ -178,5 +190,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: `snmp.pdu`, `snmp.sensor`, `redfish.health`, `rtsp.stream` and the XCP-ng collectors (with child devices), with their dashboards.
+2. M4: the XCP-ng collectors (with child devices), `rtsp.stream`, and dashboards for interfaces, server hardware, PDUs and XCP-ng.
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.

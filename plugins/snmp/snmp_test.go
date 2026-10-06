@@ -411,3 +411,74 @@ func TestOIDAfter(t *testing.T) {
 		}
 	}
 }
+
+func collectWith(t *testing.T, c plugin.Collector, community string, cfg any) (plugin.Result, map[string]plugin.Object) {
+	t.Helper()
+	r := plugintest.Collect(t, c, plugintest.Options{Address: agent(t), Config: cfg, Credentials: v2c(community), Timeout: 10 * time.Second})
+	return r, objectsByKey(r)
+}
+
+func TestPDU(t *testing.T) {
+	r, objs := collectWith(t, &PDU{}, "pub-pdu", nil)
+	if r.Status != plugin.OK || len(objs) != 8 {
+		t.Fatalf("rPDU2: %v %q %v", r.Status, r.Output, objs)
+	}
+	pdu, phase, bank2, off := objs["pdu:1"], objs["phase:1"], objs["bank:2"], objs["outlet:3"]
+	if pdu.Metrics[pPower] != 1840 || pdu.Metrics[pEnergy] != 12345.6 || pdu.Labels["model"] != "AP8853" || pdu.Status != plugin.OK {
+		t.Errorf("pdu: %+v", pdu)
+	}
+	if phase.Metrics[pCurrent] != 8.2 || phase.Metrics[pVoltage] != 230 || phase.Metrics[pPower] != 1840 {
+		t.Errorf("phase: %+v", phase)
+	}
+	if bank2.Status != plugin.Warning || bank2.Metrics[pCurrent] != 15.2 || !strings.Contains(bank2.Output, "near overload") {
+		t.Errorf("bank 2: %+v", bank2)
+	}
+	if off.Status != plugin.OK || off.Metrics[pOutletOn] != 0 || off.Name != "server-3" || objs["outlet:1"].Metrics[pPower] != 260 {
+		t.Errorf("outlets: %+v %+v", off, objs["outlet:1"])
+	}
+	if !strings.Contains(r.Output, "APC PDU AP8853, 1840 W") || !strings.Contains(r.Output, "Bank 2") {
+		t.Errorf("summary: %q", r.Output)
+	}
+
+	_, objs = collectWith(t, &PDU{}, "pub-pdu", PDUConfig{OutletOffStatus: "warning", Outlets: new(true)})
+	if objs["outlet:3"].Status != plugin.Warning {
+		t.Errorf("outlet_off_status warning: %+v", objs["outlet:3"])
+	}
+	_, objs = collectWith(t, &PDU{}, "pub-pdu", PDUConfig{Outlets: new(false)})
+	if _, ok := objs["outlet:1"]; ok || len(objs) != 4 {
+		t.Errorf("outlets off: %v", objs)
+	}
+
+	r, objs = collectWith(t, &PDU{}, "pub-pdu-legacy", nil)
+	if r.Status != plugin.OK || objs["pdu:1"].Metrics[pPower] != 1520 || objs["phase:2"].Status != plugin.Critical ||
+		objs["phase:2"].Metrics[pCurrent] != 17 || objs["outlet:2"].Metrics[pOutletOn] != 0 {
+		t.Errorf("rPDU: %v %q %v", r.Status, r.Output, objs)
+	}
+
+	r, _ = collectWith(t, &PDU{}, "pub-cisco", nil)
+	if r.Status != plugin.Unknown || r.Objects != nil || !strings.Contains(r.Output, "not an APC PDU") {
+		t.Errorf("not APC: %v %q", r.Status, r.Output)
+	}
+}
+
+func TestSensor(t *testing.T) {
+	r, objs := collectWith(t, &Sensor{}, "pub-pdu", nil)
+	probe, door := objs["probe:1"], objs["contact:1"]
+	if r.Status != plugin.OK || len(objs) != 2 {
+		t.Fatalf("rPDU2 sensors: %v %q %v", r.Status, r.Output, objs)
+	}
+	if probe.Status != plugin.Warning || probe.Metrics[sTemperature] != 32.5 || probe.Metrics[sHumidity] != 40 ||
+		!strings.Contains(probe.Output, "temperature high") {
+		t.Errorf("probe: %+v", probe)
+	}
+	if door.Status != plugin.Critical || door.Metrics[sContactOpen] != 1 || door.Labels["kind"] != "door" || door.Name != "rack-a door" {
+		t.Errorf("door: %+v", door)
+	}
+
+	r, objs = collectWith(t, &Sensor{}, "pub-nmc", nil)
+	room, leak := objs["probe:uio.1.1"], objs["contact:uio.1.1"]
+	if r.Status != plugin.OK || len(objs) != 2 || room.Metrics[sTemperature] != 24 || room.Metrics[sHumidity] != 45 ||
+		room.Status != plugin.OK || leak.Status != plugin.Critical || leak.Metrics[sContactOpen] != 1 {
+		t.Errorf("NMC sensors: %v %q %+v %+v", r.Status, r.Output, room, leak)
+	}
+}

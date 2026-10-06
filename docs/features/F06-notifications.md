@@ -86,7 +86,9 @@ Completed after M4 part 1:
 - **URL check when saved.** A webhook URL that the tenant's network policy blocks is refused with 422 `invalid-value` when it is created or updated. The check covers IP literals, `localhost`, and the addresses a hostname resolves to at that moment, and it is the same check that runs at delivery. Delivery still checks again, because DNS can change.
 - **Delivery retention.** `notifier.delivery_retention` (default 30 days) deletes finished deliveries, then routed events that no delivery or open group still needs. Pending deliveries are never deleted.
 
-Still not built: `monitoring.tenant.device_limit_reached`, and `monitoring.heartbeat` (planned with F11 in M5).
+- **Limit events.** `monitoring.tenant.device_limit_reached` and `monitoring.tenant.check_limit_reached` are written when a create brings the account to its limit (the next create is refused with 409 `limit-reached`). `data.object_type` is `Monitoring\Tenants`, `data.object` is `{tenant_id, resource, limit, count}`, `data.device` and `data.check` are null, and the subject is `tenant:<id>`. Routes deliver them by default; a route that filters on device, check or severity does not, and they are never grouped, repeated or escalated. Lowering a limit below the current count sends nothing.
+
+Still not built: `monitoring.heartbeat` (planned with F11 in M5).
 
 ## Acceptance criteria
 
