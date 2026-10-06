@@ -1,0 +1,11 @@
+{
+ "@odata.id": "/redfish/v1/Systems/437XR1138R2/Storage/RAID.Integrated.1-1/Volumes/Disk.Virtual.0",
+ "Id": "Disk.Virtual.0",
+ "Name": "Virtual Disk 0",
+ "RAIDType": "RAID1",
+ "CapacityBytes": 479559942144,
+ "Status": {
+  "State": "Enabled",
+  "Health": "Warning"
+ }
+}

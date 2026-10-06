@@ -2675,11 +2675,15 @@ components:
           additionalProperties: { type: string }
         event_types:
           type: array
-          description: "Default: opened, updated, acknowledged and resolved incident events."
+          description: |
+            Default: opened, updated, acknowledged and resolved incident events, and the
+            account limit events. A limit event has no device, check or severity, so a route
+            that filters on any of those does not deliver it.
           items:
             type: string
             enum: [monitoring.incident.opened, monitoring.incident.updated, monitoring.incident.acknowledged,
-                   monitoring.incident.resolved, monitoring.incident.commented]
+                   monitoring.incident.resolved, monitoring.incident.commented,
+                   monitoring.tenant.device_limit_reached, monitoring.tenant.check_limit_reached]
         check_ids:
           type: array
           description: Only incidents of these checks (one alarm to its own webhook).

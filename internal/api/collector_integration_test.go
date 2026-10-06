@@ -151,3 +151,52 @@ func TestCollectorObjects(t *testing.T) {
 		t.Errorf("incidents_v object incidents: %d %v", objIncidents, err)
 	}
 }
+
+// F06: reaching the device or check limit sends one tenant event, to
+// routes without device, check or severity filters, never grouped.
+func TestLimitReachedEvents(t *testing.T) {
+	ctx := context.Background()
+	x := newNoise(t, 0)
+	x.must(x.do("POST", "/v1/alert-routes", x.key, map[string]any{"name": "all", "endpoint_id": x.hook,
+		"group_by": []string{"severity"}}), 201)
+	other := newReceiver(t)
+	otherHook := x.id(x.must(x.do("POST", "/v1/webhooks", x.key, map[string]any{"name": "crit", "url": other.URL}), 201))
+	x.must(x.do("POST", "/v1/alert-routes", x.key, map[string]any{"name": "critical", "endpoint_id": otherHook,
+		"match": map[string]any{"severity": []string{"critical"}}, "continue": true}), 201)
+	if _, err := db.System.Exec(ctx, `UPDATE tenants SET max_devices = 2, max_checks = 1 WHERE id = $1`, x.tenant); err != nil {
+		t.Fatal(err)
+	}
+	a := x.device("a")
+	x.tick()
+	if got := x.rcv.types(); len(got) != 0 {
+		t.Fatalf("event before the limit: %v", got)
+	}
+	x.device("b") // the second of two: the limit is reached
+	x.must(x.do("POST", "/v1/devices", x.key, map[string]any{"name": "c", "type": "server"}), 409)
+	x.must(x.do("POST", "/v1/devices/"+a+"/checks", x.key, map[string]any{"name": "p", "plugin": "icmp"}), 201)
+	x.tick()
+	m := x.rcv.wait(t, "monitoring.tenant.device_limit_reached", 2*time.Second)
+	x.rcv.wait(t, "monitoring.tenant.check_limit_reached", 2*time.Second)
+	var ev struct {
+		Subject string
+		Data    struct {
+			AccountID  *string `json:"account_id"`
+			ObjectType string  `json:"object_type"`
+			Object     map[string]any
+			Device     any
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(m.body, &ev); err != nil {
+		t.Fatal(err)
+	}
+	if ev.Subject != "tenant:"+x.tenant.String() || ev.Data.ObjectType != `Monitoring\Tenants` || ev.Data.Device != nil ||
+		ev.Data.Object["resource"] != "devices" || ev.Data.Object["limit"] != float64(2) || ev.Data.Object["count"] != float64(2) {
+		t.Errorf("event: %s", m.body)
+	}
+	if got := x.rcv.types(); len(got) != 2 {
+		t.Errorf("want one event per limit: %v", got)
+	}
+	if got := other.types(); len(got) != 0 {
+		t.Errorf("a severity route got tenant events: %v", got)
+	}
+}

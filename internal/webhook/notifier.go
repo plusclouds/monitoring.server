@@ -275,14 +275,14 @@ func (n *Notifier) hold(ctx context.Context, tx pgx.Tx, e unrouted) (time.Time, 
 // groups, else straight to a delivery. It records the notification for
 // repeat_interval.
 func (n *Notifier) take(ctx context.Context, tx pgx.Tx, e unrouted, env *incident.Envelope, r Route) error {
-	if len(r.GroupBy) > 0 {
+	if len(r.GroupBy) > 0 && !tenantEvent(e.typ) {
 		if err := n.addToGroup(ctx, tx, e, env, r); err != nil {
 			return err
 		}
 	} else if err := n.enqueue(ctx, tx, e.tenant, e.id, e.seq, e.typ, deref(e.subject), r); err != nil {
 		return err
 	}
-	if e.subject == nil {
+	if e.subject == nil || tenantEvent(e.typ) {
 		return nil
 	}
 	if steps := r.stepsOf(); e.typ == incident.EventOpened && len(steps) > 1 {

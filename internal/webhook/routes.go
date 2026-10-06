@@ -20,7 +20,15 @@ import (
 
 // RoutedEvents are the event types routes deliver by default: the incident
 // lifecycle. Comments reach clients through the event stream only.
-var RoutedEvents = []string{incident.EventOpened, incident.EventUpdated, incident.EventAcknowledged, incident.EventResolved}
+var RoutedEvents = []string{incident.EventOpened, incident.EventUpdated, incident.EventAcknowledged, incident.EventResolved,
+	incident.EventDeviceLimitReached, incident.EventCheckLimitReached}
+
+// tenantEvent reports events about the account rather than an incident:
+// they have no device, check or severity, so only routes without such
+// filters deliver them, and they are never grouped.
+func tenantEvent(typ string) bool {
+	return typ == incident.EventDeviceLimitReached || typ == incident.EventCheckLimitReached
+}
 
 // Match selects events for a route. Empty fields match everything; every
 // set field must match.
@@ -99,7 +107,7 @@ func (g Grouping) validate() error {
 }
 
 var knownEvents = []string{incident.EventOpened, incident.EventUpdated, incident.EventAcknowledged,
-	incident.EventResolved, incident.EventCommented}
+	incident.EventResolved, incident.EventCommented, incident.EventDeviceLimitReached, incident.EventCheckLimitReached}
 
 func (in *RouteInput) validate(ctx context.Context, tx pgx.Tx) error {
 	if strings.TrimSpace(in.Name) == "" || len(in.Name) > 200 {

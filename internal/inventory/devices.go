@@ -221,6 +221,11 @@ func CreateDevice(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid
 	if err != nil {
 		return Device{}, errs.FromDB(err, deviceConstraints)
 	}
+	if n+1 == maxDevices {
+		if err := incident.LimitReached(ctx, tx, tenant, "devices", maxDevices, n+1); err != nil {
+			return Device{}, err
+		}
+	}
 	return d, audit.Write(ctx, tx, actor.Event(tenant, "device.create", "device", id.String(), nil, d.snapshot()))
 }
 
