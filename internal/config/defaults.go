@@ -28,7 +28,8 @@ func Default() Config {
 				FlushInterval: dur(time.Second),
 				MaxBuffered:   dur(60 * time.Second),
 			},
-			PartitionsAhead: dur(72 * time.Hour),
+			PartitionsAhead:      dur(72 * time.Hour),
+			WhoopsyBandRetention: dur(7 * 24 * time.Hour),
 			Rollups: Rollups{
 				FiveMinuteEvery: dur(time.Minute),
 				HourlyEvery:     dur(10 * time.Minute),
@@ -143,6 +144,7 @@ func Default() Config {
 		Usage: Usage{Weights: map[string]float64{ // confirmed by PlusClouds billing, 2026-10-07
 			"icmp": 1, "http": 2, "snmp.get": 1, "snmp.system": 1, "snmp.ups": 1, "snmp.sensor": 1,
 			"snmp.pdu": 2, "snmp.interfaces": 3, "redfish.health": 2,
+			"xapi.pool": 0, "xapi.pool:host": 3, // each pool host bills, not the pool (2026-10-07)
 		}, DefaultWeight: 1, WhoopsyMultiplier: 5},
 		SelfMonitoring: SelfMonitoring{
 			Listen:             "127.0.0.1:9090",

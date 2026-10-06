@@ -223,6 +223,10 @@ func usageJobs(db *pgxpool.Pool, c config.Config, log *logging.Logger) []metrics
 			_, err := usage.ApplyRetention(ctx, db, c.Platform.UsageRetention.D())
 			return err
 		}},
+		{Name: "whoopsy_band_retention", Every: time.Hour, Run: func(ctx context.Context) error {
+			_, err := db.Exec(ctx, `DELETE FROM whoopsy_band WHERE ts < $1`, time.Now().Add(-c.Metrics.WhoopsyBandRetention.D()))
+			return err
+		}},
 	}
 }
 

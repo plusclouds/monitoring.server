@@ -79,6 +79,9 @@ type Metrics struct {
 	Rollups         Rollups      `yaml:"rollups"`
 	RetentionEvery  Duration     `yaml:"retention_every"`
 	Query           MetricsQuery `yaml:"query"`
+	// WhoopsyBandRetention is how long the band of every Whoopsy! result
+	// is kept for graphs.
+	WhoopsyBandRetention Duration `yaml:"whoopsy_band_retention"`
 }
 
 type MetricsWrite struct {

@@ -77,6 +77,9 @@ func (*Pool) Manifest() plugin.Manifest {
 		Slow:            true,
 		PerTargetLimit:  1,
 		BillingClass:    plugin.BillingStandard,
+		// Each hypervisor host bills, not the pool: 2 hosts bill twice
+		// what 1 does. VMs and storage repositories are not billed.
+		BillableObjects: map[string]string{"host:": "host"},
 	}
 }
 

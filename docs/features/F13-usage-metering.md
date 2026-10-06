@@ -31,7 +31,7 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
     default_weight: 1   # plugins not listed
   ```
 
-- **Weights confirmed by PlusClouds (2026-10-07):** `icmp` 1, `http` 2, `snmp.get` 1, `snmp.system` 1, `snmp.ups` 1, `snmp.sensor` 1, `snmp.pdu` 2, `snmp.interfaces` 3, `redfish.health` 2; Whoopsy! at 5× the plugin's weight. Push and LLM checks get their weights when those plugins exist (M5, F14); until then `default_weight` 1 covers any other plugin. PlusClouds reviews the weights after about a month of real usage. They are in `deploy/config.example.yaml`; they apply from the next full UTC hour after the operator deploys the config.
+- **Weights confirmed by PlusClouds (2026-10-07):** `icmp` 1, `http` 2, `snmp.get` 1, `snmp.system` 1, `snmp.ups` 1, `snmp.sensor` 1, `snmp.pdu` 2, `snmp.interfaces` 3, `redfish.health` 2, `xapi.pool` 0 with `xapi.pool:host` 3 (each pool host, decided 2026-10-07); Whoopsy! at 5× the plugin's weight. Push and LLM checks get their weights when those plugins exist (M5, F14); until then `default_weight` 1 covers any other plugin. PlusClouds reviews the weights after about a month of real usage. They are in `deploy/config.example.yaml`; they apply from the next full UTC hour after the operator deploys the config.
 - **Applying a change.** At start, the server compares the file's weights with the weights in force in the database.
   - Each difference takes effect at the **next full hour** and is recorded with an audit event (actor `file`).
   - A change needs a restart, like the rest of the config; no release is needed.
@@ -40,6 +40,14 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
 - **Which node.** The maintenance node (one at a time) records the weights from its own config at start and every hour. Give every node the same `usage` section.
 - **Whoopsy!** (2026-10-07): a check with Whoopsy! on is billed as `<plugin>+whoopsy` at the plugin's weight times `usage.whoopsy_multiplier` (default 5), unless `usage.weights` names `<plugin>+whoopsy`. The multiplier is recorded with the weights (`*whoopsy`) and follows the same history rules. See [F05](F05-state-and-incidents.md#whoopsy-premium-alerting-decided-2026-10-07).
 - **Companion checks** exist only to support another check, such as `mqtt.connection` next to a push check. The plugin manifest marks them (`Billable: false`, replacing `BillingClass`), and they are never billed, whatever the config says.
+
+### Billable collector objects (v0.8.0)
+
+Rule 11 (collector objects are not billed separately) has one exception, decided by PlusClouds on 2026-10-07: the hypervisor hosts of an XCP-ng pool. A pool of 20 hosts produces far more work than one of 3, so the host, not the pool, is the unit.
+
+- A plugin declares billable object kinds by key prefix (`xapi.pool`: `host:` objects as `xapi.pool:host`). Its weight comes from `usage.weights` like a plugin's; the pool check itself has weight 0.
+- `object_periods` (like `check_periods`) runs from when the engine first sees the object until it is gone, the check is disabled or deleted, or the tenant is suspended or deleted; the same database functions as for checks keep them, so the same time rules apply. Disabling a check forgets its objects; their periods resume with the next collection.
+- The hourly close adds them to the breakdown under their key (`"xapi.pool:host": {count_seconds, weight}`) and to `billable_check_seconds`. `GET /v1/usage/current` and `/v1/usage/weights` show them too. Counting starts at the deploy of v0.8.0; earlier hours are not back-billed. Migration `00018`.
 
 ### What counts
 
