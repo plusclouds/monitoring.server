@@ -161,9 +161,18 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 	if !enabled {
 		return "check-disabled", nil
 	}
+	// A collector's metrics and thresholds are per object; its own state
+	// follows only the run's status (device unreachable, collection failed).
+	var objCfg *Config
 	if p, ok := plugin.Lookup(r.Plugin); ok {
-		for _, m := range p.Manifest().Metrics {
-			cfg.Metrics = append(cfg.Metrics, m.Name)
+		m := p.Manifest()
+		for _, d := range m.Metrics {
+			cfg.Metrics = append(cfg.Metrics, d.Name)
+		}
+		if m.Kind == plugin.KindCollector {
+			oc := cfg
+			objCfg = &oc
+			cfg.Metrics, cfg.Rules = nil, nil
 		}
 	}
 
@@ -184,7 +193,7 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 	}
 
 	out := Evaluate(cfg, prev, Input{Status: r.Status, Output: r.Output, Metrics: r.Metrics, Time: r.Time})
-	if incidentID, err = e.act(ctx, tx, r, deviceID, incidentID, out); err != nil {
+	if incidentID, err = e.act(ctx, tx, r, deviceID, nil, incidentID, out); err != nil {
 		return "", err
 	}
 	if out.Action == ActionResolve {
@@ -214,12 +223,24 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 	if err != nil {
 		return "", err
 	}
+	if objCfg != nil && r.Objects != nil {
+		if err := e.applyObjects(ctx, tx, r, deviceID, *objCfg); err != nil {
+			return "", err
+		}
+	}
 	return "applied", nil
 }
 
-// act carries out the outcome's incident action and returns the check's
-// open incident afterwards.
-func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uuid.UUID, open *uuid.UUID, out Outcome) (*uuid.UUID, error) {
+// act carries out the outcome's incident action and returns the open
+// incident afterwards, for the check itself or, with obj, for one of its
+// objects.
+func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uuid.UUID, obj *plugin.Object,
+	open *uuid.UUID, out Outcome) (*uuid.UUID, error) {
+	output := r.Output
+	var objKey, objName *string
+	if obj != nil {
+		output, objKey, objName = obj.Output, &obj.Key, &obj.Name
+	}
 	var ruleID, ruleName *string
 	if rule := out.Cause.Rule; rule != nil {
 		ruleID = &rule.ID
@@ -232,7 +253,8 @@ func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uui
 		// The state may have lost track of an incident (manual reset): reuse it.
 		if open == nil {
 			var id uuid.UUID
-			err := tx.QueryRow(ctx, `SELECT id FROM incidents WHERE check_id = $1 AND status <> 'resolved'`, r.CheckID).Scan(&id)
+			err := tx.QueryRow(ctx, `SELECT id FROM incidents WHERE check_id = $1 AND coalesce(object_key, '') = coalesce($2, '')
+				AND status <> 'resolved'`, r.CheckID, objKey).Scan(&id)
 			if err == nil {
 				open = &id
 			} else if !errors.Is(err, pgx.ErrNoRows) {
@@ -241,12 +263,13 @@ func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uui
 		}
 		if open != nil {
 			_, err := incident.Update(ctx, tx, *open, incident.UpdateInput{Severity: out.Severity, Summary: out.Summary,
-				LastOutput: r.Output, RuleID: ruleID, RuleName: ruleName, Flapping: out.State.Flapping})
+				LastOutput: output, RuleID: ruleID, RuleName: ruleName, Flapping: out.State.Flapping})
 			e.incidents.WithLabelValues("update").Inc()
 			return open, err
 		}
 		inc, err := incident.Open(ctx, tx, incident.OpenInput{TenantID: r.TenantID, CheckID: r.CheckID, DeviceID: device,
-			Severity: out.Severity, Summary: out.Summary, LastOutput: r.Output, RuleID: ruleID, RuleName: ruleName,
+			ObjectKey: objKey, ObjectName: objName,
+			Severity: out.Severity, Summary: out.Summary, LastOutput: output, RuleID: ruleID, RuleName: ruleName,
 			Flapping: out.State.Flapping})
 		e.incidents.WithLabelValues("open").Inc()
 		return &inc.ID, err
@@ -255,7 +278,7 @@ func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uui
 			return nil, nil
 		}
 		_, err := incident.Update(ctx, tx, *open, incident.UpdateInput{Severity: out.Severity, Summary: out.Summary,
-			LastOutput: r.Output, RuleID: ruleID, RuleName: ruleName, Flapping: out.State.Flapping})
+			LastOutput: output, RuleID: ruleID, RuleName: ruleName, Flapping: out.State.Flapping})
 		e.incidents.WithLabelValues("update").Inc()
 		return open, err
 	case ActionResolve:

@@ -325,3 +325,89 @@ func TestSplitAddress(t *testing.T) {
 		}
 	}
 }
+
+func collect(t *testing.T, creds map[string]plugin.Credential, cfg any, state plugin.StateStore) plugin.Result {
+	t.Helper()
+	return plugintest.Collect(t, &Interfaces{}, plugintest.Options{Address: agent(t), Config: cfg, Credentials: creds,
+		State: state, Timeout: 10 * time.Second})
+}
+
+func objectsByKey(r plugin.Result) map[string]plugin.Object {
+	out := map[string]plugin.Object{}
+	for _, o := range r.Objects {
+		out[o.Key] = o
+	}
+	return out
+}
+
+func TestInterfaces(t *testing.T) {
+	st := &plugin.MemState{}
+	r := collect(t, v2c("pub-switch"), nil, st)
+	objs := objectsByKey(r)
+	if r.Status != plugin.OK || len(r.Objects) != 3 || r.Output != "3 interfaces: 2 up, 1 down (Gi1/0/2)" {
+		t.Fatalf("first run: %v %q %v", r.Status, r.Output, objs)
+	}
+	up, down, vlan := objs["Gi1/0/1"], objs["Gi1/0/2"], objs["Vlan1"]
+	if up.Status != plugin.OK || up.Labels["alias"] != "uplink" || up.Metrics[iSpeed] != 1e9 || up.Metrics[iOperStatus] != 1 ||
+		!math.IsNaN(up.Metrics[iInBps]) {
+		t.Errorf("Gi1/0/1: %+v", up)
+	}
+	if down.Status != plugin.Critical || down.Metrics[iOperStatus] != 2 || !strings.Contains(down.Output, "down") {
+		t.Errorf("Gi1/0/2: %+v", down)
+	}
+	if vlan.Metrics[iSpeed] != 1e8 || vlan.Labels["if_type"] != "53" {
+		t.Errorf("Vlan1: %+v", vlan)
+	}
+
+	time.Sleep(1500 * time.Millisecond)
+	r = collect(t, v2c("pub-switch"), nil, st)
+	objs = objectsByKey(r)
+	// Simulated counters: Gi1/0/1 125,000 and 250,000 octets/s (64-bit),
+	// Vlan1 1,000 and 2,000 octets/s (32-bit only).
+	for _, c := range []struct {
+		key  string
+		slot int
+		want float64
+	}{{"Gi1/0/1", iInBps, 1e6}, {"Gi1/0/1", iOutBps, 2e6}, {"Vlan1", iInBps, 8000}, {"Vlan1", iOutBps, 16000}} {
+		if got := objs[c.key].Metrics[c.slot]; !(got > c.want/2 && got < c.want*2) {
+			t.Errorf("%s slot %d = %v, want about %v", c.key, c.slot, got, c.want)
+		}
+	}
+	if got := objs["Gi1/0/1"].Metrics[iInErrors]; got != 0 {
+		t.Errorf("in errors rate %v, want 0", got)
+	}
+
+	r = collect(t, v2c("pub-switch"), InterfacesConfig{AdminUpOnly: new(false), Exclude: "^Vlan"}, nil)
+	objs = objectsByKey(r)
+	if _, ok := objs["Vlan1"]; ok || len(objs) != 3 || objs["Gi1/0/3"].Status != plugin.OK ||
+		objs["Gi1/0/3"].Output != "administratively down" {
+		t.Errorf("filters: %v", objs)
+	}
+	r = collect(t, v2c("pub-switch"), InterfacesConfig{Types: []int{53}}, nil)
+	if len(r.Objects) != 1 || r.Objects[0].Key != "Vlan1" {
+		t.Errorf("type filter: %v", r.Objects)
+	}
+
+	r = collect(t, v2c("no-such-community"), InterfacesConfig{Connection: Connection{TimeoutMS: 300, Retries: new(0)}}, nil)
+	if r.Status != plugin.Critical || r.Objects != nil {
+		t.Errorf("unreachable: %v %q %v", r.Status, r.Output, r.Objects)
+	}
+}
+
+func TestInterfacesV3(t *testing.T) {
+	r := collect(t, v3cred("pub-switch", v3Auth), nil, nil)
+	if r.Status != plugin.OK || len(r.Objects) != 3 {
+		t.Fatalf("v3: %v %q", r.Status, r.Output)
+	}
+}
+
+func TestOIDAfter(t *testing.T) {
+	for _, c := range []struct {
+		a, b string
+		want bool
+	}{{".1.3.6.10", ".1.3.6.9", true}, {".1.3.6.9", ".1.3.6.10", false}, {".1.3.6.1.1", ".1.3.6.1", true}, {".1.3", ".1.3", false}} {
+		if got := oidAfter(c.a, c.b); got != c.want {
+			t.Errorf("oidAfter(%s, %s) = %v", c.a, c.b, got)
+		}
+	}
+}

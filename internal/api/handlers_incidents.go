@@ -74,6 +74,55 @@ func (s *Server) GetCheckState(ctx context.Context, req gen.GetCheckStateRequest
 	return gen.GetCheckState200JSONResponse(st), nil
 }
 
+// ListCheckObjects lists a collector check's objects with their state.
+func (s *Server) ListCheckObjects(ctx context.Context, req gen.ListCheckObjectsRequestObject) (gen.ListCheckObjectsResponseObject, error) {
+	_, t, err := tenantScope(ctx, roleReadOnly, false)
+	if err != nil {
+		return nil, err
+	}
+	var status *string
+	if req.Params.Status != nil {
+		v := string(*req.Params.Status)
+		status = &v
+	}
+	includeGone := req.Params.IncludeGone == nil || *req.Params.IncludeGone
+	out := gen.ListCheckObjects200JSONResponse{Items: []gen.CheckObject{}}
+	err = s.tx(ctx, t, func(tx pgx.Tx) error {
+		if _, err := inventory.GetCheck(ctx, tx, req.CheckId); err != nil {
+			return err
+		}
+		rows, err := tx.Query(ctx, `
+			SELECT object_key, name, labels, phase, status, since, last_status, last_output, last_metrics,
+			       incident_id, first_seen_at, last_seen_at, gone_at
+			  FROM check_objects
+			 WHERE check_id = $1 AND ($2::text IS NULL OR status = $2) AND ($3 OR gone_at IS NULL)
+			 ORDER BY object_key`, req.CheckId, status, includeGone)
+		if err != nil {
+			return err
+		}
+		out.Items, err = pgx.CollectRows(rows, func(r pgx.CollectableRow) (gen.CheckObject, error) {
+			var o gen.CheckObject
+			var metrics map[string]float64
+			err := r.Scan(&o.Key, &o.Name, &o.Labels, &o.Phase, &o.Status, &o.Since, &o.LastStatus, &o.LastOutput,
+				&metrics, &o.IncidentId, &o.FirstSeenAt, &o.LastSeenAt, &o.GoneAt)
+			o.LastMetrics = metrics
+			if o.LastMetrics == nil {
+				o.LastMetrics = map[string]float64{}
+			}
+			if o.Labels == nil {
+				o.Labels = map[string]string{}
+			}
+			o.Since, o.FirstSeenAt, o.LastSeenAt, o.GoneAt = o.Since.UTC(), o.FirstSeenAt.UTC(), o.LastSeenAt.UTC(), utcPtr(o.GoneAt)
+			return o, err
+		})
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (s *Server) RunCheckNow(ctx context.Context, req gen.RunCheckNowRequestObject) (gen.RunCheckNowResponseObject, error) {
 	p, t, err := tenantScope(ctx, roleOperator, true)
 	if err != nil {
@@ -108,7 +157,7 @@ func (s *Server) ListIncidents(ctx context.Context, req gen.ListIncidentsRequest
 	if q.Limit != nil {
 		n = *q.Limit
 	}
-	f := incident.Filter{DeviceID: q.DeviceId, CheckID: q.CheckId, Suppressed: q.Suppressed, Limit: n + 1}
+	f := incident.Filter{DeviceID: q.DeviceId, CheckID: q.CheckId, Suppressed: q.Suppressed, ObjectKey: q.ObjectKey, Limit: n + 1}
 	if q.Status != nil {
 		v := string(*q.Status)
 		f.Status = &v

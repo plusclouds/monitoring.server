@@ -89,6 +89,14 @@ In the MVP, state for a check is processed only by the node that owns its shard.
 
 - **Incidents stay per check** (per object for collectors). Several problems on one device are combined in notifications through route grouping ([F06](F06-notifications.md)), not merged into one incident, so each problem keeps its own state, acknowledgement and resolution.
 
+## Implementation status: collector objects (M4)
+
+- **State per object.** Each object of a collector run (an interface, a fan) has its own row in `check_objects` with the same state machine as a check: the check's `failure_count`, `recovery_count` and `unknown_is_critical`, and the threshold rules that apply to it. A rule without `object` (or `"*"`) applies to every object; otherwise `object` must equal the object's key or name. `object` on a rule of a plain check is rejected.
+- **Incidents per object.** One unresolved incident per check and object, with `object_key` and `object_name`; the summary starts with the object's name. Suppression treats them like any incident of the device.
+- **The run itself.** The check's own state follows the run's status only (the device does not answer, authentication failed), with an incident whose `object_key` is null. Objects are not evaluated when the collection failed, so a dead switch opens one incident, not one per port.
+- **Objects that disappear.** An object missing from a successful run gets `gone_at`, its incident resolves with `resolved_by: object-gone`, and its row is kept for 30 days; if it comes back, its state starts over.
+- **API.** `GET /v1/checks/{id}/objects` (status, last metrics, open incident, `include_gone`), `object_key` on incidents and as a list filter, `objects` in device test results. Metrics are stored per object (`object` in the query API and Grafana views; `metric_series_v.object_name`). Migration `00014`.
+
 ## Implementation status: dependency suppression (M4)
 
 - **When it applies.** An incident is opened suppressed when an open host-check incident exists upstream: on the device itself (for its other checks), on its containers, or on the devices it depends on, transitively, nearest first. It records `root_incident_id`, and `root_device_id` (its own device when not suppressed).

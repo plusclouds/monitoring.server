@@ -30,6 +30,22 @@ type Options struct {
 // plugin.SafeRun and checks the result.
 func Run(t testing.TB, c plugin.Check, o Options) plugin.Result {
 	t.Helper()
+	return run(t, c, o, func(ctx context.Context, target plugin.Target) plugin.Result {
+		return plugin.SafeRun(ctx, c, target)
+	})
+}
+
+// Collect does the same for a collector, through plugin.SafeCollect. It
+// also checks every object's metric layout and output.
+func Collect(t testing.TB, c plugin.Collector, o Options) plugin.Result {
+	t.Helper()
+	return run(t, c, o, func(ctx context.Context, target plugin.Target) plugin.Result {
+		return plugin.SafeCollect(ctx, c, target)
+	})
+}
+
+func run(t testing.TB, c plugin.Plugin, o Options, exec func(context.Context, plugin.Target) plugin.Result) plugin.Result {
+	t.Helper()
 	var raw json.RawMessage
 	if o.Config != nil {
 		b, err := json.Marshal(o.Config)
@@ -55,18 +71,28 @@ func Run(t testing.TB, c plugin.Check, o Options) plugin.Result {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), o.Timeout)
 	defer cancel()
-	r := plugin.SafeRun(ctx, c, target)
+	r := exec(ctx, target)
 
-	if n := len(c.Manifest().Metrics); len(r.Metrics) != n {
-		t.Errorf("result has %d metrics, manifest declares %d", len(r.Metrics), n)
+	m := c.Manifest()
+	outputs := []string{r.Output}
+	if m.Kind == plugin.KindCollector {
+		for _, obj := range r.Objects {
+			if len(obj.Metrics) != len(m.Metrics) {
+				t.Errorf("object %s has %d metrics, manifest declares %d", obj.Key, len(obj.Metrics), len(m.Metrics))
+			}
+			outputs = append(outputs, obj.Output, obj.Name)
+		}
+	} else if len(r.Metrics) != len(m.Metrics) {
+		t.Errorf("result has %d metrics, manifest declares %d", len(r.Metrics), len(m.Metrics))
 	}
+	all := strings.Join(outputs, "\n")
 	for role, cred := range o.Credentials {
 		for field, secret := range cred.Secret {
 			v := secret.Reveal()
 			if v == "" {
 				continue
 			}
-			if strings.Contains(r.Output, v) {
+			if strings.Contains(all, v) {
 				t.Errorf("result output contains the secret %s.%s", role, field)
 			}
 			if strings.Contains(logs.String(), v) {

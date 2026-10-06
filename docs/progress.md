@@ -126,7 +126,19 @@ Migrations `00012` and `00013`. Verified by `TestEscalationSteps`, `TestAlertRou
 
 Shared: SNMPv3 (`authPriv`, SHA-256/AES by default) and v2c credentials, the network policy checked on the resolved address, and counter rates with 32-bit wrap, restart and glitch handling. Verified against snmpsim fixtures over v2c and v3.
 
-Not built yet: the plugins that report many objects per run (`snmp.interfaces`, `snmp.pdu`, `snmp.sensor`, `redfish.health`, `xapi.*`) need collector support in the runner, engine and metrics writer; the restart inventory event comes with it.
+### M4, part 2b — collectors and `snmp.interfaces`
+
+| Area | What exists |
+| --- | --- |
+| SDK | `Collector` next to `Check` (both `Plugin`), `Object` with key, name, labels, status, output and per-object metrics, `SafeCollect`, `plugintest.Collect` |
+| Engine | Per-object state machine and incidents (`check_objects`, `incidents.object_key`), thresholds per object, objects that disappear resolve as `object-gone`, a failed collection is one incident of the check. Migration `00014` |
+| Metrics | Stored per object; `metric_series_v.object_name` and `incidents_v.object_key` for Grafana |
+| API | `GET /v1/checks/{id}/objects`, `object_key` on incidents and as a filter, objects in device test results |
+| `snmp.interfaces` | Traffic, errors, discards, status and speed of every interface; filters by name, type and admin status |
+
+Verified by `TestCollectorObjects` (engine, incidents, webhooks, metrics and Grafana views end to end), `TestInterfaces` against snmpsim, and `TestSafeCollect`.
+
+Not built yet: `snmp.pdu`, `snmp.sensor`, `redfish.health`, `xapi.*` and `rtsp.stream`; applying collector inventory (child devices, the restart event); an interfaces dashboard.
 
 ### v0.4.3 — replacing lost keys
 
@@ -166,5 +178,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: collector support (per-object metrics and state), then `snmp.interfaces`, `snmp.pdu`, `snmp.sensor`, `redfish.health`, `rtsp.stream` and the XCP-ng collectors, with their dashboards.
+2. M4: `snmp.pdu`, `snmp.sensor`, `redfish.health`, `rtsp.stream` and the XCP-ng collectors (with child devices), with their dashboards.
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.

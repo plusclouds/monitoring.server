@@ -46,6 +46,13 @@ type Rule struct {
 	Hysteresis float64    `json:"hysteresis,omitempty"`
 }
 
+// AppliesTo reports whether the rule covers a collector object: a rule
+// without an object (or "*") covers all of them, otherwise the object's key
+// or name must match exactly.
+func (r Rule) AppliesTo(key, name string) bool {
+	return r.Object == "" || r.Object == "*" || r.Object == key || r.Object == name
+}
+
 // Duration is a time.Duration written as "5m" in JSON.
 type Duration time.Duration
 

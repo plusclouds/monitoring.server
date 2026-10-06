@@ -14,6 +14,8 @@ type OpenInput struct {
 	TenantID   uuid.UUID
 	CheckID    uuid.UUID
 	DeviceID   uuid.UUID
+	ObjectKey  *string // collectors: the object the incident is about
+	ObjectName *string
 	Severity   string
 	Summary    string
 	LastOutput string
@@ -39,10 +41,11 @@ func Open(ctx context.Context, tx pgx.Tx, in OpenInput) (Incident, error) {
 	}
 	inc, err := scan(tx.QueryRow(ctx, `
 		INSERT INTO incidents (id, tenant_id, check_id, device_id, severity, status, summary, last_output,
-		                       rule_id, rule_name, flapping, suppressed, root_incident_id, root_device_id, opened_at)
-		VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10, $11, $12, $13, now()) RETURNING `+cols,
+		                       rule_id, rule_name, flapping, suppressed, root_incident_id, root_device_id, opened_at,
+		                       object_key, object_name)
+		VALUES ($1, $2, $3, $4, $5, 'open', $6, $7, $8, $9, $10, $11, $12, $13, now(), $14, $15) RETURNING `+cols,
 		id, in.TenantID, in.CheckID, in.DeviceID, in.Severity, in.Summary, in.LastOutput, in.RuleID,
-		in.RuleName, in.Flapping, root != nil, rootIncident, rootDevice))
+		in.RuleName, in.Flapping, root != nil, rootIncident, rootDevice, in.ObjectKey, in.ObjectName))
 	if err != nil {
 		return Incident{}, err
 	}
@@ -72,8 +75,8 @@ func Update(ctx context.Context, tx pgx.Tx, id uuid.UUID, in UpdateInput) (Incid
 	return inc, emit(ctx, tx, EventUpdated, inc, nil, nil)
 }
 
-// Resolve closes an incident. by is "recovery", "manual" or
-// "check-deleted". Resolving a resolved incident changes nothing.
+// Resolve closes an incident. by is "recovery", "manual", "check-deleted",
+// "check-disabled" or "object-gone". Resolving a resolved incident changes nothing.
 func Resolve(ctx context.Context, tx pgx.Tx, id uuid.UUID, by string, actor *Actor) (Incident, bool, error) {
 	cur, err := getForUpdate(ctx, tx, id)
 	if err != nil || cur.Status == StatusResolved {
@@ -142,6 +145,12 @@ func AddComment(ctx context.Context, tx pgx.Tx, id uuid.UUID, actor Actor, body 
 // about to be deleted, so receivers see them end. checks is a SQL query
 // returning check IDs, with args.
 func ResolveForChecks(ctx context.Context, tx pgx.Tx, checks string, args ...any) error {
+	return ResolveForChecksBy(ctx, tx, "check-deleted", checks, args...)
+}
+
+// ResolveForChecksBy resolves every open incident of the checks, objects'
+// incidents included, with the given reason.
+func ResolveForChecksBy(ctx context.Context, tx pgx.Tx, by, checks string, args ...any) error {
 	rows, err := tx.Query(ctx, `SELECT id FROM incidents WHERE status <> 'resolved' AND check_id IN (`+checks+`)`, args...)
 	if err != nil {
 		return err
@@ -151,7 +160,7 @@ func ResolveForChecks(ctx context.Context, tx pgx.Tx, checks string, args ...any
 		return err
 	}
 	for _, id := range ids {
-		if _, _, err := Resolve(ctx, tx, id, "check-deleted", nil); err != nil {
+		if _, _, err := Resolve(ctx, tx, id, by, nil); err != nil {
 			return err
 		}
 	}

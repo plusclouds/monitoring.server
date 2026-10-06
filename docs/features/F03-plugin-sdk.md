@@ -45,13 +45,25 @@ type Target struct {
 type Result struct {
     Status   Status             // OK, WARNING, CRITICAL, UNKNOWN
     Output   string             // human-readable, max 4 KB
-    Metrics  []float64          // aligned with Manifest.Metrics; NaN if absent
+    Metrics  []float64          // checks: aligned with Manifest.Metrics; NaN if absent
     Duration time.Duration
     Time     time.Time
+    Objects  []Object           // collectors; nil when the collection failed
 }
 
 type Batch struct {
-    Objects []ObjectMetrics // per child object: key, metric layout, values
+    Status  Status   // the run: CRITICAL when the device does not answer
+    Output  string   // summary, e.g. "48 interfaces: 46 up, 2 down"
+    Objects []Object // nil = collection failed; empty = no objects now
+}
+
+type Object struct {
+    Key     string            // stable across runs (interface name, not ifIndex), max 200 bytes
+    Name    string
+    Labels  map[string]string // alias, type, speed
+    Status  Status            // protocol facts: interface down, PSU failed
+    Output  string            // max 1 KB
+    Metrics []float64         // aligned with Manifest.Metrics: a collector's layout is per object
 }
 
 type Inventory struct {
@@ -60,7 +72,9 @@ type Inventory struct {
 }
 ```
 
-The `Check`, `Collector` and `Ingester` interfaces are as in the design document, with `Manifest() Manifest` replacing `Type()`.
+The `Check`, `Collector` and `Ingester` interfaces are as in the design document, with `Manifest() Manifest` replacing `Type()`. `Check` and `Collector` share `Plugin` (`Manifest` and `Validate`); the registry holds both.
+
+**Collectors as built (M4):** a collector is stored, scheduled, billed and configured like a check (`POST /devices/{id}/checks` with its plugin type), so CRUD, credentials, `run-now` and usage metering apply unchanged. It cannot be a device's host check. `plugin.SafeCollect` runs it like `SafeRun`, drops objects without a key or with a duplicate key, caps a run at 5,000 objects and aligns object metrics with the layout. `Inventory` is returned but not applied yet; collectors that create child devices (XCP-ng) complete it.
 
 ## Behavior
 

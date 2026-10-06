@@ -154,3 +154,73 @@ func TestRegisterRejectsBadManifest(t *testing.T) {
 	}()
 	plugin.Register(badInterval{})
 }
+
+type fakeCollector struct {
+	collect func(ctx context.Context) (plugin.Batch, error)
+}
+
+func (fakeCollector) Manifest() plugin.Manifest {
+	m := fake{}.Manifest()
+	m.Type, m.Kind = "fake.collector", plugin.KindCollector
+	return m
+}
+func (fakeCollector) Validate(json.RawMessage) error { return nil }
+func (f fakeCollector) Collect(ctx context.Context, _ plugin.Target) (plugin.Batch, plugin.Inventory, error) {
+	b, err := f.collect(ctx)
+	return b, plugin.Inventory{}, err
+}
+
+// SafeCollect keeps objects usable: no empty or duplicate keys, metrics
+// aligned with the layout, and nil objects whenever the collection failed.
+func TestSafeCollect(t *testing.T) {
+	ctx := context.Background()
+	r := plugin.SafeCollect(ctx, fakeCollector{func(context.Context) (plugin.Batch, error) {
+		return plugin.Batch{Status: plugin.OK, Output: "2 objects", Objects: []plugin.Object{
+			{Key: "a", Metrics: []float64{1}}, {Key: "a"}, {Key: ""}, {Key: "b", Name: "B", Output: strings.Repeat("x", 5000)},
+		}}, nil
+	}}, plugin.Target{})
+	if r.Status != plugin.OK || len(r.Objects) != 2 || len(r.Metrics) != 0 {
+		t.Fatalf("got %+v", r)
+	}
+	a, b := r.Objects[0], r.Objects[1]
+	if a.Name != "a" || len(a.Metrics) != 2 || a.Metrics[0] != 1 || !math.IsNaN(a.Metrics[1]) || b.Name != "B" ||
+		len(b.Output) != plugin.MaxObjectOutput {
+		t.Errorf("objects: %+v", r.Objects)
+	}
+
+	r = plugin.SafeCollect(ctx, fakeCollector{func(context.Context) (plugin.Batch, error) {
+		return plugin.Batch{Status: plugin.OK}, nil
+	}}, plugin.Target{})
+	if r.Objects != nil {
+		t.Errorf("a batch without objects is a failed collection: %+v", r)
+	}
+	r = plugin.SafeCollect(ctx, fakeCollector{func(context.Context) (plugin.Batch, error) {
+		return plugin.Batch{Status: plugin.OK, Objects: []plugin.Object{}}, nil
+	}}, plugin.Target{})
+	if r.Objects == nil || len(r.Objects) != 0 {
+		t.Errorf("an empty slice means no objects: %+v", r)
+	}
+	r = plugin.SafeCollect(ctx, fakeCollector{func(context.Context) (plugin.Batch, error) {
+		panic("boom")
+	}}, plugin.Target{})
+	if r.Status != plugin.Unknown || r.Objects != nil || !strings.Contains(r.Output, "boom") {
+		t.Errorf("panic: %+v", r)
+	}
+}
+
+func TestRegisterKindMismatch(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("a check declaring kind collector should panic")
+		}
+	}()
+	plugin.Register(mislabeled{})
+}
+
+type mislabeled struct{ fake }
+
+func (mislabeled) Manifest() plugin.Manifest {
+	m := fake{}.Manifest()
+	m.Type, m.Kind = "mislabeled", plugin.KindCollector
+	return m
+}

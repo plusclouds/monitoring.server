@@ -46,7 +46,7 @@ var (
 
 // ValidateConfig checks a config against the plugin's JSON Schema and then
 // its own Validate, as the API does before saving a check (F03).
-func ValidateConfig(c Check, raw json.RawMessage) error {
+func ValidateConfig(c Plugin, raw json.RawMessage) error {
 	m := c.Manifest()
 	sch, err := compiledSchema(m)
 	if err != nil {

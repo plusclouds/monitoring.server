@@ -189,11 +189,34 @@ func toAPICheckRun(c inventory.Check, r plugin.Result) gen.CheckRun {
 			}
 		}
 	}
-	return gen.CheckRun{
+	run := gen.CheckRun{
 		CheckId: c.ID, Name: c.Name, Plugin: c.Plugin, Status: gen.CheckRunStatus(r.Status.String()),
 		Output: r.Output, DurationMs: float64(r.Duration.Microseconds()) / 1000, Metrics: metrics,
 		Time: r.Time.UTC(),
 	}
+	if p, ok := plugin.Lookup(c.Plugin); ok && p.Manifest().Kind == plugin.KindCollector {
+		run.Metrics = map[string]*float64{}
+		if r.Objects != nil {
+			objs := make([]map[string]any, len(r.Objects))
+			for i, o := range r.Objects {
+				m := map[string]*float64{}
+				for j, d := range p.Manifest().Metrics {
+					if j < len(o.Metrics) && !math.IsNaN(o.Metrics[j]) && !math.IsInf(o.Metrics[j], 0) {
+						v := o.Metrics[j]
+						m[d.Name] = &v
+					} else {
+						m[d.Name] = nil
+					}
+				}
+				objs[i] = map[string]any{"key": o.Key, "name": o.Name, "labels": o.Labels,
+					"status": o.Status.String(), "output": o.Output, "metrics": m}
+			}
+			if conv, err := via[gen.CheckRun](map[string]any{"objects": objs}); err == nil {
+				run.Objects = conv.Objects
+			}
+		}
+	}
+	return run
 }
 
 func utcPtr(t *time.Time) *time.Time {

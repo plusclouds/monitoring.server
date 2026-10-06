@@ -117,9 +117,17 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 			return in, errs.Invalidf("runbook_url", "must be an http(s) URL")
 		}
 	}
+	if m.Kind == plugin.KindCollector && in.IsHostCheck {
+		return in, errs.Invalidf("is_host_check", "a collector (%s) cannot be the host check; use a ping or TCP check", m.Type)
+	}
 	names := make([]string, len(m.Metrics))
 	for i, d := range m.Metrics {
 		names[i] = d.Name
+	}
+	for i, r := range in.Thresholds {
+		if r.Object != "" && m.Kind != plugin.KindCollector {
+			return in, errs.Invalidf(fmt.Sprintf("thresholds[%d].object", i), "only collectors report objects; %s is a check", m.Type)
+		}
 	}
 	rules, err := threshold.Validate(in.Thresholds, names)
 	if err != nil {
@@ -328,18 +336,13 @@ func DeleteCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 }
 
 func resolveDisabled(ctx context.Context, tx pgx.Tx, check uuid.UUID) error {
-	var id uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT id FROM incidents WHERE check_id = $1 AND status <> 'resolved'`, check).Scan(&id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return nil
-	}
-	if err != nil {
+	if err := incident.ResolveForChecksBy(ctx, tx, "check-disabled", `SELECT $1::uuid`, check); err != nil {
 		return err
 	}
-	if _, _, err := incident.Resolve(ctx, tx, id, "check-disabled", nil); err != nil {
+	if _, err := tx.Exec(ctx, `DELETE FROM check_state WHERE check_id = $1`, check); err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, `DELETE FROM check_state WHERE check_id = $1`, check)
+	_, err := tx.Exec(ctx, `DELETE FROM check_objects WHERE check_id = $1`, check)
 	return err
 }
 
