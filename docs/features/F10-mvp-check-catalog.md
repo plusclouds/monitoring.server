@@ -71,6 +71,20 @@ As built (M4), `redfish.health`:
 
 ONVIF device info and snapshots are phase 2 (with discovery).
 
+As built (M4, requested 2026-10-07): `camera.snapshot`, picture checks from a JPEG snapshot, analysed in pure Go (no video decoder, no new dependency). The brands we run: Hikvision, Dahua, Axis, and ONVIF for the rest.
+
+- **Source.** `vendor: auto` (default) tries Hikvision (`/ISAPI/Streaming/channels/<channel>01/picture`), Dahua (`/cgi-bin/snapshot.cgi?channel=<n>`), Axis (`/axis-cgi/jpg/image.cgi`) and ONVIF (GetCapabilities, GetProfiles, GetSnapshotUri with a WS-Security password digest), and remembers what answered; or a fixed `vendor`, or `snapshot_url` (a path or an http(s) URL without credentials). HTTP by default (`https`, `port`, `verify_certificate`); basic and digest authentication (MD5 or SHA-256) with the `rtsp` (camera account) or `http_basic` credential.
+- **Measures**, on a grayscale copy at most 320 pixels wide: brightness (mean luma), contrast (its standard deviation), sharpness (variance of the Laplacian divided by the luma variance, so lighting changes do not read as blur), a 64-bit difference hash of the scene, and a 64×48 thumbnail.
+- **Checks** (`checks` selects them; all by default):
+  - covered: contrast below `covered_below` (4) is CRITICAL: a covered or sprayed lens, or a black picture;
+  - brightness: below `dark_below` (10 %) or above `bright_above` (95 %) is WARNING;
+  - frozen: the same picture (thumbnail difference under 0.3) `frozen_runs` (3) times in a row is CRITICAL;
+  - blur: sharpness below `blur_below` (40 %) of the reference picture's is WARNING;
+  - moved: the scene hash differing more than `moved_above` (25 %) from the reference is WARNING.
+- **Reference picture.** Learned from the first normal picture (not covered, dark or overexposed); changing `reference_id` learns a new one (after re-aiming a camera). Blur and movement are not judged while the picture is dark or overexposed, so a night-time infrared image does not read as blurred or moved. The reference lives in the plugin state, which is kept in memory: after an engine restart it is learned again from the next normal picture.
+- **Results.** A camera that does not answer is CRITICAL; a rejected credential, no working snapshot URL, a non-picture answer or a refused address is UNKNOWN. Metrics: `brightness_percent`, `contrast`, `sharpness`, `sharpness_percent_of_reference`, `scene_change_percent`, `frozen_runs`, `width`, `height`, `image_bytes`, `fetch_ms` (also the Whoopsy! default). Default interval 5 minutes, minimum 30 s.
+- **Tests** use generated pictures (sharp, blurred, dark, overexposed, covered, black, another scene, the same picture repeated) from a fake camera with digest authentication, the vendor paths and an ONVIF service. Thresholds should be tuned on our own cameras before Gate 1.
+
 ## Hypervisors
 
 | Type | What it collects |
