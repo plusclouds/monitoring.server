@@ -20,7 +20,9 @@ import (
 func newNotifier(t *testing.T) *webhook.Notifier {
 	t.Helper()
 	cfg := config.Default()
-	cfg.Notifier.RetrySchedule = []config.Duration{config.Duration(time.Millisecond)}
+	// Long enough that a tick never reaches the retry of its own failure,
+	// short enough for tests to wait for it.
+	cfg.Notifier.RetrySchedule = []config.Duration{config.Duration(50 * time.Millisecond)}
 	n, err := webhook.New(webhook.Options{System: db.System, Store: &webhook.Store{Keys: sharedKeys},
 		Sender: webhook.NewSender(cfg), Config: cfg.Notifier, Logger: slog.New(slog.DiscardHandler),
 		Registry: prometheus.NewRegistry()})
@@ -81,7 +83,7 @@ func TestWebhookRetryAndOrder(t *testing.T) {
 	}
 	rcv.code.Store(200)
 	for range 5 {
-		time.Sleep(5 * time.Millisecond)
+		time.Sleep(60 * time.Millisecond)
 		n.Tick(context.Background())
 	}
 	got := rcv.types()
