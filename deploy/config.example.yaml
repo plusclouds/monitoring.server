@@ -371,9 +371,16 @@ platform:
 # maintenance node at start and applies from the next full UTC hour; closed
 # hours keep the weights they were computed with.
 usage:
-  weights:
+  weights:            # confirmed by PlusClouds billing, 2026-10-07
     icmp: 1
     http: 2
+    snmp.get: 1
+    snmp.system: 1
+    snmp.ups: 1
+    snmp.sensor: 1
+    snmp.pdu: 2
+    snmp.interfaces: 3
+    redfish.health: 2
   default_weight: 1   # plugins not listed
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
   # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry

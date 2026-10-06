@@ -1,6 +1,6 @@
 # F13: Usage metering
 
-**Status:** Implemented in M3.5 (counting rules await PlusClouds' confirmation) · **Phase:** MVP (metering and usage API); phase 3 (usage from customer-run servers) · **Related:** [F01](F01-tenancy-auth-audit.md), [F03](F03-plugin-sdk.md), [F04](F04-scheduler-and-runner.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
+**Status:** Implemented in M3.5; counting rules and weights confirmed by PlusClouds on 2026-10-07 · **Phase:** MVP (metering and usage API); phase 3 (usage from customer-run servers) · **Related:** [F01](F01-tenancy-auth-audit.md), [F03](F03-plugin-sdk.md), [F04](F04-scheduler-and-runner.md), [ADR-0012](../adr/0012-plusclouds-identity-and-external-ids.md)
 
 ## Summary
 
@@ -31,7 +31,7 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
     default_weight: 1   # plugins not listed
   ```
 
-- **Defaults.** The proposed defaults are `icmp` 1 and `http` 2. Weights for the M4 plugins are set when they ship. PlusClouds pricing confirms all weights before charging starts.
+- **Weights confirmed by PlusClouds (2026-10-07):** `icmp` 1, `http` 2, `snmp.get` 1, `snmp.system` 1, `snmp.ups` 1, `snmp.sensor` 1, `snmp.pdu` 2, `snmp.interfaces` 3, `redfish.health` 2; Whoopsy! at 5× the plugin's weight. Push and LLM checks get their weights when those plugins exist (M5, F14); until then `default_weight` 1 covers any other plugin. PlusClouds reviews the weights after about a month of real usage. They are in `deploy/config.example.yaml`; they apply from the next full UTC hour after the operator deploys the config.
 - **Applying a change.** At start, the server compares the file's weights with the weights in force in the database.
   - Each difference takes effect at the **next full hour** and is recorded with an audit event (actor `file`).
   - A change needs a restart, like the rest of the config; no release is needed.
@@ -43,7 +43,7 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
 
 ### What counts
 
-These rules were proposed by PlusClouds and await their user's confirmation.
+These rules were proposed by PlusClouds and confirmed by PlusClouds' billing on 2026-10-07, all fourteen as listed (the numbered list sent for confirmation matches the rows below, plus: collector objects are not billed separately; `device_seconds` is informational; no surcharge for short intervals, to be revisited if heavy users appear). A free tier is applied by PlusClouds in weighted check-seconds on its side.
 
 | Case | Billed |
 | --- | --- |
@@ -167,8 +167,7 @@ A server that PlusClouds does not host can be billed only if it reports. One con
 
 ## Open questions
 
-- **Counting rules:** awaiting PlusClouds' confirmation of the table above.
-- **Default weights** for the M4 plugins, with PlusClouds pricing.
+- **Weights for push and LLM checks** (F08, F12, F14), once those plugins exist.
 - **LLM units** ([F14](F14-llm-monitoring.md)): whether spans, content storage and judge evaluations get their own meters.
 
 ## Implementation status (M3.5)
