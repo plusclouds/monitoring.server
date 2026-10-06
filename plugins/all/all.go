@@ -7,4 +7,5 @@ import (
 	_ "github.com/plusclouds/monitoring.server/plugins/icmp"
 	_ "github.com/plusclouds/monitoring.server/plugins/redfish"
 	_ "github.com/plusclouds/monitoring.server/plugins/snmp"
+	_ "github.com/plusclouds/monitoring.server/plugins/xapi"
 )

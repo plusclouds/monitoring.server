@@ -383,6 +383,9 @@ func DeleteCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID
 	if err := incident.ResolveForChecks(ctx, tx, `SELECT $1::uuid`, id); err != nil {
 		return err
 	}
+	if err := deleteDiscovered(ctx, tx, actor, id); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(ctx, `DELETE FROM checks WHERE id = $1`, id); err != nil {
 		return err
 	}

@@ -147,6 +147,9 @@ type Result struct {
 	// collection failed (the run's Status says why) and says nothing about
 	// the objects; an empty slice means the device has no objects now.
 	Objects []Object
+	// Inventory is what a successful collection discovered: child devices
+	// (hosts, VMs) the engine creates, moves and removes. Nil otherwise.
+	Inventory *Inventory
 }
 
 // Object is one part of a device reported by a collector: an interface, a
@@ -164,6 +167,15 @@ type Object struct {
 	// Metrics are aligned with Manifest.Metrics: a collector's metric
 	// layout is per object.
 	Metrics []float64
+	// Device is the key of a child device of the same run's inventory the
+	// object belongs to (a VM's metrics and incidents go to the VM's
+	// device); empty for the collector's own device.
+	Device string
+	// Availability marks the object whose status says whether its device
+	// is up, like a host check: a CRITICAL incident of it suppresses the
+	// incidents of everything that depends on the device (an XCP-ng host
+	// down suppresses its VMs).
+	Availability bool
 }
 
 // MaxOutput is the longest Result.Output kept.
@@ -206,20 +218,27 @@ type Batch struct {
 }
 
 // Inventory is what a collector learned about a device and its children.
-// The engine does not apply it yet; collectors that create child devices
-// (XCP-ng) complete it.
+// Children nil means the collector does not discover devices; an empty
+// list means the device has none now (they are removed after a while).
 type Inventory struct {
 	Device   *DeviceInfo
 	Children []ChildDevice
 }
 
+// DeviceInfo is a device's hardware and software identity.
 type DeviceInfo struct {
 	Vendor, Model, Serial, Firmware string
 }
 
+// ChildDevice is a device a collector discovered: a pool's host, a host's
+// VM. Key is stable for the collector (a UUID) and survives renames and
+// migrations.
 type ChildDevice struct {
 	Key, Name, Type, Address string
-	Info                     DeviceInfo
+	// ParentKey is the key of another child that contains this one (the
+	// host a VM runs on); empty for the collector's own device.
+	ParentKey string
+	Info      DeviceInfo
 }
 
 // ResultSink receives results from ingesters.

@@ -2444,7 +2444,7 @@ components:
     Device:
       type: object
       required: [id, name, address, type, tags, notes, parent_id, site_id, physical_peer_id, inventory,
-                 managed_by, external, status, created_at, updated_at]
+                 managed_by, external, status, discovered, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -2466,6 +2466,18 @@ components:
           oneOf:
             - $ref: "#/components/schemas/ExternalRef"
             - type: "null"
+        discovered:
+          type: [object, "null"]
+          description: |
+            Set when a collector (such as xapi.pool) discovered the device: a VM or a pool host. Such
+            devices follow the collector (renamed, moved to the host a VM migrated to), do not count
+            toward max_devices, are removed 7 days after the collector stops reporting them
+            (`gone_at`), and are removed with the collector check.
+          required: [check_id, key, gone_at]
+          properties:
+            check_id: { type: string, format: uuid, description: The collector check }
+            key: { type: string, description: "The collector's key, e.g. vm:<uuid>" }
+            gone_at: { type: [string, "null"], format: date-time }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
@@ -2681,7 +2693,7 @@ components:
     CheckObject:
       type: object
       required: [key, name, labels, phase, status, since, last_status, last_output, last_metrics, incident_id,
-                 first_seen_at, last_seen_at, gone_at]
+                 device_id, first_seen_at, last_seen_at, gone_at]
       properties:
         key: { type: string, description: "Stable identifier within the check, e.g. the interface name" }
         name: { type: string }
@@ -2698,6 +2710,10 @@ components:
           type: object
           additionalProperties: { type: number, format: double }
         incident_id: { type: [string, "null"], format: uuid }
+        device_id:
+          type: [string, "null"]
+          format: uuid
+          description: The discovered device the object belongs to (a VM), when it is not the check's own device
         first_seen_at: { type: string, format: date-time }
         last_seen_at: { type: string, format: date-time }
         gone_at: { type: [string, "null"], format: date-time, description: "When the device stopped reporting it" }

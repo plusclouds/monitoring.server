@@ -80,6 +80,16 @@ ONVIF device info and snapshots are phase 2 (with discovery).
 
 Credentials: a read-only XAPI user (`read-only` RBAC role in XenServer/XCP-ng). If the pool master changes, the collector follows the redirect (`HOST_IS_SLAVE` error carries the new master address).
 
+As built (M4): one collector, `xapi.pool`, does both jobs (inventory and performance).
+
+- **Protocol.** JSON-RPC 2.0 at `https://<master>/jsonrpc` (the XAPI wire protocol document), ints read whether sent as numbers or strings. Login with `session.login_with_password` (credential `xapi` in the `auth` role), logout after every run. A pool member answers `HOST_IS_SLAVE` with the master's address, which the collector follows once. Certificates are not verified unless `verify_certificate` is set (hosts ship self-signed ones).
+- **Inventory.** `pool`, `host`, `host_metrics`, `VM`, `VM_guest_metrics` and `SR` records, one `get_all_records` call each. Hosts and VMs become child devices (types `hypervisor_host` and `vm`, keys `host:<uuid>` and `vm:<uuid>`); a running VM's parent is its host, a halted one sits under the pool device; a migration moves it. Templates, snapshots and control domains are not devices. The pool device gets the master's product and version as inventory.
+- **Performance.** `/rrd_updates?json=true&host=true&cf=AVERAGE&interval=60` from every live host (each serves its own and its VMs' data), the newest value of each source, an older row when the newest is NaN. Host: `cpu_avg`, physical NICs (`pif_eth*`); VM: `cpu*` averaged, `memory` and `memory_internal_free` (needs guest tools), `vif_*`, `vbd_*` read, write and IOPS. `performance: false` skips it.
+- **Objects.** `host:<uuid>` (CRITICAL when not live, WARNING when disabled for maintenance), `vm:<uuid>` (power state; paused is WARNING; halted and suspended are `halted_status`, default OK; guest tools as a label), `sr:<uuid>` (size, used percent; SRs without a size such as ISO libraries are skipped). Host and VM objects belong to their child devices, so a VM's incidents and metrics are found on the VM's device. Per-object metrics: `cpu_percent`, `memory_used_percent`, `net_rx_bps`, `net_tx_bps`, `disk_read_bps`, `disk_write_bps`, `disk_iops`, `used_percent`, `size_bytes`, `snapshot_count`, `oldest_snapshot_days`.
+- **Tests** run against a fake pool (master and member over TLS) in the documented formats. Not yet verified on our own XCP-ng pool.
+- **Suppression.** Host and VM objects are availability objects: a host that is not live (CRITICAL) suppresses its VMs' incidents and the incidents of checks on those VMs; a VM that is down suppresses the checks on it. Maintenance mode (WARNING) suppresses nothing.
+- **Not built:** SR multipathing, HA details beyond on/off.
+
 ## Facility (SNMP-based)
 
 | Type | Metrics |

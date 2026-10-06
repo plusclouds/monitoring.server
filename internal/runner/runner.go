@@ -39,6 +39,9 @@ type Result struct {
 	Interval  time.Duration
 	Scheduled time.Time
 	plugin.Result
+	// ObjectDevices maps a collector object's key to the discovered device
+	// it belongs to (a VM). The engine fills it before metrics are stored.
+	ObjectDevices map[string]uuid.UUID
 }
 
 // Options configure a runner.

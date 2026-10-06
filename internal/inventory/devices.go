@@ -23,22 +23,24 @@ var DeviceTypes = []string{"network", "server", "bmc", "camera", "web", "hypervi
 
 // Device is anything with its own address or lifecycle.
 type Device struct {
-	ID             uuid.UUID
-	TenantID       uuid.UUID
-	Name           string
-	Address        string
-	Type           string
-	Tags           map[string]string
-	Notes          *string
-	ParentID       *uuid.UUID // containment (ADR-0014)
-	SiteID         *uuid.UUID
-	PhysicalPeerID *uuid.UUID
-	Inventory      map[string]any // written by plugins
-	ManagedBy      string
-	External       *extref.Ref
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	Status         *Status // set by ListDevices and FillStatus
+	ID              uuid.UUID
+	TenantID        uuid.UUID
+	Name            string
+	Address         string
+	Type            string
+	Tags            map[string]string
+	Notes           *string
+	ParentID        *uuid.UUID // containment (ADR-0014)
+	SiteID          *uuid.UUID
+	PhysicalPeerID  *uuid.UUID
+	Inventory       map[string]any // written by plugins
+	ManagedBy       string
+	CollectorKey    *string    // set when a collector discovered the device; ManagedBy is that collector
+	CollectorGoneAt *time.Time // when the collector stopped reporting it
+	External        *extref.Ref
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
+	Status          *Status // set by ListDevices and FillStatus
 }
 
 // DeviceInput is the client-writable part of a device. Updates replace it.
@@ -79,7 +81,7 @@ func (in DeviceInput) validate() error {
 }
 
 const deviceCols = `id, tenant_id, name, address, type, tags, notes, parent_id, site_id, physical_peer_id,
-	inventory, managed_by, external_source, external_type, external_id, created_at, updated_at`
+	inventory, managed_by, external_source, external_type, external_id, created_at, updated_at, collector_key, collector_gone_at`
 
 var deviceConstraints = map[string]string{
 	"devices_tenant_id_name_key": "a device with this name already exists",
@@ -90,7 +92,8 @@ func scanDevice(row pgx.Row) (Device, error) {
 	var d Device
 	var src, typ, ext *string
 	err := row.Scan(&d.ID, &d.TenantID, &d.Name, &d.Address, &d.Type, &d.Tags, &d.Notes, &d.ParentID,
-		&d.SiteID, &d.PhysicalPeerID, &d.Inventory, &d.ManagedBy, &src, &typ, &ext, &d.CreatedAt, &d.UpdatedAt)
+		&d.SiteID, &d.PhysicalPeerID, &d.Inventory, &d.ManagedBy, &src, &typ, &ext, &d.CreatedAt, &d.UpdatedAt,
+		&d.CollectorKey, &d.CollectorGoneAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return d, errs.ErrNotFound
 	}
@@ -133,7 +136,7 @@ func ListDevices(ctx context.Context, tx pgx.Tx, f DeviceFilter, p Page) ([]Devi
 	}
 	rows, err := tx.Query(ctx, `SELECT d.id, d.tenant_id, d.name, d.address, d.type, d.tags, d.notes, d.parent_id,
 		       d.site_id, d.physical_peer_id, d.inventory, d.managed_by, d.external_source, d.external_type,
-		       d.external_id, d.created_at, d.updated_at, `+statusCols+`
+		       d.external_id, d.created_at, d.updated_at, d.collector_key, d.collector_gone_at, `+statusCols+`
 		  FROM devices d `+statusJoin+`
 		 WHERE ($1::text IS NULL OR d.type = $1)
 		   AND ($2::uuid IS NULL OR d.site_id = $2)
@@ -153,8 +156,8 @@ func ListDevices(ctx context.Context, tx pgx.Tx, f DeviceFilter, p Page) ([]Devi
 		var st Status
 		var src, typ, ext *string
 		err := r.Scan(append([]any{&d.ID, &d.TenantID, &d.Name, &d.Address, &d.Type, &d.Tags, &d.Notes, &d.ParentID,
-			&d.SiteID, &d.PhysicalPeerID, &d.Inventory, &d.ManagedBy, &src, &typ, &ext, &d.CreatedAt, &d.UpdatedAt},
-			scanStatus(&st)...)...)
+			&d.SiteID, &d.PhysicalPeerID, &d.Inventory, &d.ManagedBy, &src, &typ, &ext, &d.CreatedAt, &d.UpdatedAt,
+			&d.CollectorKey, &d.CollectorGoneAt}, scanStatus(&st)...)...)
 		d.External, d.Status = extref.FromColumns(src, typ, ext), &st
 		return d, err
 	})
@@ -198,7 +201,8 @@ func CreateDevice(ctx context.Context, tx pgx.Tx, actor audit.Actor, tenant uuid
 		return Device{}, err
 	}
 	var n int
-	if err := tx.QueryRow(ctx, `SELECT count(*) FROM devices WHERE tenant_id = $1`, tenant).Scan(&n); err != nil {
+	// Devices a collector discovered (VMs) do not count (F13 rule 10).
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM devices WHERE tenant_id = $1 AND collector_key IS NULL`, tenant).Scan(&n); err != nil {
 		return Device{}, err
 	}
 	if n >= maxDevices {

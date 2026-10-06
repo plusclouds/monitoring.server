@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/plusclouds/monitoring.server/internal/incident"
+	"github.com/plusclouds/monitoring.server/internal/inventory"
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
@@ -109,22 +110,66 @@ func (e *Engine) Run(ctx context.Context) error {
 }
 
 func (e *Engine) handle(ctx context.Context, r runner.Result) {
-	if e.o.Metrics != nil {
-		e.o.Metrics.Add(r) // late results too: they are metrics only
-	}
 	start := time.Now()
-	outcome, err := e.Apply(ctx, r)
+	outcome, err := e.apply1(ctx, &r)
 	if err != nil {
 		e.log.Error("apply result", "check_id", r.CheckID, "error", err)
 		outcome = "error"
 	}
 	e.results.WithLabelValues(outcome).Inc()
 	e.writeTime.Observe(time.Since(start).Seconds())
+	if e.o.Metrics != nil {
+		// Late results too: they are metrics only. Objects of discovered
+		// devices are stored under those devices.
+		if r.ObjectDevices == nil && hasObjectDevices(r) {
+			if r.ObjectDevices, err = e.objectDevices(ctx, r); err != nil {
+				e.log.Error("object devices", "check_id", r.CheckID, "error", err)
+			}
+		}
+		e.o.Metrics.Add(r)
+	}
+}
+
+func hasObjectDevices(r runner.Result) bool {
+	for _, o := range r.Objects {
+		if o.Device != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// objectDevices looks up the discovered devices of a result's objects,
+// for results that did not go through Apply (late ones).
+func (e *Engine) objectDevices(ctx context.Context, r runner.Result) (map[string]uuid.UUID, error) {
+	rows, err := e.o.System.Query(ctx, `SELECT collector_key, id FROM devices WHERE managed_by = $1 AND collector_key IS NOT NULL`,
+		r.CheckID.String())
+	if err != nil {
+		return nil, err
+	}
+	byKey := map[string]uuid.UUID{}
+	var k string
+	var id uuid.UUID
+	if _, err := pgx.ForEachRow(rows, []any{&k, &id}, func() error { byKey[k] = id; return nil }); err != nil {
+		return nil, err
+	}
+	out := map[string]uuid.UUID{}
+	for _, o := range r.Objects {
+		if d, ok := byKey[o.Device]; ok {
+			out[o.Key] = d
+		}
+	}
+	return out, nil
 }
 
 // Apply applies one result: state, and incidents with their events, in one
 // transaction. It returns how the result was used.
 func (e *Engine) Apply(ctx context.Context, r runner.Result) (string, error) {
+	return e.apply1(ctx, &r)
+}
+
+// apply1 is Apply that also records the object devices in r.
+func (e *Engine) apply1(ctx context.Context, r *runner.Result) (string, error) {
 	// Late results (a probe's buffer) are metrics only, never state (F05).
 	if r.Interval > 0 && time.Since(r.Time) > 2*r.Interval {
 		return "late", nil
@@ -136,6 +181,9 @@ func (e *Engine) Apply(ctx context.Context, r runner.Result) (string, error) {
 			outcome, err = e.apply(ctx, tx, r)
 			return err
 		})
+		if err != nil {
+			r.ObjectDevices = nil
+		}
 		// Two writers raced to open an incident for the check: re-read and retry.
 		var pg *pgconn.PgError
 		if attempt < 2 && errors.As(err, &pg) && pg.Code == "23505" {
@@ -145,13 +193,16 @@ func (e *Engine) Apply(ctx context.Context, r runner.Result) (string, error) {
 	}
 }
 
-func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string, error) {
+func (e *Engine) apply(ctx context.Context, tx pgx.Tx, rp *runner.Result) (string, error) {
+	r := *rp
 	var cfg Config
 	var enabled bool
 	var deviceID uuid.UUID
+	var hostCheck bool
 	err := tx.QueryRow(ctx, `SELECT failure_count, recovery_count, unknown_is_critical, thresholds, enabled, device_id,
-		       whoopsy FROM checks WHERE id = $1 FOR SHARE`, r.CheckID).
-		Scan(&cfg.FailureCount, &cfg.RecoveryCount, &cfg.UnknownIsCritical, &cfg.Rules, &enabled, &deviceID, &cfg.Whoopsy)
+		       whoopsy, is_host_check FROM checks WHERE id = $1 FOR SHARE`, r.CheckID).
+		Scan(&cfg.FailureCount, &cfg.RecoveryCount, &cfg.UnknownIsCritical, &cfg.Rules, &enabled, &deviceID, &cfg.Whoopsy,
+			&hostCheck)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "check-gone", nil
 	}
@@ -194,7 +245,7 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 	}
 
 	out := Evaluate(cfg, prev, Input{Status: r.Status, Output: r.Output, Metrics: r.Metrics, Time: r.Time})
-	if incidentID, err = e.act(ctx, tx, r, deviceID, nil, incidentID, out); err != nil {
+	if incidentID, err = e.act(ctx, tx, r, deviceID, nil, hostCheck, incidentID, out); err != nil {
 		return "", err
 	}
 	if out.Action == ActionResolve {
@@ -225,7 +276,20 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 		return "", err
 	}
 	if objCfg != nil && r.Objects != nil {
-		if err := e.applyObjects(ctx, tx, r, deviceID, *objCfg); err != nil {
+		var children map[string]uuid.UUID
+		if r.Inventory != nil {
+			if children, err = inventory.ApplyDiscovered(ctx, tx, r.TenantID, r.CheckID, deviceID, r.Time, *r.Inventory); err != nil {
+				return "", err
+			}
+		}
+		devices := map[string]uuid.UUID{}
+		for _, o := range r.Objects {
+			if d, ok := children[o.Device]; ok {
+				devices[o.Key] = d
+			}
+		}
+		rp.ObjectDevices = devices
+		if err := e.applyObjects(ctx, tx, r, deviceID, devices, *objCfg); err != nil {
 			return "", err
 		}
 	}
@@ -236,7 +300,11 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 // incident afterwards, for the check itself or, with obj, for one of its
 // objects.
 func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uuid.UUID, obj *plugin.Object,
-	open *uuid.UUID, out Outcome) (*uuid.UUID, error) {
+	hostCheck bool, open *uuid.UUID, out Outcome) (*uuid.UUID, error) {
+	availability := hostCheck
+	if obj != nil {
+		availability = obj.Availability
+	}
 	output := r.Output
 	var objKey, objName *string
 	if obj != nil {
@@ -269,7 +337,7 @@ func (e *Engine) act(ctx context.Context, tx pgx.Tx, r runner.Result, device uui
 			return open, err
 		}
 		inc, err := incident.Open(ctx, tx, incident.OpenInput{TenantID: r.TenantID, CheckID: r.CheckID, DeviceID: device,
-			ObjectKey: objKey, ObjectName: objName,
+			ObjectKey: objKey, ObjectName: objName, Availability: availability,
 			Severity: out.Severity, Summary: out.Summary, LastOutput: output, RuleID: ruleID, RuleName: ruleName,
 			Flapping: out.State.Flapping})
 		e.incidents.WithLabelValues("open").Inc()
