@@ -167,6 +167,10 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### M4, part 2f — camera pictures
+
+`camera.snapshot`: a JPEG snapshot from Hikvision, Dahua, Axis or ONVIF cameras (or a URL), checked for blur, darkness and overexposure, a frozen picture, a covered lens or black picture, and a camera moved away from its reference picture. Verified with generated pictures against a fake camera (`TestPictureChecks`, `TestSources`, `TestFailures`).
+
 ### Whoopsy! and metric statistics (2026-10-07)
 
 | Area | What exists |
@@ -210,5 +214,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: cameras (`rtsp.stream`, and `camera.snapshot` with blur, brightness, frozen/covered and moved-camera checks for Hikvision, Dahua, Axis and ONVIF), then dashboards for interfaces, server hardware, PDUs and XCP-ng.
+2. M4: `rtsp.stream` (video stream health), then dashboards for interfaces, server hardware, PDUs, XCP-ng and cameras.
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.

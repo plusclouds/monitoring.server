@@ -375,7 +375,7 @@ func TestPlugins(t *testing.T) {
 			t.Errorf("%s: config_schema is not an object schema", p["type"])
 		}
 	}
-	if strings.Join(types, ",") != "http,icmp,redfish.health,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,xapi.pool" {
+	if strings.Join(types, ",") != "camera.snapshot,http,icmp,redfish.health,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,xapi.pool" {
 		t.Errorf("plugins = %v, want the built-in plugins sorted by type", types)
 	}
 	snmp := e.must(e.do("GET", "/v1/plugins/snmp.system", e.adminKey, nil), 200)
