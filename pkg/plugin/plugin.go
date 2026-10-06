@@ -85,6 +85,10 @@ type Manifest struct {
 	PerTargetLimit  int             `json:"-"` // concurrent runs against one address; 0 = runner default
 	Slow            bool            `json:"-"` // runs in the slow pool (F04)
 	BillingClass    string          `json:"billing_class"`
+	// WhoopsyMetric is the metric Whoopsy! (band alerting) watches unless
+	// the check names another: response time for http, round-trip time
+	// for icmp. Empty: the check must name one.
+	WhoopsyMetric string `json:"whoopsy_metric,omitempty"`
 }
 
 // MetricDef is one slot of a plugin's metric layout.

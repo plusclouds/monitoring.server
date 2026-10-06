@@ -143,7 +143,19 @@ func toAPICheck(c inventory.Check) gen.Check {
 		Thresholds: rulesToAPI(c.Thresholds), FailureCount: c.FailureCount, RecoveryCount: c.RecoveryCount,
 		IsHostCheck: c.IsHostCheck, UnknownIsCritical: c.UnknownIsCritical, RunbookUrl: c.RunbookURL,
 		Credentials: creds, ManagedBy: c.ManagedBy, CreatedAt: c.CreatedAt.UTC(), UpdatedAt: c.UpdatedAt.UTC(),
+		Whoopsy: whoopsyToAPI(c.Whoopsy),
 	}
+}
+
+func whoopsyToAPI(w *threshold.Whoopsy) *gen.Whoopsy {
+	if w == nil {
+		return nil
+	}
+	out, err := via[gen.Whoopsy](w)
+	if err != nil {
+		return nil
+	}
+	return &out
 }
 
 func checkInput(b gen.CheckWrite) (inventory.CheckInput, error) {

@@ -1119,6 +1119,76 @@ paths:
               schema: { $ref: "#/components/schemas/CheckState" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /checks/{check_id}/whoopsy:
+    get:
+      operationId: getWhoopsy
+      tags: [checks]
+      summary: Whoopsy! settings and the current band
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WhoopsyStatus" }
+        default: { $ref: "#/components/responses/Problem" }
+    put:
+      operationId: enableWhoopsy
+      tags: [checks]
+      summary: Turn Whoopsy! on, or change its settings
+      description: |
+        Requires the operator role. Every field is optional; the defaults
+        are a window of 7 results, 1 standard deviation, 3 results in a row,
+        above the band, warning. Collectors are refused. Billing changes
+        from the moment it is turned on (`<plugin>+whoopsy`).
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Whoopsy" }
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WhoopsyStatus" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: disableWhoopsy
+      tags: [checks]
+      summary: Turn Whoopsy! off
+      description: Requires the operator role. An open Whoopsy! incident resolves with the check's next result.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      responses:
+        "204": { description: Off }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /checks/{check_id}/whoopsy/reset:
+    post:
+      operationId: resetWhoopsy
+      tags: [checks]
+      summary: Forget the learned band (accept a new normal)
+      description: |
+        Requires the operator role. The band is frozen while results break
+        it, so a lasting change (a deploy that makes responses slower for
+        good) keeps alerting until someone accepts it. Reset clears the
+        window: the band is learned again from the next `window` results,
+        and an open Whoopsy! incident resolves with the next result. 409
+        `whoopsy-off` when Whoopsy! is off.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      responses:
+        "200":
+          description: Status after the reset
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WhoopsyStatus" }
+        default: { $ref: "#/components/responses/Problem" }
+
   /checks/{check_id}/objects:
     get:
       operationId: listCheckObjects
@@ -1693,14 +1763,82 @@ paths:
           in: query
           description: Bucket size in seconds. Default gives about 500 points, at least 10 s.
           schema: { type: integer, minimum: 1 }
-        - { name: agg, in: query, schema: { type: string, enum: [avg, min, max, sum], default: avg } }
+        - name: agg
+          in: query
+          description: |
+            `avg`, `min`, `max` and `sum` work at every resolution. `stddev`
+            (sample standard deviation) and percentiles (`p50`, `p95`,
+            `p99`, any `p<n>` with up to three decimals such as `p99.9`) are
+            computed from the raw samples in each bucket, never from
+            rollups: `from` must be within raw retention (422 on `from`
+            otherwise), `resolution` other than `raw` is refused, and a
+            request may read at most 2,000,000 raw samples. Buckets where
+            the value is undefined (a deviation of one sample) are left out.
+          schema: { type: string, pattern: '^(avg|min|max|sum|stddev|p[0-9]{1,2}(\.[0-9]{1,3})?)$', default: avg }
         - { name: resolution, in: query, schema: { type: string, enum: [raw, 5m, 1h] } }
+        - name: moving_window
+          in: query
+          description: |
+            Moving average over points: every point becomes the mean of
+            itself and the `moving_window - 1` points before it (fewer at
+            the start). Applied after `agg`.
+          schema: { type: integer, minimum: 1, maximum: 1000 }
       responses:
         "200":
           description: Series with points
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MetricQueryResult" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /metrics/summary:
+    get:
+      operationId: summarizeMetrics
+      tags: [metrics]
+      summary: Statistics of the selected series over the whole window
+      description: |
+        One set of statistics per metric (merged across layout changes, like
+        `/metrics/query`), computed from raw samples, so every value is
+        exact. `from` must be within raw retention (422 on `from`
+        otherwise), and a request may read at most 2,000,000 raw samples
+        (422). The last hour, the default, is cheap enough to poll every
+        30 seconds.
+      parameters:
+        - $ref: "#/components/parameters/MetricDeviceID"
+        - $ref: "#/components/parameters/MetricCheckID"
+        - $ref: "#/components/parameters/MetricName"
+        - $ref: "#/components/parameters/MetricObject"
+        - { name: from, in: query, description: "Default: an hour before `to`", schema: { type: string, format: date-time } }
+        - { name: to, in: query, description: "Default: now", schema: { type: string, format: date-time } }
+        - name: percentile
+          in: query
+          description: Extra percentiles besides p50, p95 and p99, such as `p90` or `p99.9`.
+          style: form
+          explode: true
+          schema:
+            type: array
+            maxItems: 10
+            items: { type: string, pattern: '^p[0-9]{1,2}(\.[0-9]{1,3})?$' }
+        - name: window
+          in: query
+          description: Also report the mean and standard deviation of the last `window` samples (the Whoopsy! band).
+          schema: { type: integer, minimum: 1, maximum: 10000 }
+      responses:
+        "200":
+          description: Statistics per metric
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [resolution, exact, from, to, series]
+                properties:
+                  resolution: { type: string, enum: [raw] }
+                  exact: { type: boolean, description: "Always true: computed from raw samples" }
+                  from: { type: string, format: date-time }
+                  to: { type: string, format: date-time }
+                  series:
+                    type: array
+                    items: { $ref: "#/components/schemas/MetricSummary" }
         default: { $ref: "#/components/responses/Problem" }
 
   /metrics/retention-classes:
@@ -1859,11 +1997,16 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [default_weight, weights]
+                required: [default_weight, whoopsy_multiplier, weights]
                 properties:
                   default_weight: { type: number, format: double }
+                  whoopsy_multiplier:
+                    type: number
+                    format: double
+                    description: A check with Whoopsy! on weighs its plugin's weight times this, unless `weights` has `<plugin>+whoopsy`.
                   weights:
                     type: object
+                    description: By plugin type; `<plugin>+whoopsy` keys override the multiplier for that plugin.
                     additionalProperties: { type: number, format: double }
         default: { $ref: "#/components/responses/Problem" }
 
@@ -2177,6 +2320,7 @@ components:
         min_interval_seconds: { type: integer }
         needs_raw_socket: { type: boolean }
         billing_class: { type: string, enum: [basic, standard, push, advanced, free] }
+        whoopsy_metric: { type: string, description: "The metric Whoopsy! watches by default; absent when a check must name one" }
 
     MetricDef:
       type: object
@@ -2393,7 +2537,7 @@ components:
       type: object
       required: [id, device_id, name, plugin, config, interval_seconds, timeout_seconds, enabled, thresholds,
                  failure_count, recovery_count, is_host_check, unknown_is_critical, runbook_url, credentials,
-                 managed_by, created_at, updated_at]
+                 whoopsy, managed_by, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         device_id: { type: string, format: uuid }
@@ -2415,9 +2559,60 @@ components:
           type: object
           description: "Credential ID per role, for example {\"auth\": \"…\"}"
           additionalProperties: { type: string, format: uuid }
+        whoopsy:
+          description: Whoopsy! settings; null when it is off. Changed only through `/checks/{check_id}/whoopsy`.
+          oneOf:
+            - { $ref: "#/components/schemas/Whoopsy" }
+            - { type: "null" }
         managed_by: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    Whoopsy:
+      type: object
+      additionalProperties: false
+      description: |
+        Whoopsy! (premium alerting): an alert when `metric` leaves its own
+        band, the moving average of the last `window` results plus or minus
+        `deviations` sample standard deviations, for `consecutive` results
+        in a row. The band is at least `min_delta` wide on each side. Values
+        that break the band do not enter the window: the band stays at the
+        last normal, so an incident lasts until results return to it.
+        `POST /checks/{check_id}/whoopsy/reset` accepts a new normal. A check with Whoopsy!
+        is billed as `<plugin>+whoopsy` (the plugin's weight times
+        `usage.whoopsy_multiplier`, default 5).
+      properties:
+        metric: { type: string, description: "Default: the plugin's whoopsy_metric (total_ms for http, rtt_avg_ms for icmp)" }
+        window: { type: integer, minimum: 3, maximum: 1000, default: 7, description: Results in the band }
+        deviations: { type: number, format: double, exclusiveMinimum: 0, maximum: 10, default: 1 }
+        consecutive: { type: integer, minimum: 1, maximum: 100, default: 3, description: Results outside the band in a row before the alert }
+        direction: { type: string, enum: [above, below, both], default: above }
+        min_delta: { type: number, format: double, minimum: 0, default: 0, description: "Smallest half-width of the band, in the metric's unit" }
+        severity: { type: string, enum: [warning, critical], default: warning }
+
+    WhoopsyStatus:
+      type: object
+      required: [check_id, enabled, settings, band]
+      properties:
+        check_id: { type: string, format: uuid }
+        enabled: { type: boolean }
+        settings:
+          oneOf:
+            - { $ref: "#/components/schemas/Whoopsy" }
+            - { type: "null" }
+        band:
+          type: [object, "null"]
+          description: The engine's band after the last result; null until the check has a result with Whoopsy! on.
+          required: [points, mean, stddev, lower, upper, last_value, consecutive_hits, alerting]
+          properties:
+            points: { type: integer, description: "Results in the window so far; the band applies once it reaches window" }
+            mean: { type: [number, "null"], format: double }
+            stddev: { type: [number, "null"], format: double }
+            lower: { type: [number, "null"], format: double }
+            upper: { type: [number, "null"], format: double }
+            last_value: { type: [number, "null"], format: double }
+            consecutive_hits: { type: integer }
+            alerting: { type: boolean }
 
     CheckWrite:
       type: object
@@ -2876,6 +3071,41 @@ components:
         series:
           type: array
           items: { $ref: "#/components/schemas/MetricQuerySeries" }
+
+    MetricSummary:
+      type: object
+      required: [device_id, check_id, object, name, unit, count, min, max, avg, stddev, p50, p95, p99, percentiles,
+                 last, last_at]
+      description: Values are null when the window has no samples (and stddev also with one sample).
+      properties:
+        device_id: { type: string, format: uuid }
+        check_id: { type: string, format: uuid }
+        object: { type: string }
+        name: { type: string }
+        unit: { type: string }
+        count: { type: integer, description: Raw samples in the window }
+        min: { type: [number, "null"], format: double }
+        max: { type: [number, "null"], format: double }
+        avg: { type: [number, "null"], format: double }
+        stddev: { type: [number, "null"], format: double, description: "Sample standard deviation (n-1)" }
+        p50: { type: [number, "null"], format: double }
+        p95: { type: [number, "null"], format: double }
+        p99: { type: [number, "null"], format: double }
+        percentiles:
+          type: object
+          description: Every percentile computed, by name (p50, p95, p99 and the asked ones). Linear interpolation between the closest ranks.
+          additionalProperties: { type: number, format: double }
+        last: { type: [number, "null"], format: double }
+        last_at: { type: [string, "null"], format: date-time }
+        moving:
+          type: [object, "null"]
+          description: With `window`, the mean and standard deviation of the last `window` samples.
+          required: [window, count, avg, stddev]
+          properties:
+            window: { type: integer }
+            count: { type: integer }
+            avg: { type: [number, "null"], format: double }
+            stddev: { type: [number, "null"], format: double }
 
     MetricQuerySeries:
       type: object

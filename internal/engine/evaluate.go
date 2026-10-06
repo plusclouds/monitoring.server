@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"math"
 	"math/bits"
+	"slices"
+	"strconv"
 	"time"
 
 	"github.com/plusclouds/monitoring.server/internal/threshold"
@@ -41,6 +43,18 @@ type RuleState struct {
 	PendingSince time.Time `json:"pending_since,omitzero"`
 }
 
+// WhoopsyState is the memory of the Whoopsy! band: the last values of its
+// metric, how many results in a row left the band, and the band the last
+// result was judged against.
+type WhoopsyState struct {
+	Metric string          `json:"metric"`
+	Values []float64       `json:"values"`
+	Hits   int             `json:"hits"`
+	Last   float64         `json:"last"` // the last value judged, inside the band or not
+	Level  string          `json:"level,omitempty"`
+	Band   *threshold.Band `json:"band,omitempty"`
+}
+
 // State is a check's state machine, stored in check_state.
 type State struct {
 	Phase  string    `json:"phase"`
@@ -55,6 +69,7 @@ type State struct {
 	History           uint32               `json:"history"` // bit 0 = latest result changed good/bad
 	LastBad           bool                 `json:"last_bad"`
 	Rules             map[string]RuleState `json:"rules,omitempty"`
+	Whoopsy           *WhoopsyState        `json:"whoopsy,omitempty"`
 	Severity          string               `json:"severity,omitempty"` // severity of the open incident
 }
 
@@ -64,6 +79,7 @@ type Config struct {
 	RecoveryCount     int
 	UnknownIsCritical bool
 	Rules             []threshold.Rule
+	Whoopsy           *threshold.Whoopsy
 	Metrics           []string // the plugin's metric names, aligned with Input.Metrics
 }
 
@@ -91,6 +107,9 @@ type Cause struct {
 	Level  string
 	Value  float64
 	Plugin bool
+	// Whoopsy is set when the Whoopsy! band caused the level.
+	Whoopsy *threshold.Whoopsy
+	Band    *threshold.Band
 }
 
 // Outcome of evaluating one result.
@@ -150,6 +169,53 @@ func Evaluate(cfg Config, prev State, in Input) Outcome {
 		}
 	}
 	s.Rules = rules
+
+	// Whoopsy!: the metric against its own recent band.
+	s.Whoopsy = nil
+	if w := cfg.Whoopsy; w != nil {
+		ws := prev.Whoopsy
+		if ws == nil || ws.Metric != w.Metric {
+			ws = &WhoopsyState{Metric: w.Metric}
+		} else {
+			c := *ws
+			c.Values = slices.Clone(ws.Values)
+			ws = &c
+		}
+		v := metric(cfg.Metrics, in.Metrics, w.Metric)
+		if !math.IsNaN(v) && !math.IsInf(v, 0) {
+			outside := false
+			if len(ws.Values) >= w.Window {
+				b := w.BandOf(ws.Values[len(ws.Values)-w.Window:])
+				ws.Band = &b
+				outside = w.Outside(b, v)
+				if outside {
+					ws.Hits++
+				} else {
+					ws.Hits = 0
+				}
+			}
+			ws.Last = v
+			// The band is frozen while values break it: an outlier never
+			// enters the window, so a slowdown cannot widen the band and
+			// resolve itself. Resetting Whoopsy! accepts a new normal.
+			if !outside {
+				ws.Values = append(ws.Values, v)
+			}
+			if extra := len(ws.Values) - w.Window; extra > 0 {
+				ws.Values = ws.Values[extra:]
+			}
+			ws.Level = ""
+			if ws.Hits >= w.Consecutive {
+				ws.Level = w.Severity
+			}
+		}
+		s.Whoopsy = ws
+		if threshold.Rank(ws.Level) > threshold.Rank(cause.Level) {
+			cause = Cause{Rule: &threshold.Rule{ID: threshold.WhoopsyRuleID, Name: threshold.WhoopsyName, Metric: w.Metric},
+				Level: ws.Level, Value: v, Whoopsy: w, Band: ws.Band}
+			immediate = true // consecutive results already filtered the noise
+		}
+	}
 
 	// Effective status: the worse of the plugin's status and the thresholds.
 	// The plugin is the cause when it is at least as bad as the thresholds.
@@ -233,6 +299,15 @@ func metric(names []string, values []float64, name string) float64 {
 }
 
 func summary(c Cause, in Input) string {
+	if c.Whoopsy != nil && c.Band != nil {
+		w, b := c.Whoopsy, c.Band
+		edge, side := b.Upper, "above"
+		if c.Value < b.Lower {
+			edge, side = b.Lower, "below"
+		}
+		return fmt.Sprintf("%s: %s = %s, %s %s (moving average %s ± %g standard deviations of %s over the last %d results, %d in a row)",
+			threshold.WhoopsyName, w.Metric, num(c.Value), side, num(edge), num(b.Mean), w.Deviations, num(b.StdDev), w.Window, w.Consecutive)
+	}
 	if c.Rule != nil && (c.Level == threshold.LevelWarning || c.Level == threshold.LevelCritical) {
 		cond := c.Rule.Critical
 		if c.Level == threshold.LevelWarning {
@@ -253,4 +328,9 @@ func summary(c Cause, in Input) string {
 		out = out[:300]
 	}
 	return out
+}
+
+// num prints a value with at most three decimals.
+func num(v float64) string {
+	return strconv.FormatFloat(math.Round(v*1000)/1000, 'f', -1, 64)
 }

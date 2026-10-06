@@ -82,6 +82,7 @@ func (c *Check) Manifest() plugin.Manifest {
 		DefaultInterval: time.Minute,
 		MinInterval:     5 * time.Second,
 		BillingClass:    plugin.BillingStandard,
+		WhoopsyMetric:   "total_ms",
 	}
 }
 

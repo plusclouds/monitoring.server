@@ -50,5 +50,13 @@ func toAPIPlugin(m plugin.Manifest) (gen.Plugin, error) {
 		ConfigSchema: schema, CredentialTypes: nonNilSlice(m.CredentialTypes), Metrics: metrics,
 		DefaultIntervalSeconds: int(m.DefaultInterval.Seconds()), MinIntervalSeconds: int(m.MinInterval.Seconds()),
 		NeedsRawSocket: m.NeedsRawSocket, BillingClass: gen.PluginBillingClass(m.BillingClass),
+		WhoopsyMetric: nilIfEmpty(m.WhoopsyMetric),
 	}, nil
+}
+
+func nilIfEmpty(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

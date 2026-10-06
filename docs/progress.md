@@ -11,7 +11,7 @@ This page records which milestones are done and what comes next. The milestone d
 | M1 — skeleton | Repo layout, CI, migrations, F01, F03, `http` and `icmp` plugins | **Done** | Merged in PR #2; released as `v0.1.0-m1` to `v0.1.3-m1` |
 | M2 — first loop | F02, F04, F05, F06 (single node) | **Done** | Merged in PRs #3 and #4; released as `v0.2.0-m2`, client fixes in `v0.2.1`. Deferred items below |
 | M3 — metrics | F07, Grafana data source and first dashboards | **Done** | Merged in PR #6; released as `v0.3.0-m3`, client decisions in `v0.3.1`. Deferred items below |
-| M3.5 — usage metering | F13: check periods, hourly close, `GET /v1/usage/tenants` for PlusClouds billing (pull only) | **Done** | Released as `v0.3.5-m3.5`. Counting rules await PlusClouds' confirmation |
+| M3.5 — usage metering | F13: check periods, hourly close, `GET /v1/usage/tenants` for PlusClouds billing (pull only) | **Done** | Released as `v0.3.5-m3.5`. Counting rules and weights confirmed by PlusClouds (2026-10-07) |
 | M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | **In progress**: alert noise done (`v0.4.0-m4a`), webhooks completed (`v0.4.1`), SNMP checks built; multi-object collectors (interfaces, PDU, sensors, Redfish, XCP-ng) and RTSP next |
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
@@ -155,6 +155,15 @@ Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs
 ### v0.4.3 — replacing lost keys
 
 `monitor admin rotate-platform-key [--keep-old]`, `monitor admin revoke-platform-keys --keep ID` and `monitor admin create-admin-key --tenant ID`. Bootstrap prints keys once and stores only their hashes, so a lost key is replaced, not recovered. Each command writes an audit event. Verified by `TestAdminKeyCommands`.
+
+### Whoopsy! and metric statistics (2026-10-07)
+
+| Area | What exists |
+| --- | --- |
+| Statistics | `agg=stddev` and `agg=p<n>` on `/v1/metrics/query`, `moving_window=N`, and `/v1/metrics/summary` (count, min, max, avg, stddev, p50, p95, p99, more percentiles, last, and the band of the last N samples). Raw samples only, exact; older windows get 422 |
+| Whoopsy! | Premium band alerting per check: moving average ± N standard deviations over the last N results, N results in a row. `GET/PUT/DELETE /v1/checks/{id}/whoopsy` and `POST .../whoopsy/reset`; the band is frozen while results break it. Billed as `<plugin>+whoopsy` at 5× the plugin's weight. Migration `00015` |
+
+Verified by `TestMetricStatistics`, `TestWhoopsy`, `TestWhoopsyBand` and `TestWhoopsyCheck` (API, incident, webhook, band, current and closed-hour billing).
 
 ### M3.5 — usage metering (F13)
 

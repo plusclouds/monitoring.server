@@ -50,6 +50,7 @@ func (c *Check) Manifest() plugin.Manifest {
 		MinInterval:     5 * time.Second,
 		NeedsRawSocket:  true,
 		BillingClass:    plugin.BillingBasic,
+		WhoopsyMetric:   "rtt_avg_ms",
 	}
 }
 

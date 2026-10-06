@@ -57,3 +57,11 @@ What exists and what was deferred is recorded in [progress](../progress.md#m3--m
 - **Retention class.** A metric goes to its plugin's class when the tenant's `metric_classes` allows it, else `standard`, else the tenant's first allowed class.
 - **Query alignment.** Buckets start at multiples of `step` since 2000-01-01 UTC. The query fills buckets the rollups have not reached yet from the finer level.
 - **Standalone installs** set retention with `monitor admin retention`, because they have no platform key.
+
+## Statistics from raw samples (2026-10-07)
+
+Percentiles and standard deviations need every sample, which rollups do not keep (they hold min, max, sum and count). They are computed from raw samples only, so they are exact, and a window older than raw retention is refused (422 on `from`), never approximated. Long-range percentiles (a mergeable sketch in the rollups) were not wanted.
+
+- `GET /v1/metrics/query`: `agg` also takes `stddev` (sample, n-1) and percentiles `p<n>` with up to three decimals (`p50`, `p95`, `p99.9`), per bucket, by linear interpolation between the closest ranks. `resolution` other than `raw` is refused for them. `moving_window=N` replaces every point with the mean of the last N points (any `agg`).
+- `GET /v1/metrics/summary`: per metric over the whole window (default the last hour): `count`, `min`, `max`, `avg`, `stddev`, `p50`, `p95`, `p99`, extra `percentile=` values, `last`, `last_at`, and with `window=N` the mean and standard deviation of the last N samples (the Whoopsy! band). `exact: true`, `resolution: raw`. Same selector as the query (`device_id` or `check_id`, repeated `name`, `object` for collector objects).
+- A request reads at most 2,000,000 raw samples (422 beyond).

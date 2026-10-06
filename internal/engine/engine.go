@@ -149,9 +149,9 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 	var cfg Config
 	var enabled bool
 	var deviceID uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT failure_count, recovery_count, unknown_is_critical, thresholds, enabled, device_id
-		FROM checks WHERE id = $1 FOR SHARE`, r.CheckID).
-		Scan(&cfg.FailureCount, &cfg.RecoveryCount, &cfg.UnknownIsCritical, &cfg.Rules, &enabled, &deviceID)
+	err := tx.QueryRow(ctx, `SELECT failure_count, recovery_count, unknown_is_critical, thresholds, enabled, device_id,
+		       whoopsy FROM checks WHERE id = $1 FOR SHARE`, r.CheckID).
+		Scan(&cfg.FailureCount, &cfg.RecoveryCount, &cfg.UnknownIsCritical, &cfg.Rules, &enabled, &deviceID, &cfg.Whoopsy)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "check-gone", nil
 	}
@@ -171,8 +171,9 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, r runner.Result) (string,
 		}
 		if m.Kind == plugin.KindCollector {
 			oc := cfg
+			oc.Whoopsy = nil // checks only
 			objCfg = &oc
-			cfg.Metrics, cfg.Rules = nil, nil
+			cfg.Metrics, cfg.Rules, cfg.Whoopsy = nil, nil, nil
 		}
 	}
 

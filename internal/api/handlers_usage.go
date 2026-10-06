@@ -149,5 +149,10 @@ func (s *Server) GetUsageWeights(ctx context.Context, _ gen.GetUsageWeightsReque
 	if err != nil {
 		return nil, err
 	}
-	return gen.GetUsageWeights200JSONResponse{DefaultWeight: def, Weights: weights}, nil
+	mult, ok := weights[usage.WhoopsyMultiplier]
+	if !ok {
+		mult = 5
+	}
+	delete(weights, usage.WhoopsyMultiplier)
+	return gen.GetUsageWeights200JSONResponse{DefaultWeight: def, WhoopsyMultiplier: mult, Weights: weights}, nil
 }

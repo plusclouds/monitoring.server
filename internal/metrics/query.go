@@ -111,6 +111,9 @@ type Query struct {
 	Agg        string        // default avg
 	Resolution string        // raw, 5m or 1h; empty picks from the step and retention
 	MaxPoints  int
+	// MovingWindow, above 1, replaces every point with the mean of the
+	// last MovingWindow points.
+	MovingWindow int
 }
 
 // Point is one bucket of a series.
@@ -158,6 +161,9 @@ func Run(ctx context.Context, tx pgx.Tx, q Query) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
+	if rawAgg(q.Agg) {
+		return q.runRaw(ctx, tx, series)
+	}
 	level, err := q.level(ctx, tx, series)
 	if err != nil {
 		return Result{}, err
@@ -186,7 +192,48 @@ func Run(ctx context.Context, tx pgx.Tx, q Query) (Result, error) {
 		}
 	}
 	for i := range out.Series {
-		out.Series[i].Points = points(buckets[i], q.Agg)
+		out.Series[i].Points = MovingAverage(points(buckets[i], q.Agg), q.MovingWindow)
+	}
+	return out, nil
+}
+
+// runRaw answers percentile and standard deviation queries from raw
+// samples, whatever the step.
+func (q *Query) runRaw(ctx context.Context, tx pgx.Tx, series []Series) (Result, error) {
+	if q.Resolution != "" && q.Resolution != LevelRaw {
+		return Result{}, errs.Invalidf("resolution", "%s is computed from raw samples only", q.Agg)
+	}
+	if err := rawCovers(ctx, tx, series, q.From); err != nil {
+		return Result{}, err
+	}
+	out := Result{Resolution: LevelRaw, Step: q.Step}
+	type key struct {
+		check  uuid.UUID
+		object string
+		name   string
+	}
+	merged := map[key]int{}
+	var samples [][]rawSample
+	budget := 0
+	for _, s := range series {
+		k := key{s.CheckID, s.Object, s.Name}
+		i, ok := merged[k]
+		if !ok {
+			i = len(out.Series)
+			merged[k] = i
+			out.Series = append(out.Series, QuerySeries{DeviceID: s.DeviceID, CheckID: s.CheckID, Object: s.Object,
+				Name: s.Name, Unit: s.Unit})
+			samples = append(samples, nil)
+		}
+		out.Series[i].SeriesIDs = append(out.Series[i].SeriesIDs, s.ID)
+		raw, err := readRaw(ctx, tx, s, q.From, q.To, &budget)
+		if err != nil {
+			return Result{}, err
+		}
+		samples[i] = append(samples[i], raw...)
+	}
+	for i := range out.Series {
+		out.Series[i].Points = MovingAverage(rawPoints(samples[i], q.Step, q.Agg), q.MovingWindow)
 	}
 	return out, nil
 }
@@ -217,8 +264,11 @@ func (q *Query) normalize() error {
 	if q.Agg == "" {
 		q.Agg = AggAvg
 	}
-	if !slices.Contains([]string{AggAvg, AggMin, AggMax, AggSum}, q.Agg) {
-		return errs.Invalidf("agg", "must be avg, min, max or sum")
+	if !slices.Contains([]string{AggAvg, AggMin, AggMax, AggSum}, q.Agg) && !rawAgg(q.Agg) {
+		return errs.Invalidf("agg", "must be avg, min, max, sum, stddev or a percentile from p0.001 to p99.999 such as p95 or p99.9")
+	}
+	if q.MovingWindow < 0 || q.MovingWindow > 1000 {
+		return errs.Invalidf("moving_window", "must be between 1 and 1000 points")
 	}
 	if _, ok := levelSize[q.Resolution]; q.Resolution != "" && !ok {
 		return errs.Invalidf("resolution", "must be raw, 5m or 1h")
