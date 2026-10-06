@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-05 · **Latest release tag:** `v0.4.1`
+**Last updated:** 2026-10-05 · **Latest release tag:** `v0.4.3`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -128,6 +128,10 @@ Shared: SNMPv3 (`authPriv`, SHA-256/AES by default) and v2c credentials, the net
 
 Not built yet: the plugins that report many objects per run (`snmp.interfaces`, `snmp.pdu`, `snmp.sensor`, `redfish.health`, `xapi.*`) need collector support in the runner, engine and metrics writer; the restart inventory event comes with it.
 
+### v0.4.3 — replacing lost keys
+
+`monitor admin rotate-platform-key [--keep-old]`, `monitor admin revoke-platform-keys --keep ID` and `monitor admin create-admin-key --tenant ID`. Bootstrap prints keys once and stores only their hashes, so a lost key is replaced, not recovered. Each command writes an audit event. Verified by `TestAdminKeyCommands`.
+
 ### M3.5 — usage metering (F13)
 
 | Area | What exists |
@@ -163,3 +167,4 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
 2. M4: collector support (per-object metrics and state), then `snmp.interfaces`, `snmp.pdu`, `snmp.sensor`, `redfish.health`, `rtsp.stream` and the XCP-ng collectors, with their dashboards.
+3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.

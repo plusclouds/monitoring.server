@@ -78,6 +78,12 @@ docker compose up -d
 docker compose logs bootstrap # the platform key, printed on the first start only
 ```
 
+A lost platform key cannot be shown again; make a new one (this revokes the old key, so update leo4's secret right after, or add `--keep-old` and run `admin revoke-platform-keys --keep <new key id>` once leo4 uses the new key):
+
+```sh
+docker compose run --rm bootstrap admin rotate-platform-key
+```
+
 Every later `up` applies new migrations and leaves the installation as it is. The API listens on `127.0.0.1:8443` by default; put a TLS-terminating proxy in front before exposing it. Back up the PostgreSQL volume and `MONITOR_KEK`: without the key, stored device credentials cannot be decrypted.
 
 ## Development
@@ -114,9 +120,12 @@ Without `--standalone`, bootstrap prints the platform key that the PlusClouds AP
 
 | Command | Purpose |
 | --- | --- |
-| `monitor serve [--roles api,…]` | Run the engine roles (only `api` is implemented so far) plus the status server |
+| `monitor serve [--roles api,…]` | Run the engine roles plus the status server |
 | `monitor migrate up\|down\|status` | Database migrations, as the schema owner |
 | `monitor admin bootstrap [--standalone --tenant NAME]` | Create the installation ID, the platform tenant and the first key (once) |
+| `monitor admin rotate-platform-key [--keep-old]` | New platform key when the bootstrap key is lost or leaked; revokes the old ones unless `--keep-old` |
+| `monitor admin revoke-platform-keys --keep ID` | After a `--keep-old` rotation, revoke every platform key except the new one |
+| `monitor admin create-admin-key --tenant ID` | New admin key for a standalone tenant whose bootstrap admin key is lost |
 | `monitor admin verify-audit [--tenant ID]` | Check the audit log hash chain |
 | `monitor admin gen-token` | Random token for status and preshared enrollment tokens |
 | `monitor config validate\|print [--probe]` | Check a config file, or print the effective config with secrets redacted |

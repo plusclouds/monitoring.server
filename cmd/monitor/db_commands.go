@@ -33,6 +33,15 @@ func dsn(name string, d config.DSN) (string, error) {
 	return v, nil
 }
 
+// systemDB loads the config and connects as the system role.
+func systemDB(cmd *cobra.Command, path string) (*pgxpool.Pool, error) {
+	c, err := config.Load(path, nil)
+	if err != nil {
+		return nil, err
+	}
+	return openSystem(cmd.Context(), c)
+}
+
 // openSystem connects as the system role, used by the admin commands.
 func openSystem(ctx context.Context, c config.Config) (*pgxpool.Pool, error) {
 	d, err := dsn("database.system", c.Database.System)
@@ -97,7 +106,8 @@ func newMigrate() *cobra.Command {
 
 func newAdmin() *cobra.Command {
 	cmd := &cobra.Command{Use: "admin", Short: "Administrative commands that run outside the API"}
-	cmd.AddCommand(newBootstrap(), newVerifyAudit(), newGenToken(), newRetention(), newUsageRecompute())
+	cmd.AddCommand(newBootstrap(), newRotatePlatformKey(), newRevokePlatformKeys(), newCreateAdminKey(), newVerifyAudit(), newGenToken(),
+		newRetention(), newUsageRecompute())
 	return cmd
 }
 
@@ -108,7 +118,8 @@ func newBootstrap() *cobra.Command {
 		Long: `Without flags, creates the platform key that the PlusClouds API (leo4) uses.
 With --standalone --tenant NAME, creates a local tenant and an admin API key instead,
 for installs without PlusClouds. Keys are printed once and cannot be shown again.
-With --if-needed, a second run succeeds without changes, so deployments can run it on every start.`,
+With --if-needed, a second run succeeds without changes, so deployments can run it on every start.
+A lost key cannot be shown again: create a new one with rotate-platform-key or create-admin-key.`,
 		Args: cobra.NoArgs,
 	}
 	path := configFlag(cmd, defaultConfigPath)
@@ -159,6 +170,99 @@ func printBootstrap(w io.Writer, r admin.BootstrapResult) error {
 		}
 	}
 	return nil
+}
+
+func newRotatePlatformKey() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "rotate-platform-key",
+		Short: "Create a new platform key and revoke the old ones (when the bootstrap key is lost or leaked)",
+		Long: `Creates a new platform key for the PlusClouds API (leo4) and prints it once.
+Every other platform key is revoked at once, so the PlusClouds API fails until its secret
+is updated. With --keep-old the old keys keep working until
+revoke-platform-keys --keep <new key id>, so the PlusClouds API can switch without downtime.`,
+		Args: cobra.NoArgs,
+	}
+	path := configFlag(cmd, defaultConfigPath)
+	keepOld := cmd.Flags().Bool("keep-old", false, "do not revoke the existing platform keys")
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		db, err := systemDB(cmd, *path)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		k, err := admin.RotatePlatformKey(cmd.Context(), db, *keepOld)
+		if err != nil {
+			return err
+		}
+		revoked := fmt.Sprintf("%d older platform key(s) revoked.", k.Revoked)
+		if *keepOld {
+			revoked = fmt.Sprintf("Older platform keys still work; after the switch run: monitor admin revoke-platform-keys --keep %s", k.ID)
+		}
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "key id: %s\n%s\n\nPlatform key for the PlusClouds API (shown once, store it in leo4's secrets):\n%s\n",
+			k.ID, revoked, k.Key)
+		return err
+	}
+	return cmd
+}
+
+func newRevokePlatformKeys() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "revoke-platform-keys",
+		Short: "Revoke every platform key except the one given (after rotate-platform-key --keep-old)",
+		Args:  cobra.NoArgs,
+	}
+	path := configFlag(cmd, defaultConfigPath)
+	keep := cmd.Flags().String("keep", "", "ID of the platform key that stays valid")
+	_ = cmd.MarkFlagRequired("keep")
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		id, err := uuid.Parse(*keep)
+		if err != nil {
+			return fmt.Errorf("--keep: %w", err)
+		}
+		db, err := systemDB(cmd, *path)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		n, err := admin.RevokePlatformKeys(cmd.Context(), db, id)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "%d platform key(s) revoked; %s stays valid\n", n, id)
+		return err
+	}
+	return cmd
+}
+
+func newCreateAdminKey() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "create-admin-key",
+		Short: "Create an admin API key for a tenant (standalone installs whose admin key is lost)",
+		Long: `Creates an admin API key for the tenant and prints it once. Existing keys keep
+working; list and revoke them through the API with the new key.`,
+		Args: cobra.NoArgs,
+	}
+	path := configFlag(cmd, defaultConfigPath)
+	tenant := cmd.Flags().String("tenant", "", "tenant ID (printed by bootstrap)")
+	_ = cmd.MarkFlagRequired("tenant")
+	cmd.RunE = func(cmd *cobra.Command, _ []string) error {
+		id, err := uuid.Parse(*tenant)
+		if err != nil {
+			return fmt.Errorf("--tenant: %w", err)
+		}
+		db, err := systemDB(cmd, *path)
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		k, err := admin.CreateAdminKey(cmd.Context(), db, id)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintf(cmd.OutOrStdout(), "key id: %s\ntenant id: %s\n\nAdmin API key (shown once):\n%s\n", k.ID, k.TenantID, k.Key)
+		return err
+	}
+	return cmd
 }
 
 func newVerifyAudit() *cobra.Command {
