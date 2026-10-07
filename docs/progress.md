@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-05 · **Latest release tag:** `v0.4.3`
+**Last updated:** 2026-10-05 · **Latest release tag:** `v0.8.2`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -12,7 +12,7 @@ This page records which milestones are done and what comes next. The milestone d
 | M2 — first loop | F02, F04, F05, F06 (single node) | **Done** | Merged in PRs #3 and #4; released as `v0.2.0-m2`, client fixes in `v0.2.1`. Deferred items below |
 | M3 — metrics | F07, Grafana data source and first dashboards | **Done** | Merged in PR #6; released as `v0.3.0-m3`, client decisions in `v0.3.1`. Deferred items below |
 | M3.5 — usage metering | F13: check periods, hourly close, `GET /v1/usage/tenants` for PlusClouds billing (pull only) | **Done** | Released as `v0.3.5-m3.5`. Counting rules and weights confirmed by PlusClouds (2026-10-07) |
-| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | **In progress**: alert noise done (`v0.4.0-m4a`), webhooks completed (`v0.4.1`), SNMP checks built; multi-object collectors (interfaces, PDU, sensors, Redfish, XCP-ng) and RTSP next |
+| M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | **Done in code** (`v0.4.0-m4a` to `v0.8.2`): alert noise, webhooks, SNMP checks and collectors, Redfish, APC facility, XCP-ng with discovered devices, cameras, dashboards. Not built: `ipmi.sensors` (Redfish covers our Dell, HPE and ASUS servers). Pending: verification on our own devices |
 | M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | Not started | |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
@@ -167,6 +167,10 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### M4, part 2h — dashboards
+
+Grafana dashboards for network interfaces, server hardware, power and environment, XCP-ng pools and cameras, on a new view `check_objects_v` (migration `00019`). `TestGrafanaDashboards` runs every query of every provisioned dashboard as the Grafana role.
+
 ### M4, part 2g — camera streams
 
 `rtsp.stream`: frame rate, bitrate, resolution, packet loss and jitter of a camera's RTSP stream over a few seconds, without decoding video (Hikvision, Dahua, Axis paths or a given path). Verified against an in-process RTSP server (`TestStream`, `TestStreamFailures`). Also: `camera.snapshot` weight 2 confirmed by PlusClouds.
@@ -224,5 +228,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: dashboards for interfaces, server hardware, PDUs, XCP-ng and cameras; then the compatibility checks on our own devices.
+2. M4 is complete in code. Before Gate 1: run every plugin against our own devices (switches, Dell/HPE/ASUS BMCs, APC PDUs and UPSs, the XCP-ng pool, Hikvision/Dahua/Axis cameras), record a compatibility table and tune the camera thresholds; then M5 (push ingestion, remote probes, self-monitoring).
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.
