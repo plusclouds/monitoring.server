@@ -1,0 +1,408 @@
+{
+  "uid": "monitor-server-hardware",
+  "title": "Server hardware",
+  "description": "redfish.health: component health, temperatures, fans and power from BMCs (M4).",
+  "tags": [
+    "monitor",
+    "redfish",
+    "hardware"
+  ],
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "label": "Tenant",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "definition": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      },
+      {
+        "name": "check",
+        "label": "Server",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT device_name || ' / ' || name AS __text, check_id::text AS __value\n  FROM check_states_v WHERE tenant_id = '$tenant' AND plugin IN ('redfish.health') ORDER BY 1",
+        "definition": "SELECT device_name || ' / ' || name AS __text, check_id::text AS __value\n  FROM check_states_v WHERE tenant_id = '$tenant' AND plugin IN ('redfish.health') ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {},
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "title": "Components not OK",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device_name AS server, labels->>'kind' AS kind, name AS component, status, since, last_output\n  FROM check_objects_v\n WHERE tenant_id = '$tenant' AND check_id IN ($check) AND gone_at IS NULL AND status <> 'OK'\n ORDER BY status = 'OK', device_name, name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green"
+                      },
+                      "WARNING": {
+                        "color": "orange"
+                      },
+                      "CRITICAL": {
+                        "color": "red"
+                      },
+                      "UNKNOWN": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "id": 1,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 7
+      }
+    },
+    {
+      "title": "Temperatures",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'temperature_celsius' AND m.object LIKE 'temperature:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'temperature_celsius' AND m.object LIKE 'temperature:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'temperature_celsius' AND m.object LIKE 'temperature:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "celsius",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 2,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Fans",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'fan_rpm' AND m.object LIKE 'fan:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'fan_rpm' AND m.object LIKE 'fan:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'fan_rpm' AND m.object LIKE 'fan:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "rpm",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 3,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Power use",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'power_watts' AND m.object LIKE 'power:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'power_watts' AND m.object LIKE 'power:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'power_watts' AND m.object LIKE 'power:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 4,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Power supply output",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'power_watts' AND m.object LIKE 'psu:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'power_watts' AND m.object LIKE 'psu:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'power_watts' AND m.object LIKE 'psu:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "watt",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 5,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 15,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Systems",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device_name AS server, labels->>'vendor' AS vendor, labels->>'model' AS model, labels->>'serial' AS serial, labels->>'bios' AS bios, labels->>'bmc_firmware' AS bmc, labels->>'power_state' AS power, status\n  FROM check_objects_v\n WHERE tenant_id = '$tenant' AND check_id IN ($check) AND gone_at IS NULL AND labels->>'kind' = 'system'\n ORDER BY device_name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green"
+                      },
+                      "WARNING": {
+                        "color": "orange"
+                      },
+                      "CRITICAL": {
+                        "color": "red"
+                      },
+                      "UNKNOWN": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "id": 6,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 6
+      }
+    }
+  ]
+}

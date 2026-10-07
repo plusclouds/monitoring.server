@@ -1,0 +1,440 @@
+{
+  "uid": "monitor-cameras",
+  "title": "Cameras",
+  "description": "camera.snapshot and rtsp.stream: picture checks and stream health (M4).",
+  "tags": [
+    "monitor",
+    "camera"
+  ],
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "label": "Tenant",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "definition": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      },
+      {
+        "name": "check",
+        "label": "Camera check",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT device_name || ' / ' || name AS __text, check_id::text AS __value\n  FROM check_states_v WHERE tenant_id = '$tenant' AND plugin IN ('camera.snapshot', 'rtsp.stream') ORDER BY 1",
+        "definition": "SELECT device_name || ' / ' || name AS __text, check_id::text AS __value\n  FROM check_states_v WHERE tenant_id = '$tenant' AND plugin IN ('camera.snapshot', 'rtsp.stream') ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {},
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "title": "Camera checks",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device_name AS camera, name AS check, plugin, status, since, last_output\n  FROM check_states_v\n WHERE tenant_id = '$tenant' AND check_id IN ($check)\n ORDER BY status = 'OK', device_name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green"
+                      },
+                      "WARNING": {
+                        "color": "orange"
+                      },
+                      "CRITICAL": {
+                        "color": "red"
+                      },
+                      "UNKNOWN": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "id": 1,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "title": "Frames per second",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'fps' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'fps' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'fps' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 2,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Bitrate",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'bitrate_kbps' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'bitrate_kbps' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'bitrate_kbps' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Kbits",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 3,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Brightness",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'brightness_percent' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'brightness_percent' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'brightness_percent' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 4,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Sharpness (percent of reference)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'sharpness_percent_of_reference' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'sharpness_percent_of_reference' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'sharpness_percent_of_reference' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 5,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Scene change from reference",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'scene_change_percent' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'scene_change_percent' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'scene_change_percent' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 6,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "RTP packet loss",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'rtp_loss_percent' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'rtp_loss_percent' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT c.device_name FROM check_states_v c WHERE c.check_id = m.check_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'rtp_loss_percent' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 7,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 24,
+        "w": 12,
+        "h": 8
+      }
+    }
+  ]
+}
