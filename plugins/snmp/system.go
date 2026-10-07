@@ -40,7 +40,7 @@ func (*System) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCheck,
 		Description:     "SNMP: uptime, CPU and memory use, from a vendor profile or HOST-RESOURCES-MIB. Reports restarts.",
 		ConfigSchema:    plugin.SchemaFor[SystemConfig](),
-		CredentialTypes: credentialTypes,
+		CredentialTypes: credentialTypes, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			{Name: "uptime_seconds", Unit: "s", Description: "System uptime (hrSystemUptime, else sysUpTime)", Kind: "gauge", RetentionClass: plugin.RetentionStandard},
 			{Name: "cpu_percent", Unit: "percent", Description: "CPU use: average of all processors, or the busiest module on chassis devices", Kind: "gauge", RetentionClass: plugin.RetentionStandard},

@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-05 · **Latest release tag:** `v0.8.3`
+**Last updated:** 2026-10-07 · **Latest release tag:** `v0.8.4`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -166,6 +166,11 @@ Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs
 Suppression: a pool host that goes down suppresses its VMs' incidents and the checks on those VMs (availability incidents, migration `00017`); maintenance mode does not.
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
+
+### v0.8.4 — stream URLs with tokens, optional credentials
+
+- `rtsp.stream` takes a full `url` (`rtsp://host/live/retail?token=...`), works without a credential on open streams, and accepts a new `url_token` credential that keeps the token encrypted. Outputs hide the query. Verified by `TestStreamURL` and against a public token-protected stream.
+- `GET /v1/plugins` gives `credentials_required` per plugin: true for the `snmp.*` plugins, `redfish.health` and `xapi.pool`; false for `rtsp.stream`, `camera.snapshot`, `http` and `icmp`. It is advisory: the API still accepts a check without a credential, which then runs UNKNOWN (`TestPlugins`).
 
 ### v0.8.3 — availability "unusual"
 

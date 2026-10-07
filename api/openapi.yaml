@@ -2351,7 +2351,7 @@ components:
 
     Plugin:
       type: object
-      required: [type, kind, description, config_schema, credential_types, metrics,
+      required: [type, kind, description, config_schema, credential_types, credentials_required, metrics,
                  default_interval_seconds, min_interval_seconds, needs_raw_socket, billing_class]
       properties:
         type: { type: string }
@@ -2363,6 +2363,12 @@ components:
         credential_types:
           type: array
           items: { type: string }
+        credentials_required:
+          type: boolean
+          description: >-
+            True when the plugin cannot run without a credential in the "auth" role. False when the
+            credential is optional (e.g. an open RTSP stream) or the plugin takes none. The API does not
+            enforce it: a check created without a required credential runs UNKNOWN until one is assigned.
         metrics:
           type: array
           items: { $ref: "#/components/schemas/MetricDef" }
