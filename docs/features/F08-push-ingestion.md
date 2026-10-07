@@ -57,6 +57,18 @@ Pushed timestamps are accepted from up to 24 h in the past (devices that buffer 
 - 5,000 MQTT messages/s on one ingest node without message loss at QoS 1.
 - The HTTP push body parser, the MQTT payload profiles and mapping selectors, and (phase 2) the SNMP trap and syslog parsers have Go fuzz tests run in CI; no input crashes the ingest role or exceeds its memory limits.
 
+## As built (M5, part 1: `v0.9.0`)
+
+- **`push.http`** (plugin kind `ingester`, billing class `push`). Config: `metrics` (name to selector), `units`, `status`, `output`, `timestamp`, `missed_count` (default 3). Selectors are a JSONPath subset without wildcards: `$.a.b`, `$.list[0].v`, `$["name with-dash"]`. Metric values may be numbers, numeric strings or booleans (1/0). Status values: `ok`/`warning`/`critical`/`unknown`, `0`..`3`, `true`/`false`, plus `up`, `down`, `warn`, `crit`, `error`. Without `status` every message is OK and thresholds decide. A message without its timestamp gets the arrival time.
+- **Per-check metric layout.** An ingester's metrics come from the check's config (`plugin.Ingester.MetricsFor`), in alphabetical order; thresholds are validated against those names. Renaming metrics starts new series.
+- **Token.** Created with the check and returned once as `push_token` (`mpush_<8>_<43>`); only its SHA-256 is stored. `GET /v1/checks/{id}` shows `push` (`ingest_path`, `ingest_url` from `ingest.http.public_url`, `token_prefix`, `token_created_at`, `last_push_at`). `POST /v1/checks/{id}/rotate-token` replaces it; the old token stops at once.
+- **Listener.** `POST /ingest/v1/{check_id}` on the `ingest` role (`ingest.http.listen`, behind the reverse proxy at `<public URL>/ingest/`). 202 `{"accepted": n}`; 401 for a missing or wrong token (the same answer for an unknown check), 400 for a malformed message, 409 for a disabled check, 413 above `max_body`, 429 above the per-check rate. A body is one object or an array of up to 1,000 (oldest first after sorting). The ingest role must run in the engine's process (results pass through the same channel as the runner's).
+- **Last seen.** Every 5 s the listener claims, in one `UPDATE … RETURNING`, the enabled push checks silent for `interval × missed_count` and sends each a CRITICAL "no data since …" result, at most once per interval while the silence lasts; several ingest nodes never report twice. The next message resolves it. Push checks default to `failure_count` 1, since `missed_count` already waits.
+- **Timestamps.** Up to 24 h old or 5 minutes ahead are kept; outside that window the server time is used and the output says so. Results older than 2 × the interval are metrics only (the engine's late rule).
+- **Fuzzing.** `FuzzParse` runs for 15 s in `make test` (CI).
+- **Billing.** `push.http` uses `default_weight` (1) until PlusClouds sets a weight.
+- **Not yet:** the tenant batch endpoint (`/ingest/v1/batch`, with F12), MQTT (part 2), SNMP traps and syslog (phase 2).
+
 ## Open questions
 
 - The MQTT broker, topic structure and payload format are now taken from `fixleanplus.metric.collector` ([F12](F12-fixlean-collector-replacement.md)). Open questions specific to that migration are listed there.

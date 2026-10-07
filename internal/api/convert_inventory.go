@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -129,7 +130,9 @@ func rulesToAPI(in []threshold.Rule) []gen.ThresholdRule {
 	return out
 }
 
-func toAPICheck(c inventory.Check) gen.Check {
+// toAPICheck converts a check; ingestURL is the ingest listener's public
+// URL ("" when not configured), for push checks.
+func toAPICheck(c inventory.Check, ingestURL string) gen.Check {
 	var cfg map[string]any
 	_ = json.Unmarshal(c.Config, &cfg)
 	if cfg == nil {
@@ -139,14 +142,32 @@ func toAPICheck(c inventory.Check) gen.Check {
 	if creds == nil {
 		creds = map[string]uuid.UUID{}
 	}
-	return gen.Check{
+	out := gen.Check{
 		Id: c.ID, DeviceId: c.DeviceID, Name: c.Name, Plugin: c.Plugin, Config: cfg,
 		IntervalSeconds: c.IntervalSeconds, TimeoutSeconds: c.TimeoutSeconds, Enabled: c.Enabled,
 		Thresholds: rulesToAPI(c.Thresholds), FailureCount: c.FailureCount, RecoveryCount: c.RecoveryCount,
 		IsHostCheck: c.IsHostCheck, UnknownIsCritical: c.UnknownIsCritical, RunbookUrl: c.RunbookURL,
 		Credentials: creds, ManagedBy: c.ManagedBy, CreatedAt: c.CreatedAt.UTC(), UpdatedAt: c.UpdatedAt.UTC(),
-		Whoopsy: whoopsyToAPI(c.Whoopsy),
+		Whoopsy: whoopsyToAPI(c.Whoopsy), Push: pushToAPI(c, ingestURL),
 	}
+	if c.PushToken != "" {
+		out.PushToken = &c.PushToken
+	}
+	return out
+}
+
+func pushToAPI(c inventory.Check, ingestURL string) *gen.PushSource {
+	if c.Push == nil {
+		return nil
+	}
+	path := "/ingest/v1/" + c.ID.String()
+	out := &gen.PushSource{IngestPath: path, TokenPrefix: c.Push.TokenPrefix,
+		TokenCreatedAt: c.Push.TokenCreatedAt.UTC(), LastPushAt: c.Push.LastPushAt}
+	if ingestURL != "" {
+		u := strings.TrimSuffix(ingestURL, "/") + path
+		out.IngestUrl = &u
+	}
+	return out
 }
 
 func whoopsyToAPI(w *threshold.Whoopsy) *gen.Whoopsy {

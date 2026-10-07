@@ -1239,6 +1239,25 @@ paths:
               schema: { $ref: "#/components/schemas/WhoopsyStatus" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /checks/{check_id}/rotate-token:
+    post:
+      operationId: rotatePushToken
+      tags: [checks]
+      summary: Replace a push check's ingest token
+      description: |
+        Requires the configuration role. The old token stops working at
+        once; the new one is in `push_token`, shown only in this response.
+        409 `not-push` for a check that is not a push check.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+      responses:
+        "200":
+          description: The check with its new token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Check" }
+        default: { $ref: "#/components/responses/Problem" }
+
   /checks/{check_id}/objects:
     get:
       operationId: listCheckObjects
@@ -2605,7 +2624,7 @@ components:
       type: object
       required: [id, device_id, name, plugin, config, interval_seconds, timeout_seconds, enabled, thresholds,
                  failure_count, recovery_count, is_host_check, unknown_is_critical, runbook_url, credentials,
-                 whoopsy, managed_by, created_at, updated_at]
+                 whoopsy, push, managed_by, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         device_id: { type: string, format: uuid }
@@ -2632,9 +2651,32 @@ components:
           oneOf:
             - { $ref: "#/components/schemas/Whoopsy" }
             - { type: "null" }
+        push:
+          description: Push checks (plugin kind `ingester`, e.g. `push.http`) only; null for polled checks.
+          oneOf:
+            - { $ref: "#/components/schemas/PushSource" }
+            - { type: "null" }
+        push_token:
+          type: string
+          description: |
+            The push check's ingest token, only in the response that created it
+            (create, `rotate-token`); never shown again. Devices send it as
+            `Authorization: Bearer <token>`.
         managed_by: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+
+    PushSource:
+      type: object
+      required: [ingest_path, ingest_url, token_prefix, token_created_at, last_push_at]
+      properties:
+        ingest_path: { type: string, description: "/ingest/v1/{check_id} on the ingest listener" }
+        ingest_url:
+          type: [string, "null"]
+          description: The full URL devices POST to; null when the server has no `ingest.http.public_url`.
+        token_prefix: { type: string, description: The start of the current token, to tell tokens apart }
+        token_created_at: { type: string, format: date-time }
+        last_push_at: { type: [string, "null"], format: date-time, description: Time of the newest accepted message }
 
     Whoopsy:
       type: object
@@ -2696,7 +2738,7 @@ components:
           type: array
           maxItems: 100
           items: { $ref: "#/components/schemas/ThresholdRule" }
-        failure_count: { type: integer, minimum: 1, maximum: 100, default: 3 }
+        failure_count: { type: integer, minimum: 1, maximum: 100, description: "Default 3; 1 for push checks, whose missed_count already waits" }
         recovery_count: { type: integer, minimum: 1, maximum: 100, default: 1 }
         is_host_check: { type: boolean, default: false, description: "The check that says whether the device is up" }
         unknown_is_critical: { type: boolean, default: false }

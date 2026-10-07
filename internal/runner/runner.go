@@ -42,6 +42,9 @@ type Result struct {
 	// ObjectDevices maps a collector object's key to the discovered device
 	// it belongs to (a VM). The engine fills it before metrics are stored.
 	ObjectDevices map[string]uuid.UUID
+	// Layout is the metric layout of an ingester's check (its config names
+	// the metrics); nil means the plugin manifest's.
+	Layout []plugin.MetricDef
 }
 
 // Options configure a runner.
@@ -289,6 +292,10 @@ func (r *Runner) reload(ctx context.Context) error {
 	defer r.mu.Unlock()
 	next := make(map[uuid.UUID]*entry, len(jobs))
 	for _, j := range jobs {
+		// Ingesters do not run: their data is pushed (F08).
+		if p, ok := plugin.Lookup(j.Plugin); ok && p.Manifest().Kind == plugin.KindIngester {
+			continue
+		}
 		iv := time.Duration(j.IntervalSeconds) * time.Second
 		e := r.entries[j.CheckID]
 		if e == nil || e.interval != iv {

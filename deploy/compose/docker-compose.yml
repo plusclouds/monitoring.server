@@ -79,6 +79,8 @@ services:
       MONITOR_KEK: ${MONITOR_KEK:?set MONITOR_KEK in .env}
       MONITOR_API__PUBLIC_URL: ${MONITOR_PUBLIC_URL:-http://localhost:8443}
       MONITOR_API__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
+      MONITOR_INGEST__HTTP__PUBLIC_URL: ${MONITOR_PUBLIC_URL:-http://localhost:9443}
+      MONITOR_INGEST__HTTP__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
       MONITOR_PLATFORM__IDENTITY_SOURCE: ${MONITOR_IDENTITY_SOURCE:-plusclouds}
     configs:
       - source: monitor-config
@@ -88,6 +90,7 @@ services:
     networks: [backend, frontend]
     ports:
       - "${MONITOR_API_BIND:-127.0.0.1}:${MONITOR_API_PORT:-8443}:8443"
+      - "${MONITOR_API_BIND:-127.0.0.1}:${MONITOR_INGEST_PORT:-9443}:9443"
     stop_grace_period: 40s   # node.shutdown_grace is 30s
 
   # Runs once per `up`: creates the installation ID, the platform tenant and
@@ -131,8 +134,14 @@ configs:
       probe_service:
         enabled: false   # not implemented in this release
       ingest:
-        http: { enabled: false }
-        mqtt: { enabled: false }
+        # HTTP push (F08): devices POST to <public URL>/ingest/v1/<check_id>.
+        # Plain HTTP inside the stack like the API; the reverse proxy
+        # terminates TLS and routes /ingest/ here.
+        http:
+          enabled: true
+          listen: ":9443"
+          tls: { cert_file: "", key_file: "" }
+        mqtt: { enabled: false }   # not implemented in this release
       self_monitoring:
         # Loopback inside the container; Docker's health check probes it
         # with `monitor health`.

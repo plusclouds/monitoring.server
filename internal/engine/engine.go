@@ -220,7 +220,11 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, rp *runner.Result) (strin
 	if p, ok := plugin.Lookup(r.Plugin); ok {
 		m := p.Manifest()
 		manifest = m
-		for _, d := range m.Metrics {
+		defs := m.Metrics
+		if r.Layout != nil {
+			defs = r.Layout
+		}
+		for _, d := range defs {
 			cfg.Metrics = append(cfg.Metrics, d.Name)
 		}
 		if m.Kind == plugin.KindCollector {

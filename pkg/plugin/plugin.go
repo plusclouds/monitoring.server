@@ -220,10 +220,31 @@ type Collector interface {
 	Collect(ctx context.Context, target Target) (Batch, Inventory, error)
 }
 
-// Ingester receives pushed data (F08).
+// Ingester receives pushed data instead of running (F08). The ingest role
+// accepts a message for one of its checks and the plugin turns it into
+// results. Its metrics are named by each check's config, so the layout is
+// per check: Manifest.Metrics is empty.
 type Ingester interface {
-	Manifest() Manifest
-	Start(ctx context.Context, sink ResultSink) error
+	Plugin
+	// MetricsFor is the metric layout of a check with this (valid) config.
+	MetricsFor(cfg json.RawMessage) ([]MetricDef, error)
+	// Parse turns one pushed message into results, oldest first, with
+	// Metrics aligned with MetricsFor(cfg). A zero Time means the time the
+	// message arrived. An error means the message is malformed.
+	Parse(cfg json.RawMessage, body []byte) ([]Result, error)
+}
+
+// MetricsOf is the metric layout of a check: the manifest's, or for an
+// ingester the one its config names (nil when the config is invalid).
+func MetricsOf(p Plugin, cfg json.RawMessage) []MetricDef {
+	if in, ok := p.(Ingester); ok {
+		defs, err := in.MetricsFor(cfg)
+		if err != nil {
+			return nil
+		}
+		return defs
+	}
+	return p.Manifest().Metrics
 }
 
 // Batch is a collector run: the device-level status and output (a summary
@@ -258,11 +279,6 @@ type ChildDevice struct {
 	// host a VM runs on); empty for the collector's own device.
 	ParentKey string
 	Info      DeviceInfo
-}
-
-// ResultSink receives results from ingesters.
-type ResultSink interface {
-	Submit(ctx context.Context, checkID string, r Result) error
 }
 
 // Settings are runner-wide options (F04) that some plugins need, passed to

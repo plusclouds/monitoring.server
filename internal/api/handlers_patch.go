@@ -185,7 +185,7 @@ func (s *Server) PatchCheck(ctx context.Context, req gen.PatchCheckRequestObject
 	if err != nil {
 		return nil, err
 	}
-	return gen.PatchCheck200JSONResponse(toAPICheck(c)), nil
+	return gen.PatchCheck200JSONResponse(toAPICheck(c, s.ingestURL)), nil
 }
 
 // siteWrite is a site's client-writable fields in their write form.
