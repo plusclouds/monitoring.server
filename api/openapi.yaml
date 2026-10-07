@@ -60,6 +60,8 @@ tags:
     description: Stored check metrics, rollups and retention (F07, ADR-0003)
   - name: usage
     description: Billable usage for PlusClouds billing (F13)
+  - name: ingest
+    description: The embedded MQTT broker's credentials, profiles and devices (F08, F12)
 
 paths:
   /me:
@@ -2079,6 +2081,224 @@ paths:
                     additionalProperties: { type: number, format: double }
         default: { $ref: "#/components/responses/Problem" }
 
+  /ingest/mqtt-credentials:
+    get:
+      operationId: listMqttCredentials
+      tags: [ingest]
+      summary: The tenant's MQTT credentials, by name
+      responses:
+        "200":
+          description: Credentials (passwords are never shown again)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/MqttCredential" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: createMqttCredential
+      tags: [ingest]
+      summary: Create an MQTT credential
+      description: |
+        Requires the configuration role. The credential decides the tenant
+        of every device that connects with it. A `device` credential may only
+        publish under `<prefix>/<device_key>/...`; a `shared` one under any
+        key of the tenant (FixLean firmware today: one password for every
+        sensor). The password, given or generated, is in `password` only in
+        this response. `allow_plain` lets it use the plain listener (1883,
+        for firmware without TLS). Unknown keys create a `sensor` device with
+        a `push.mqtt` and an `mqtt.connection` check when `auto_register` is
+        on and the tenant is below `max_devices`; otherwise the messages are
+        dropped and listed under `GET /ingest/unregistered`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MqttCredentialCreate" }
+      responses:
+        "201":
+          description: The credential with its password, shown once
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MqttCredential" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /ingest/mqtt-credentials/{credential_id}:
+    parameters:
+      - $ref: "#/components/parameters/MqttCredentialID"
+    get:
+      operationId: getMqttCredential
+      tags: [ingest]
+      summary: One MQTT credential
+      responses:
+        "200":
+          description: The credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MqttCredential" }
+        default: { $ref: "#/components/responses/Problem" }
+    patch:
+      operationId: patchMqttCredential
+      tags: [ingest]
+      summary: Rename, enable or disable a credential, or change its flags
+      description: |
+        Requires the configuration role. Kind, key, username and profile do not
+        change. A disabled credential stops new connections within the cache
+        time (`ingest.mqtt.credential_cache_ttl`, 60 s); open ones keep going
+        until they reconnect.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MqttCredentialPatch" }
+      responses:
+        "200":
+          description: The credential
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MqttCredential" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: deleteMqttCredential
+      tags: [ingest]
+      summary: Delete a credential
+      responses:
+        "204": { description: Deleted }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /ingest/mqtt-credentials/{credential_id}/rotate:
+    post:
+      operationId: rotateMqttCredential
+      tags: [ingest]
+      summary: Replace a credential's password
+      description: Requires the configuration role. Send `password` to set one (8 to 256 characters), or nothing to have one generated; it is returned once.
+      parameters:
+        - $ref: "#/components/parameters/MqttCredentialID"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                password: { type: string, minLength: 8, maxLength: 256 }
+      responses:
+        "200":
+          description: The credential with its new password
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MqttCredential" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /ingest/profiles:
+    get:
+      operationId: listIngestProfiles
+      tags: [ingest]
+      summary: Built-in MQTT payload profiles
+      responses:
+        "200":
+          description: Profiles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [name, description]
+                      properties:
+                        name: { type: string }
+                        description: { type: string }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /ingest/unregistered:
+    get:
+      operationId: listUnregistered
+      tags: [ingest]
+      summary: Device keys whose messages were dropped, newest first
+      description: Keys that published without a device, because the credential's `auto_register` is off or the tenant is at `max_devices`. Binding a device to the key (`POST /devices/{device_id}/mqtt`) removes it from the list.
+      responses:
+        "200":
+          description: Keys
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [device_key, credential_id, reason, messages, first_seen, last_seen]
+                      properties:
+                        device_key: { type: string }
+                        credential_id: { type: [string, "null"], format: uuid }
+                        reason: { type: string }
+                        messages: { type: integer, format: int64 }
+                        first_seen: { type: string, format: date-time }
+                        last_seen: { type: string, format: date-time }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /devices/{device_id}/mqtt:
+    parameters:
+      - $ref: "#/components/parameters/DeviceID"
+    get:
+      operationId: getDeviceMqtt
+      tags: [ingest]
+      summary: The device's MQTT binding and current connection
+      responses:
+        "200":
+          description: The binding; 404 when the device is not an MQTT device
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeviceMqtt" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      operationId: bindDeviceMqtt
+      tags: [ingest]
+      summary: Make a device an MQTT device (pre-registration)
+      description: |
+        Requires the configuration role. Messages under `<prefix>/<device_key>/...`
+        then belong to this device: it gets a `push.mqtt` data check (last-seen
+        5 minutes until the device connects) and an `mqtt.connection` check,
+        which is its host check unless it has one. These checks do not count
+        toward `max_checks`. 409 `already-bound` when the device or the key
+        is bound already.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [device_key]
+              properties:
+                device_key: { type: string, maxLength: 64, description: "The key in the device's topics, e.g. its MAC" }
+                profile: { type: string, enum: [fixlean-esp, json], default: json }
+      responses:
+        "200":
+          description: The binding
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeviceMqtt" }
+        default: { $ref: "#/components/responses/Problem" }
+    delete:
+      operationId: unbindDeviceMqtt
+      tags: [ingest]
+      summary: Remove the MQTT binding and its two checks
+      responses:
+        "204": { description: Unbound }
+        default: { $ref: "#/components/responses/Problem" }
+
 components:
   securitySchemes:
     bearer:
@@ -2141,6 +2361,11 @@ components:
       schema: { type: string, format: uuid }
     SiteID:
       name: site_id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    MqttCredentialID:
+      name: credential_id
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -2666,16 +2891,78 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
 
+    MqttCredential:
+      type: object
+      required: [id, name, username, kind, device_key, profile, allow_plain, auto_register, enabled, created_at, updated_at, last_used_at]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        username: { type: string }
+        password: { type: string, description: "Only in the create and rotate responses" }
+        kind: { type: string, enum: [device, shared] }
+        device_key: { type: [string, "null"], description: "device kind: the only key it may publish under (stored upper-case)" }
+        profile: { type: string, enum: [fixlean-esp, json], description: Profile of devices it registers }
+        allow_plain: { type: boolean }
+        auto_register: { type: boolean }
+        enabled: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        last_used_at: { type: [string, "null"], format: date-time }
+
+    MqttCredentialCreate:
+      type: object
+      additionalProperties: false
+      required: [name, kind]
+      properties:
+        name: { type: string, maxLength: 200 }
+        username: { type: string, maxLength: 128, description: "Default: generated (mq-...). Unique across the server" }
+        password: { type: string, minLength: 8, maxLength: 256, description: "Default: generated. Set it to keep existing firmware's password" }
+        kind: { type: string, enum: [device, shared] }
+        device_key: { type: string, maxLength: 64, description: Required for kind device }
+        profile: { type: string, enum: [fixlean-esp, json], default: json }
+        allow_plain: { type: boolean, default: false }
+        auto_register: { type: boolean, default: true }
+        enabled: { type: boolean, default: true }
+
+    MqttCredentialPatch:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, maxLength: 200 }
+        allow_plain: { type: boolean }
+        auto_register: { type: boolean }
+        enabled: { type: boolean }
+
+    DeviceMqtt:
+      type: object
+      required: [device_id, device_key, data_check_id, connection_check_id, created_at, session]
+      properties:
+        device_id: { type: string, format: uuid }
+        device_key: { type: string }
+        data_check_id: { type: string, format: uuid }
+        connection_check_id: { type: [string, "null"], format: uuid }
+        created_at: { type: string, format: date-time }
+        session:
+          type: [object, "null"]
+          description: The open connection; null while the device is not connected
+          required: [node_id, client_id, remote, keepalive, connected_at]
+          properties:
+            node_id: { type: string }
+            client_id: { type: string }
+            remote: { type: string }
+            keepalive: { type: integer }
+            connected_at: { type: string, format: date-time }
+
     PushSource:
       type: object
       required: [ingest_path, ingest_url, token_prefix, token_created_at, last_push_at]
       properties:
-        ingest_path: { type: string, description: "/ingest/v1/{check_id} on the ingest listener" }
+        ingest_path: { type: [string, "null"], description: "/ingest/v1/{check_id} on the ingest listener; null for push.mqtt" }
         ingest_url:
           type: [string, "null"]
-          description: The full URL devices POST to; null when the server has no `ingest.http.public_url`.
-        token_prefix: { type: string, description: The start of the current token, to tell tokens apart }
-        token_created_at: { type: string, format: date-time }
+          description: The full URL devices POST to; null for push.mqtt or when the server has no `ingest.http.public_url`.
+        token_prefix: { type: [string, "null"], description: "The start of the current token, to tell tokens apart; null for push.mqtt (no HTTP token)" }
+        token_created_at: { type: [string, "null"], format: date-time }
         last_push_at: { type: [string, "null"], format: date-time, description: Time of the newest accepted message }
 
     Whoopsy:

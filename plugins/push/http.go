@@ -136,14 +136,20 @@ func compile(raw json.RawMessage) (compiled, error) {
 	if err != nil {
 		return compiled{}, err
 	}
+	return compileMapping(cfg.Metrics, cfg.Status, cfg.Output, cfg.Timestamp)
+}
+
+// compileMapping parses a mapping's selectors; metrics in name order.
+func compileMapping(metrics map[string]string, status, output, timestamp string) (compiled, error) {
 	var c compiled
-	names := make([]string, 0, len(cfg.Metrics))
-	for n := range cfg.Metrics {
+	var err error
+	names := make([]string, 0, len(metrics))
+	for n := range metrics {
 		names = append(names, n)
 	}
 	slices.Sort(names)
 	for _, n := range names {
-		s, err := parseSelector(cfg.Metrics[n])
+		s, err := parseSelector(metrics[n])
 		if err != nil {
 			return compiled{}, err
 		}
@@ -152,7 +158,7 @@ func compile(raw json.RawMessage) (compiled, error) {
 	for _, f := range []struct {
 		src string
 		dst *selector
-	}{{cfg.Status, &c.status}, {cfg.Output, &c.output}, {cfg.Timestamp, &c.timestamp}} {
+	}{{status, &c.status}, {output, &c.output}, {timestamp, &c.timestamp}} {
 		if f.src == "" {
 			continue
 		}
@@ -170,6 +176,10 @@ func (*HTTP) Parse(raw json.RawMessage, body []byte) ([]plugin.Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid check config: %w", err)
 	}
+	return c.parse(body)
+}
+
+func (c compiled) parse(body []byte) ([]plugin.Result, error) {
 	dec := json.NewDecoder(bytes.NewReader(body))
 	dec.UseNumber()
 	var doc any
@@ -242,7 +252,9 @@ func (c compiled) message(m any) (plugin.Result, error) {
 	}
 	if r.Output == "" {
 		r.Output = "pushed: " + strings.Join(found, ", ")
-		if len(found) == 0 {
+		if len(found) == 0 && len(c.metrics) > 0 {
+			r.Output = "pushed, but none of the configured metric fields was in the message"
+		} else if len(found) == 0 {
 			r.Output = "pushed"
 		}
 	}

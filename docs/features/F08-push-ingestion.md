@@ -67,7 +67,19 @@ Pushed timestamps are accepted from up to 24 h in the past (devices that buffer 
 - **Timestamps.** Up to 24 h old or 5 minutes ahead are kept; outside that window the server time is used and the output says so. Results older than 2 × the interval are metrics only (the engine's late rule).
 - **Fuzzing.** `FuzzParse` runs for 15 s in `make test` (CI).
 - **Billing.** `push.http` uses `default_weight` (1) until PlusClouds sets a weight.
-- **Not yet:** the tenant batch endpoint (`/ingest/v1/batch`, with F12), MQTT (part 2), SNMP traps and syslog (phase 2).
+- **Not yet:** the tenant batch endpoint (`/ingest/v1/batch`, with F12), SNMP traps and syslog (phase 2).
+
+## As built (M5, part 2: `v0.10.0`)
+
+- **Broker.** `mochi-mqtt/server` v2.7.9 (MIT) in the `ingest` role: MQTT 3.1.1 and 5, TLS listener (`ingest.mqtt.listen`, 8883) and the plain listener (`ingest.mqtt.legacy`, 1883) when enabled. The certificate is read again when its file changes (checked once a minute), for Let's Encrypt renewals. QoS up to 1; every message is acknowledged after the pipeline took it and never routed or retained; nothing may subscribe. Clean sessions only.
+- **Credentials** (`/v1/ingest/mqtt-credentials`): username (global), Argon2id password (given or generated, shown once; `rotate`), `kind` `device` (bound to one `device_key`) or `shared` (any key of the tenant, as FixLean firmware uses today), `profile`, `allow_plain` (only such credentials may use 1883), `auto_register`, `enabled`. Successful logins are cached for `credential_cache_ttl` (60 s), so a disabled or rotated credential stops new connections within it; `max_concurrent_auth` bounds Argon2 work; connect rate per IP and publish rate per client are enforced.
+- **Topics.** `<prefix>/<device_key>/...`: the second segment is the device key (a MAC, a serial), compared without case and stored upper-case. A device credential publishing under another key is disconnected (MQTT 3.1.1) or gets "not authorized" (MQTT 5).
+- **Devices.** The first message under an unknown key creates a `sensor` device named after the key (tag `vendor` from the first segment) with a `push.mqtt` data check and an `mqtt.connection` check (the host check unless the device has one); within `max_devices`. Auto-registration off or the tenant at its limit: the message is acknowledged, dropped and listed in `GET /v1/ingest/unregistered`. `POST /v1/devices/{id}/mqtt` pre-registers a device (`GET` shows the binding and the live session, `DELETE` unbinds). MQTT checks do not count toward `max_checks`; `push.mqtt` and `mqtt.connection` cannot be created through `POST …/checks`.
+- **Profiles** (`GET /v1/ingest/profiles`): `fixlean-esp` (see F12) and `json`: every numeric field (booleans as 1/0, nested objects joined with `_`, three levels) becomes a metric named in lowercase with `_`; or the check's `metrics` selectors pick them as for `push.http`. New keys are added to the check's `fields` (sorted) up to `max_discovered_fields` (200), which changes the layout version.
+- **Online/offline.** A session is tied to the device of the first key it publishes under (a client publishing for several keys is a gateway and reports no connection). The first data message of a session sets the connection check OK; a disconnect or keepalive timeout (1.5 × keepalive) sets it CRITICAL, unless the node is shutting down or a newer session took over (`mqtt_sessions` row check). The `push.mqtt` last-seen rule is the fallback: interval 1.5 × keepalive clamped to 60–300 s, `missed_count` 1. Last-seen times are written every 2 s in one statement.
+- **Billing.** `mqtt.connection` weight 0 (proposed), `push.mqtt` the default weight: one sensor bills once.
+- **Tests.** `TestMQTTBroker` (credentials, listeners, registration, discovery, inventory, thresholds, disconnect, ACL, limits, pre-registration, rotation), `FuzzDecode` in CI.
+- **Not yet:** external-broker mode (shadow migration, F12 step 1), PROXY protocol, the metric metadata API (`PATCH /v1/checks/{id}/metrics/{key}`), SSE telemetry ticks, client certificates.
 
 ## Open questions
 

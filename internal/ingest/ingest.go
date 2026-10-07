@@ -30,7 +30,6 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/tlsconf"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
-	"github.com/plusclouds/monitoring.server/plugins/push"
 )
 
 // Time window for pushed timestamps (F08): older or newer messages get the
@@ -247,7 +246,7 @@ func (s *Server) push(w http.ResponseWriter, r *http.Request) {
 	var newest time.Time
 	interval := time.Duration(src.interval) * time.Second
 	for _, res := range results {
-		res.Time = window(&res, now)
+		res.Time = Window(&res, now)
 		if res.Time.After(newest) {
 			newest = res.Time
 		}
@@ -273,9 +272,9 @@ func (s *Server) push(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprintf(w, `{"accepted":%d}`+"\n", len(results))
 }
 
-// window applies the timestamp rule: no time is now; a time more than 24 h
+// Window applies the timestamp rule (F08): no time is now; a time more than 24 h
 // old or 5 minutes ahead is replaced by now, with a note.
-func window(r *plugin.Result, now time.Time) time.Time {
+func Window(r *plugin.Result, now time.Time) time.Time {
 	if r.Time.IsZero() {
 		return now
 	}
@@ -323,6 +322,18 @@ func (s *Server) fail(w http.ResponseWriter, status int, typ, title, detail stri
 	})
 }
 
+// missedCount is a push check's missed_count (push.http and push.mqtt
+// share the field), as the sweep query reads it.
+func missedCount(cfg json.RawMessage) int {
+	var c struct {
+		MissedCount int `json:"missed_count"`
+	}
+	if json.Unmarshal(cfg, &c) != nil || c.MissedCount < 1 {
+		return 3
+	}
+	return c.MissedCount
+}
+
 // Sweep sends a CRITICAL result for every enabled push check that has not
 // heard from its device for missed_count intervals, at most once per
 // interval while the silence lasts. A claim in the database makes it safe
@@ -360,7 +371,7 @@ func (s *Server) Sweep(ctx context.Context) (int, error) {
 		if p, ok := plugin.Lookup(x.plugin); ok {
 			layout = plugin.MetricsOf(p, x.config)
 		}
-		missed := push.MissedCount(x.config)
+		missed := missedCount(x.config)
 		out := "no data received yet"
 		if x.last != nil {
 			out = "no data since " + x.last.UTC().Format(time.RFC3339) + " (" + strconv.Itoa(missed) + " intervals of " +

@@ -81,6 +81,8 @@ services:
       MONITOR_API__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
       MONITOR_INGEST__HTTP__PUBLIC_URL: ${MONITOR_PUBLIC_URL:-http://localhost:9443}
       MONITOR_INGEST__HTTP__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
+      MONITOR_INGEST__MQTT__ENABLED: ${MONITOR_MQTT_ENABLED:-false}
+      MONITOR_INGEST__MQTT__LEGACY__ENABLED: ${MONITOR_MQTT_PLAIN_ENABLED:-false}
       MONITOR_PLATFORM__IDENTITY_SOURCE: ${MONITOR_IDENTITY_SOURCE:-plusclouds}
     configs:
       - source: monitor-config
@@ -91,6 +93,11 @@ services:
     ports:
       - "${MONITOR_API_BIND:-127.0.0.1}:${MONITOR_API_PORT:-8443}:8443"
       - "${MONITOR_API_BIND:-127.0.0.1}:${MONITOR_INGEST_PORT:-9443}:9443"
+      # MQTT for devices, on the public address (MONITOR_MQTT_BIND).
+      - "${MONITOR_MQTT_BIND:-0.0.0.0}:${MONITOR_MQTT_PORT:-8883}:8883"
+      - "${MONITOR_MQTT_BIND:-0.0.0.0}:${MONITOR_MQTT_PLAIN_PORT:-1883}:1883"
+    volumes:
+      - ./tls:/etc/monitor/tls:ro   # mqtt.crt and mqtt.key, readable by uid 65532
     stop_grace_period: 40s   # node.shutdown_grace is 30s
 
   # Runs once per `up`: creates the installation ID, the platform tenant and
@@ -141,7 +148,18 @@ configs:
           enabled: true
           listen: ":9443"
           tls: { cert_file: "", key_file: "" }
-        mqtt: { enabled: false }   # not implemented in this release
+        # Embedded MQTT broker (F08, F12), off until MONITOR_MQTT_ENABLED=true
+        # in .env and a certificate in ./tls (see mqtt-cert-hook.sh). Devices
+        # connect directly (TCP), not through the HTTP reverse proxy.
+        mqtt:
+          enabled: false
+          listen: ":8883"
+          tls:
+            cert_file: /etc/monitor/tls/mqtt.crt
+            key_file: /etc/monitor/tls/mqtt.key
+          legacy:
+            enabled: false   # plain 1883 for FixLean firmware: MONITOR_MQTT_PLAIN_ENABLED=true
+            listen: ":1883"
       self_monitoring:
         # Loopback inside the container; Docker's health check probes it
         # with `monitor health`.

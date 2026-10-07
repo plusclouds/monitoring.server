@@ -145,6 +145,7 @@ func Default() Config {
 			"icmp": 1, "http": 2, "snmp.get": 1, "snmp.system": 1, "snmp.ups": 1, "snmp.sensor": 1,
 			"snmp.pdu": 2, "snmp.interfaces": 3, "redfish.health": 2,
 			"xapi.pool": 0, "xapi.pool:host": 3, "camera.snapshot": 2, "rtsp.stream": 2, // each pool host bills, not the pool (2026-10-07)
+			"mqtt.connection": 0, // an MQTT sensor bills once, through its push.mqtt data check (proposed, v0.10.0)
 		}, DefaultWeight: 1, WhoopsyMultiplier: 5},
 		SelfMonitoring: SelfMonitoring{
 			Listen:             "127.0.0.1:9090",

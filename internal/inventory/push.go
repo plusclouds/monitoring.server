@@ -13,14 +13,13 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/audit"
 	"github.com/plusclouds/monitoring.server/internal/auth"
 	"github.com/plusclouds/monitoring.server/internal/errs"
-	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
 
 // PushSource is what a push check (F08) shows about its ingest token and
 // its last message. The token itself is shown once.
 type PushSource struct {
-	TokenPrefix    string     `json:"token_prefix"`
-	TokenCreatedAt time.Time  `json:"token_created_at"`
+	TokenPrefix    *string    `json:"token_prefix"` // nil for MQTT data checks: they have no HTTP token
+	TokenCreatedAt *time.Time `json:"token_created_at"`
 	LastPushAt     *time.Time `json:"last_push_at"`
 }
 
@@ -61,8 +60,8 @@ func RotatePushToken(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.
 	if err != nil {
 		return Check{}, err
 	}
-	if p, ok := plugin.Lookup(c.Plugin); !ok || p.Manifest().Kind != plugin.KindIngester {
-		return Check{}, errs.Conflictf("not-push", "%s is not a push check; only push checks have an ingest token", c.Plugin)
+	if c.Plugin != "push.http" {
+		return Check{}, errs.Conflictf("not-push", "%s has no ingest token; only push.http checks do", c.Plugin)
 	}
 	token, err := setPushToken(ctx, tx, c.TenantID, id)
 	if err != nil {
@@ -73,5 +72,5 @@ func RotatePushToken(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.
 	}
 	c.PushToken = token
 	return c, audit.Write(ctx, tx, actor.Event(c.TenantID, "check.push_token.rotate", "check", id.String(), nil,
-		map[string]any{"token_prefix": c.Push.TokenPrefix}))
+		map[string]any{"token_prefix": *c.Push.TokenPrefix}))
 }

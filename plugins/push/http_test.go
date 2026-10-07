@@ -87,7 +87,7 @@ func TestParse(t *testing.T) {
 	}
 
 	// Without a status selector every message is OK and the output lists the values.
-	if rs, err := p.Parse(c, []byte(`{"state":"ok"}`)); err != nil || !rs[0].Time.IsZero() {
+	if rs, err := p.Parse(c, []byte(`{"state":"ok"}`)); err != nil || !rs[0].Time.IsZero() || !strings.Contains(rs[0].Output, "none of the configured") {
 		t.Errorf("no timestamp: %+v %v", rs, err)
 	}
 	plain := cfg(t, HTTPConfig{Metrics: map[string]string{"v": "$.v"}})
