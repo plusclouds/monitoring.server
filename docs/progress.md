@@ -167,6 +167,10 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### M4, part 2g — camera streams
+
+`rtsp.stream`: frame rate, bitrate, resolution, packet loss and jitter of a camera's RTSP stream over a few seconds, without decoding video (Hikvision, Dahua, Axis paths or a given path). Verified against an in-process RTSP server (`TestStream`, `TestStreamFailures`). Also: `camera.snapshot` weight 2 confirmed by PlusClouds.
+
 ### v0.8.0 — billing per pool host, Whoopsy! band history
 
 - Each hypervisor host of an XCP-ng pool bills as `xapi.pool:host` (weight 3), the pool check at weight 0; `object_periods` keep the billable time under the same rules as checks (`TestHostBilling`).
@@ -220,5 +224,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4: `rtsp.stream` (video stream health), then dashboards for interfaces, server hardware, PDUs, XCP-ng and cameras.
+2. M4: dashboards for interfaces, server hardware, PDUs, XCP-ng and cameras; then the compatibility checks on our own devices.
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.

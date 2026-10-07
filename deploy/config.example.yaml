@@ -385,6 +385,7 @@ usage:
     redfish.health: 2
     xapi.pool: 0            # the pool itself is not billed...
     xapi.pool:host: 3       # ...each of its hypervisor hosts is
+    camera.snapshot: 2
   default_weight: 1   # plugins not listed
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
   # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry
