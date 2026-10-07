@@ -151,6 +151,10 @@ Rollback during step 3 is moving the broker hostname back to the collector.
 - A tenant at its device limit does not gain devices, and existing devices keep reporting.
 - The `fixlean-esp` profile parser has a fuzz test seeded with the collector's recorded payloads.
 
+## As built (`v0.10.0`)
+
+The broker, the `fixlean-esp` profile, legacy shared credentials on the plain listener, auto-registration, field discovery (into the check's `fields`), status payloads to inventory and metrics, the `mqtt.connection` host check and the last-seen fallback are in place (details in F08). Status metrics: `rssi_dbm`, `runtime_ms`, `memory_free_bytes`, `memory_min_free_bytes` ("Memory Info" as a number, or an object whose keys mention free and min). Field categories, display names and the metric metadata API, the lake batch endpoint, SSE telemetry and the shadow (external-broker) mode are still to come.
+
 ## Open questions
 
 1. **Read side:** the widget query API, datasource registry, panel alerts and dashboard reports are UI features, which the engine does not have. Do they move to Grafana dashboards plus `/v1/metrics/query`, into another FixLean service, or stay in a slimmed-down collector reading the engine? This decides when step 5 can happen.

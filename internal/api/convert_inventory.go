@@ -160,9 +160,12 @@ func pushToAPI(c inventory.Check, ingestURL string) *gen.PushSource {
 	if c.Push == nil {
 		return nil
 	}
+	out := &gen.PushSource{TokenPrefix: c.Push.TokenPrefix, TokenCreatedAt: c.Push.TokenCreatedAt, LastPushAt: c.Push.LastPushAt}
+	if c.Push.TokenPrefix == nil { // push.mqtt: data comes through the broker
+		return out
+	}
 	path := "/ingest/v1/" + c.ID.String()
-	out := &gen.PushSource{IngestPath: path, TokenPrefix: c.Push.TokenPrefix,
-		TokenCreatedAt: c.Push.TokenCreatedAt.UTC(), LastPushAt: c.Push.LastPushAt}
+	out.IngestPath = &path
 	if ingestURL != "" {
 		u := strings.TrimSuffix(ingestURL, "/") + path
 		out.IngestUrl = &u

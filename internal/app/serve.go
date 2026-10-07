@@ -26,6 +26,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/ingest"
 	"github.com/plusclouds/monitoring.server/internal/logging"
 	"github.com/plusclouds/monitoring.server/internal/metrics"
+	"github.com/plusclouds/monitoring.server/internal/mqtt"
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
@@ -166,7 +167,12 @@ func Serve(ctx context.Context, o ServeOptions) error {
 		}
 		if has(config.RoleIngest) {
 			if o.Config.Ingest.MQTT.Enabled {
-				log.Warn("ingest.mqtt is not implemented yet and will not start")
+				br, err := mqtt.New(mqtt.Options{Config: o.Config.Ingest.MQTT, TLS: o.Config.TLS, NodeID: o.Config.Node.ID,
+					System: pools.system, Results: results, Logger: log.Logger, Registry: reg})
+				if err != nil {
+					return err
+				}
+				g.Go(func() error { return br.Run(gctx) })
 			}
 			if o.Config.Ingest.HTTP.Enabled {
 				in, err := ingest.New(ingest.Options{Config: o.Config.Ingest.HTTP, TLS: o.Config.TLS, System: pools.system,

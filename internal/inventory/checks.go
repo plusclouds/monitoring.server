@@ -275,6 +275,17 @@ func ListChecks(ctx context.Context, tx pgx.Tx, f CheckFilter, p Page) ([]Check,
 
 // CreateCheck adds a check to a device within the tenant's max_checks limit.
 func CreateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.UUID, lim Limits, in CheckInput) (Check, error) {
+	if slices.Contains(MQTTPlugins, in.Plugin) {
+		return Check{}, errs.Invalidf("plugin", "%s checks are created by binding the device to MQTT: POST /v1/devices/{device_id}/mqtt", in.Plugin)
+	}
+	return createCheck(ctx, tx, actor, device, lim, in)
+}
+
+// MQTTPlugins are the checks the broker keeps (F12). They do not count
+// toward max_checks: the device they belong to counts toward max_devices.
+var MQTTPlugins = []string{"push.mqtt", "mqtt.connection"}
+
+func createCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.UUID, lim Limits, in CheckInput) (Check, error) {
 	d, err := GetDevice(ctx, tx, device)
 	if err != nil {
 		return Check{}, err
@@ -286,10 +297,12 @@ func CreateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 		return Check{}, err
 	}
 	var n int
-	if err := tx.QueryRow(ctx, `SELECT count(*) FROM checks WHERE tenant_id = $1`, d.TenantID).Scan(&n); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM checks WHERE tenant_id = $1 AND NOT plugin = ANY($2)`,
+		d.TenantID, MQTTPlugins).Scan(&n); err != nil {
 		return Check{}, err
 	}
-	if n >= lim.MaxChecks {
+	mqtt := slices.Contains(MQTTPlugins, in.Plugin)
+	if n >= lim.MaxChecks && !mqtt {
 		return Check{}, errs.Conflictf("limit-reached", "the tenant has reached its limit of %d checks", lim.MaxChecks)
 	}
 	id, err := uuid.NewV7()
@@ -311,8 +324,13 @@ func CreateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 		return Check{}, err
 	}
 	var token string
-	if p, _ := plugin.Lookup(in.Plugin); p != nil && p.Manifest().Kind == plugin.KindIngester {
+	switch in.Plugin {
+	case "push.http":
 		if token, err = setPushToken(ctx, tx, d.TenantID, id); err != nil {
+			return Check{}, err
+		}
+	case "push.mqtt": // last-seen rule, no HTTP token
+		if _, err := tx.Exec(ctx, `INSERT INTO push_sources (check_id, tenant_id, token_created_at) VALUES ($1, $2, NULL)`, id, d.TenantID); err != nil {
 			return Check{}, err
 		}
 	}
@@ -321,7 +339,7 @@ func CreateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 		return Check{}, err
 	}
 	c.PushToken = token
-	if n+1 == lim.MaxChecks {
+	if n+1 == lim.MaxChecks && !mqtt {
 		if err := incident.LimitReached(ctx, tx, d.TenantID, "checks", lim.MaxChecks, n+1); err != nil {
 			return Check{}, err
 		}

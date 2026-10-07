@@ -1,6 +1,6 @@
 # ADR-0013: Embedded MQTT broker in the ingest role
 
-**Status:** Proposed · **Date:** 2026-09-27
+**Status:** Accepted, built in `v0.10.0` (see F08 "As built") · **Date:** 2026-09-27
 
 ## Context
 

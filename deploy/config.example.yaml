@@ -387,7 +387,8 @@ usage:
     xapi.pool:host: 3       # ...each of its hypervisor hosts is
     camera.snapshot: 2
     rtsp.stream: 2
-  default_weight: 1   # plugins not listed
+    mqtt.connection: 0      # an MQTT sensor bills once, through its push.mqtt check (proposed)
+  default_weight: 1   # plugins not listed (push.http, push.mqtt)
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
   # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry
   # such as "http+whoopsy: 8" overrides it for one plugin.

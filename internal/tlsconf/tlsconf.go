@@ -5,6 +5,9 @@ package tlsconf
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
+	"sync"
+	"time"
 
 	"github.com/plusclouds/monitoring.server/internal/config"
 )
@@ -68,4 +71,53 @@ func parseSuites(names []string) ([]uint16, error) {
 		out = append(out, id)
 	}
 	return out, nil
+}
+
+// ServerReloading is Server with a certificate that is read again when its
+// files change (checked at most once a minute), so a renewed certificate
+// (Let's Encrypt) applies to long-running listeners without a restart.
+func ServerReloading(p config.TLSPolicy, l config.ListenerTLS) (*tls.Config, error) {
+	c, err := Base(p)
+	if err != nil {
+		return nil, err
+	}
+	r := &reloader{cert: l.CertFile, key: l.KeyFile}
+	if err := r.load(); err != nil {
+		return nil, err
+	}
+	c.GetCertificate = r.get
+	return c, nil
+}
+
+type reloader struct {
+	cert, key string
+	mu        sync.Mutex
+	current   *tls.Certificate
+	modTime   time.Time
+	checked   time.Time
+}
+
+func (r *reloader) load() error {
+	st, err := os.Stat(r.cert)
+	if err != nil {
+		return fmt.Errorf("load certificate: %w", err)
+	}
+	cert, err := tls.LoadX509KeyPair(r.cert, r.key)
+	if err != nil {
+		return fmt.Errorf("load certificate: %w", err)
+	}
+	r.current, r.modTime = &cert, st.ModTime()
+	return nil
+}
+
+func (r *reloader) get(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if time.Since(r.checked) > time.Minute {
+		r.checked = time.Now()
+		if st, err := os.Stat(r.cert); err == nil && !st.ModTime().Equal(r.modTime) {
+			_ = r.load() // a half-written renewal keeps the old certificate until the next check
+		}
+	}
+	return r.current, nil
 }

@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-07 · **Latest release tag:** `v0.9.0`
+**Last updated:** 2026-10-07 · **Latest release tag:** `v0.10.0`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -13,7 +13,7 @@ This page records which milestones are done and what comes next. The milestone d
 | M3 — metrics | F07, Grafana data source and first dashboards | **Done** | Merged in PR #6; released as `v0.3.0-m3`, client decisions in `v0.3.1`. Deferred items below |
 | M3.5 — usage metering | F13: check periods, hourly close, `GET /v1/usage/tenants` for PlusClouds billing (pull only) | **Done** | Released as `v0.3.5-m3.5`. Counting rules and weights confirmed by PlusClouds (2026-10-07) |
 | M4 — alert noise and targets | F06 grouping and repeat notifications, F05 dependency suppression, then F10: SNMP, Redfish/IPMI, RTSP, XCP-ng, UPS/PDU | **Done in code** (`v0.4.0-m4a` to `v0.8.2`): alert noise, webhooks, SNMP checks and collectors, Redfish, APC facility, XCP-ng with discovered devices, cameras, dashboards. Not built: `ipmi.sensors` (Redfish covers our Dell, HPE and ASUS servers). Pending: verification on our own devices |
-| M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | **In progress** | Part 1 (HTTP push, `v0.9.0`) done; next: MQTT, self-monitoring, remote probes |
+| M5 — push and probes | F08 (embedded MQTT broker, [ADR-0013](adr/0013-embedded-mqtt-broker.md)), F09 basic, F11 | **In progress** | Part 1 (HTTP push, `v0.9.0`) and part 2 (MQTT broker, `v0.10.0`) done; next: self-monitoring, remote probes |
 | M6 — FixLean shadow | F12 steps 0–2 | Not started | Depends on M5 |
 | Gate 1 | Load test at 10,000 simulated devices, security review | Not started | Live on our own datacenter |
 
@@ -167,6 +167,10 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### v0.10.0 — M5 part 2: embedded MQTT broker
+
+Devices publish to the engine's own broker (TLS 8883, plain 1883 for FixLean firmware): per-credential tenants, topic ACLs, auto-registration within `max_devices`, field discovery, FixLean status payloads to inventory, an `mqtt.connection` host check for online/offline, and the `push.mqtt` last-seen rule. API: `/v1/ingest/mqtt-credentials`, `/v1/ingest/profiles`, `/v1/ingest/unregistered`, `/v1/devices/{id}/mqtt`. Migration `00022`. Verified by `TestMQTTBroker` and `FuzzDecode`. Compose keeps MQTT off until `MONITOR_MQTT_ENABLED=true` and a certificate in `deploy/compose/tls`.
+
 ### v0.9.0 — M5 part 1: HTTP push
 
 `push.http` checks: devices POST JSON to `/ingest/v1/{check_id}` with the check's own token; the config maps the body to metrics, a status and an output; silence for `missed_count` intervals goes CRITICAL. New `ingest` role listener, `POST /v1/checks/{id}/rotate-token`, `push` on checks, migration `00021`. Verified by `TestHTTPPush` (token, metrics, thresholds, batches, silence, rotation, limits) and `FuzzParse`. Deployment: Compose publishes port 9443 and the OpenResty site routes `/ingest/` to it.
@@ -241,5 +245,5 @@ Decided, no code: customers own their webhooks and see the server-generated secr
 ## Next steps
 
 1. Deploy `v0.4.1` or later and set retention on the live server: `monitor admin retention standard --raw-days 7 --rollup-5m-days 90 --rollup-1h-days 730`, and the same for `high-frequency` and `capacity`. Until a policy is set, data is kept forever.
-2. M4 is complete in code. Before Gate 1: run every plugin against our own devices (switches, Dell/HPE/ASUS BMCs, APC PDUs and UPSs, the XCP-ng pool, Hikvision/Dahua/Axis cameras), record a compatibility table and tune the camera thresholds; M5 is under way (HTTP push done; MQTT, self-monitoring and remote probes next).
+2. M4 is complete in code. Before Gate 1: run every plugin against our own devices (switches, Dell/HPE/ASUS BMCs, APC PDUs and UPSs, the XCP-ng pool, Hikvision/Dahua/Axis cameras), record a compatibility table and tune the camera thresholds; M5 is under way (HTTP push and the MQTT broker done; self-monitoring and remote probes next). Before the FixLean cutover: external-broker shadow mode (F12 step 1).
 3. Later (requested 2026-10-05): replication of devices and hosts between several monitoring servers. Recorded in the [feature index](features/README.md#phase-2-and-later); spec and milestone to be decided.
