@@ -31,7 +31,7 @@ Seconds are time-weighted inside the hour: a check added at 10:15 counts 2,700 s
     default_weight: 1   # plugins not listed
   ```
 
-- **Weights confirmed by PlusClouds (2026-10-07):** `icmp` 1, `http` 2, `snmp.get` 1, `snmp.system` 1, `snmp.ups` 1, `snmp.sensor` 1, `snmp.pdu` 2, `snmp.interfaces` 3, `redfish.health` 2, `xapi.pool` 0 with `xapi.pool:host` 3 (each pool host, decided 2026-10-07), `camera.snapshot` 2; Whoopsy! at 5× the plugin's weight. Push and LLM checks get their weights when those plugins exist (M5, F14); until then `default_weight` 1 covers any other plugin. PlusClouds reviews the weights after about a month of real usage. They are in `deploy/config.example.yaml`; they apply from the next full UTC hour after the operator deploys the config.
+- **Weights confirmed by PlusClouds (2026-10-07):** `icmp` 1, `http` 2, `snmp.get` 1, `snmp.system` 1, `snmp.ups` 1, `snmp.sensor` 1, `snmp.pdu` 2, `snmp.interfaces` 3, `redfish.health` 2, `xapi.pool` 0 with `xapi.pool:host` 3 (each pool host, decided 2026-10-07), `camera.snapshot` 2, `rtsp.stream` 2; Whoopsy! at 5× the plugin's weight. Push and LLM checks get their weights when those plugins exist (M5, F14); until then `default_weight` 1 covers any other plugin. PlusClouds reviews the weights after about a month of real usage. They are in `deploy/config.example.yaml`; they apply from the next full UTC hour after the operator deploys the config.
 - **Applying a change.** At start, the server compares the file's weights with the weights in force in the database.
   - Each difference takes effect at the **next full hour** and is recorded with an audit event (actor `file`).
   - A change needs a restart, like the rest of the config; no release is needed.
