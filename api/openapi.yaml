@@ -3084,14 +3084,17 @@ components:
 
     Availability:
       type: string
-      enum: [up, down, unknown, unmonitored, disabled]
+      enum: [up, down, unusual, unknown, unmonitored, disabled]
 
     DeviceStatus:
       type: object
       readOnly: true
       description: |
         Rolled-up state. availability comes from the device's host check
-        (is_host_check): down while it is in PROBLEM, up when OK or PENDING,
+        (is_host_check): down while it is in PROBLEM, except unusual when
+        the problem comes only from its Whoopsy! band (the check itself
+        succeeds and no fixed threshold is breached: it works, but not as
+        usual), up when OK or PENDING,
         unknown when UNKNOWN or without a result yet, disabled when the host
         check is disabled, unmonitored without a host check. health is the
         worst severity among open and acknowledged incidents.

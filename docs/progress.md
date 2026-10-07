@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-05 · **Latest release tag:** `v0.8.2`
+**Last updated:** 2026-10-05 · **Latest release tag:** `v0.8.3`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -166,6 +166,10 @@ Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs
 Suppression: a pool host that goes down suppresses its VMs' incidents and the checks on those VMs (availability incidents, migration `00017`); maintenance mode does not.
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
+
+### v0.8.3 — availability "unusual"
+
+A device whose host check is in PROBLEM only through its Whoopsy! band shows `unusual` instead of `down` (`TestUnusualAvailability`, migration `00020`).
 
 ### M4, part 2h — dashboards
 
