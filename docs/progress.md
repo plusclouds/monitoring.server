@@ -167,6 +167,12 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### v0.8.0 — billing per pool host, Whoopsy! band history
+
+- Each hypervisor host of an XCP-ng pool bills as `xapi.pool:host` (weight 3), the pool check at weight 0; `object_periods` keep the billable time under the same rules as checks (`TestHostBilling`).
+- The engine records the Whoopsy! band of every result; `GET /v1/checks/{id}/whoopsy/band` serves it for graphs, 7 days (`TestWhoopsyCheck`).
+- Migration `00018`.
+
 ### M4, part 2f — camera pictures
 
 `camera.snapshot`: a JPEG snapshot from Hikvision, Dahua, Axis or ONVIF cameras (or a URL), checked for blur, darkness and overexposure, a frozen picture, a covered lens or black picture, and a camera moved away from its reference picture. Verified with generated pictures against a fake camera (`TestPictureChecks`, `TestSources`, `TestFailures`).

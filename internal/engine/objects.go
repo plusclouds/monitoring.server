@@ -11,6 +11,7 @@ import (
 
 	"github.com/plusclouds/monitoring.server/internal/incident"
 	"github.com/plusclouds/monitoring.server/internal/runner"
+	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
 
 // goneRetention is how long an object that stopped being reported keeps its
@@ -28,7 +29,7 @@ type objectRow struct {
 // transaction. Objects missing from the run are marked gone and their
 // incidents resolve.
 func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, device uuid.UUID,
-	devices map[string]uuid.UUID, cfg Config) error {
+	devices map[string]uuid.UUID, cfg Config, m plugin.Manifest) error {
 	rows, err := tx.Query(ctx, `SELECT object_key, machine, incident_id, gone_at IS NOT NULL
 		FROM check_objects WHERE check_id = $1 FOR UPDATE`, r.CheckID)
 	if err != nil {
@@ -86,17 +87,18 @@ func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, d
 		}
 		batch.Queue(`
 			INSERT INTO check_objects (check_id, object_key, tenant_id, name, labels, phase, status, since, machine,
-			                           last_status, last_output, last_metrics, incident_id, last_seen_at, gone_at, device_id)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, $15)
+			                           last_status, last_output, last_metrics, incident_id, last_seen_at, gone_at, device_id,
+			                           billing_key)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NULL, $15, $16)
 			ON CONFLICT (check_id, object_key) DO UPDATE SET
 			       name = excluded.name, labels = excluded.labels, phase = excluded.phase, status = excluded.status,
 			       since = excluded.since, machine = excluded.machine, last_status = excluded.last_status,
 			       last_output = excluded.last_output, last_metrics = excluded.last_metrics,
 			       incident_id = excluded.incident_id, last_seen_at = excluded.last_seen_at, gone_at = NULL,
-			       device_id = excluded.device_id`,
+			       device_id = excluded.device_id, billing_key = excluded.billing_key`,
 			r.CheckID, obj.Key, r.TenantID, obj.Name, nonNilLabels(obj.Labels), out.State.Phase, out.State.Status,
 			out.State.Since, out.State, obj.Status.String(), obj.Output, metricMap(cfg.Metrics, obj.Metrics), inc, r.Time,
-			nullDevice(devices, obj.Key))
+			nullDevice(devices, obj.Key), nullString(m.BillingKey(obj.Key)))
 	}
 	if err := tx.SendBatch(ctx, batch).Close(); err != nil {
 		return err
@@ -120,9 +122,22 @@ func (e *Engine) applyObjects(ctx context.Context, tx pgx.Tx, r runner.Result, d
 			return err
 		}
 	}
-	_, err = tx.Exec(ctx, `DELETE FROM check_objects WHERE check_id = $1 AND gone_at < $2`,
-		r.CheckID, r.Time.Add(-goneRetention))
+	if _, err = tx.Exec(ctx, `DELETE FROM check_objects WHERE check_id = $1 AND gone_at < $2`,
+		r.CheckID, r.Time.Add(-goneRetention)); err != nil {
+		return err
+	}
+	// Billable objects (pool hosts) start and end their periods (F13).
+	if len(m.BillableObjects) > 0 {
+		_, err = tx.Exec(ctx, `SELECT usage_sync_check_objects($1)`, r.CheckID)
+	}
 	return err
+}
+
+func nullString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
 
 func metricMap(names []string, values []float64) map[string]*float64 {

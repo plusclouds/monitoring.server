@@ -6,9 +6,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
+	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/runner"
+	"github.com/plusclouds/monitoring.server/internal/store"
+	"github.com/plusclouds/monitoring.server/internal/usage"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
 
@@ -225,5 +229,103 @@ func TestDiscoveredHostSuppression(t *testing.T) {
 	collect(plugin.OK, plugin.OK)
 	if s = x.incident(site); s["suppressed"] != false {
 		t.Errorf("VM back: site %v", s)
+	}
+}
+
+// F13 (2026-10-07): an XCP-ng pool bills per hypervisor host ("xapi.pool:host",
+// weight 3), not per pool (weight 0); VMs are not billed. A host's period
+// ends when it is gone or the check is disabled.
+func TestHostBilling(t *testing.T) {
+	ctx := context.Background()
+	x := newNoise(t, 0)
+	if _, err := usage.SyncWeights(ctx, db.System, config.Default().Usage, time.Now().Add(-3*time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	pool := x.id(x.must(x.do("POST", "/v1/devices", x.key, map[string]any{"name": "pool", "type": "hypervisor_host"}), 201))
+	chk := x.id(x.must(x.do("POST", "/v1/devices/"+pool+"/checks", x.key, map[string]any{"name": "pool", "plugin": "xapi.pool"}), 201))
+	collect := func(hosts ...string) {
+		t.Helper()
+		var children []plugin.ChildDevice
+		var objs []plugin.Object
+		for _, h := range hosts {
+			children = append(children, plugin.ChildDevice{Key: "host:" + h, Name: "xcp-" + h, Type: "hypervisor_host"})
+			objs = append(objs, plugin.Object{Key: "host:" + h, Name: h, Device: "host:" + h, Availability: true, Metrics: plugin.NaNs(11)})
+		}
+		children = append(children, plugin.ChildDevice{Key: "vm:a", Name: "a", Type: "vm"})
+		objs = append(objs, plugin.Object{Key: "vm:a", Name: "a", Device: "vm:a", Metrics: plugin.NaNs(11)})
+		if _, err := x.eng.Apply(ctx, runner.Result{TenantID: x.tenant, DeviceID: uuid.MustParse(pool), CheckID: uuid.MustParse(chk),
+			Plugin: "xapi.pool", Interval: time.Minute, Result: plugin.Result{Status: plugin.OK, Output: "pool", Time: time.Now(),
+				Objects: objs, Inventory: &plugin.Inventory{Children: children}}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	open := func() []string {
+		rows, err := db.System.Query(ctx, `SELECT object_key FROM object_periods WHERE check_id = $1 AND ended_at IS NULL ORDER BY 1`, chk)
+		if err != nil {
+			t.Fatal(err)
+		}
+		keys, err := pgx.CollectRows(rows, pgx.RowTo[string])
+		if err != nil {
+			t.Fatal(err)
+		}
+		return keys
+	}
+
+	collect("1", "2")
+	if got := open(); len(got) != 2 || got[0] != "host:1" {
+		t.Fatalf("open periods: %v", got)
+	}
+	cur := x.must(x.do("GET", "/v1/usage/current", x.key, nil), 200).body
+	byPlugin := cur["by_plugin"].(map[string]any)
+	if h := byPlugin["xapi.pool:host"].(map[string]any); h["checks"] != float64(2) || h["weight"] != float64(3) {
+		t.Errorf("hosts: %v", byPlugin)
+	}
+	if p := byPlugin["xapi.pool"].(map[string]any); p["weight"] != float64(0) {
+		t.Errorf("the pool itself: %v", p)
+	}
+	if cur["weighted_checks"] != float64(6) {
+		t.Errorf("weighted: %v", cur["weighted_checks"])
+	}
+
+	collect("1") // host 2 left the pool
+	if got := open(); len(got) != 1 {
+		t.Errorf("after a host left: %v", got)
+	}
+	x.must(x.do("PATCH", "/v1/checks/"+chk, x.key, map[string]any{"enabled": false}), 200)
+	if got := open(); len(got) != 0 {
+		t.Errorf("disabled check: %v", got)
+	}
+	x.must(x.do("PATCH", "/v1/checks/"+chk, x.key, map[string]any{"enabled": true}), 200)
+	collect("1") // disabling forgot the objects: billing resumes with the next collection
+	if got := open(); len(got) != 1 || got[0] != "host:1" {
+		t.Errorf("enabled again: %v", got)
+	}
+
+	// A closed hour bills each host second at weight 3.
+	owner, err := store.Open(ctx, store.PoolOptions{DSN: db.OwnerDSN})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer owner.Close()
+	h := time.Now().UTC().Truncate(time.Hour).Add(-2 * time.Hour)
+	if _, err := owner.Exec(ctx, `UPDATE object_periods SET started_at = $2 WHERE check_id = $1 AND ended_at IS NULL`, chk, h); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.System.Exec(ctx, `SELECT usage_close_hour($1, 1, NULL)`, h); err != nil {
+		t.Fatal(err)
+	}
+	var secs int64
+	var weight float64
+	if err := db.System.QueryRow(ctx, `SELECT count_seconds, weight::float8 FROM usage_hour_plugins
+		WHERE plugin = 'xapi.pool:host' AND period_start = $1`, h).Scan(&secs, &weight); err != nil || secs != 3600 || weight != 3 {
+		t.Errorf("closed hour: %d s at %v, %v", secs, weight, err)
+	}
+	if w := x.must(x.do("GET", "/v1/usage/weights", x.key, nil), 200).body["weights"].(map[string]any); w["xapi.pool:host"] != float64(3) {
+		t.Errorf("weights: %v", w)
+	}
+	// Deleting the check ends the periods.
+	x.must(x.do("DELETE", "/v1/checks/"+chk, x.key, nil), 204)
+	if got := open(); len(got) != 0 {
+		t.Errorf("deleted check: %v", got)
 	}
 }

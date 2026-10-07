@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -89,6 +90,21 @@ type Manifest struct {
 	// the check names another: response time for http, round-trip time
 	// for icmp. Empty: the check must name one.
 	WhoopsyMetric string `json:"whoopsy_metric,omitempty"`
+	// BillableObjects are the object kinds of a collector billed on their
+	// own, by object key prefix: {"host:": "host"} bills every host object
+	// as "<type>:host" (F13). Other objects are never billed.
+	BillableObjects map[string]string `json:"billable_objects,omitempty"`
+}
+
+// BillingKey is the billing key of a collector object, or "" when the
+// object is not billed on its own.
+func (m Manifest) BillingKey(objectKey string) string {
+	for prefix, kind := range m.BillableObjects {
+		if strings.HasPrefix(objectKey, prefix) {
+			return m.Type + ":" + kind
+		}
+	}
+	return ""
 }
 
 // MetricDef is one slot of a plugin's metric layout.

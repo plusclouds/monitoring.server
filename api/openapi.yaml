@@ -1167,6 +1167,56 @@ paths:
         "204": { description: Off }
         default: { $ref: "#/components/responses/Problem" }
 
+  /checks/{check_id}/whoopsy/band:
+    get:
+      operationId: getWhoopsyBand
+      tags: [checks]
+      summary: The Whoopsy! band of every result, for graphs
+      description: |
+        One point per result while Whoopsy! was on, with the band the engine
+        judged that result against: the mean and sample standard deviation
+        of the window before it (the result itself excluded, values that
+        broke the band left out, as the engine does), and the edges with
+        `deviations`, `min_delta` and `direction` applied, under the
+        settings in force at that time. `mean`, `stddev`, `lower` and
+        `upper` are null while the band is learning; `lower` is null for
+        direction `above` and `upper` for `below`. Kept for
+        `metrics.whoopsy_band_retention` (7 days by default). At most 7 days
+        and 20,000 points per request (422 otherwise). The last hour, the
+        default, is cheap enough to poll every 30 seconds.
+      parameters:
+        - $ref: "#/components/parameters/CheckID"
+        - { name: from, in: query, description: "Default: an hour before `to`", schema: { type: string, format: date-time } }
+        - { name: to, in: query, description: "Default: now", schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Band points, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [check_id, from, to, points]
+                properties:
+                  check_id: { type: string, format: uuid }
+                  from: { type: string, format: date-time }
+                  to: { type: string, format: date-time }
+                  points:
+                    type: array
+                    items:
+                      type: object
+                      required: [t, value, mean, stddev, lower, upper, outside, hits, alerting]
+                      properties:
+                        t: { type: string, format: date-time, description: "The result's time" }
+                        value: { type: number, format: double }
+                        mean: { type: [number, "null"], format: double }
+                        stddev: { type: [number, "null"], format: double }
+                        lower: { type: [number, "null"], format: double }
+                        upper: { type: [number, "null"], format: double }
+                        outside: { type: boolean, description: The result broke the band }
+                        hits: { type: integer, description: Results in a row outside the band, this one included }
+                        alerting: { type: boolean, description: "Whoopsy! was alerting after this result" }
+        default: { $ref: "#/components/responses/Problem" }
+
   /checks/{check_id}/whoopsy/reset:
     post:
       operationId: resetWhoopsy

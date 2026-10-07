@@ -83,6 +83,8 @@ metrics:
     five_minute_every: 1m
     hourly_every: 10m
   retention_every: 1h
+  # How long the Whoopsy! band of every result is kept for graphs.
+  whoopsy_band_retention: 168h
   query:
     max_points_per_series: 10000
 
@@ -381,6 +383,8 @@ usage:
     snmp.pdu: 2
     snmp.interfaces: 3
     redfish.health: 2
+    xapi.pool: 0            # the pool itself is not billed...
+    xapi.pool:host: 3       # ...each of its hypervisor hosts is
   default_weight: 1   # plugins not listed
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
   # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry

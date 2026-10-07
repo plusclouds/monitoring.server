@@ -93,6 +93,26 @@ func TestWhoopsyCheck(t *testing.T) {
 	if err := json.Unmarshal(m.body, &ev); err != nil || ev.Data.Check.RuleID != "whoopsy" {
 		t.Errorf("webhook: %s", m.body)
 	}
+	// The band of every result, as the engine judged it.
+	hist := x.must(x.do("GET", path+"/band", x.key, nil), 200).body["points"].([]any)
+	if len(hist) != 10 {
+		t.Fatalf("band history: %d points", len(hist))
+	}
+	first, eighth, last := hist[0].(map[string]any), hist[7].(map[string]any), hist[9].(map[string]any)
+	if first["mean"] != nil || first["upper"] != nil || first["outside"] != false || first["value"] != float64(400) {
+		t.Errorf("learning point: %v", first)
+	}
+	if !approx(eighth["mean"], 500) || !approx(eighth["upper"], 500+81.64965809277261) || eighth["lower"] != nil ||
+		eighth["outside"] != true || eighth["hits"] != float64(1) {
+		t.Errorf("first slow result: %v", eighth)
+	}
+	// The band is frozen: the third slow result is judged against the same band.
+	if !approx(last["mean"], 500) || last["hits"] != float64(3) || last["alerting"] != true {
+		t.Errorf("third slow result: %v", last)
+	}
+	old := time.Now().Add(-8 * 24 * time.Hour).UTC().Format(time.RFC3339)
+	x.must(x.do("GET", path+"/band?from="+old, x.key, nil), 422)
+
 	band := x.must(x.do("GET", path, x.key, nil), 200).body["band"].(map[string]any)
 	if band["points"] != float64(7) || band["consecutive_hits"] != float64(3) || band["alerting"] != true ||
 		band["last_value"] != float64(1000) || band["upper"] == nil {

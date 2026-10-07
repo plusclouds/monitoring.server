@@ -19,6 +19,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/incident"
 	"github.com/plusclouds/monitoring.server/internal/inventory"
 	"github.com/plusclouds/monitoring.server/internal/runner"
+	"github.com/plusclouds/monitoring.server/internal/threshold"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
 
@@ -215,8 +216,10 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, rp *runner.Result) (strin
 	// A collector's metrics and thresholds are per object; its own state
 	// follows only the run's status (device unreachable, collection failed).
 	var objCfg *Config
+	var manifest plugin.Manifest
 	if p, ok := plugin.Lookup(r.Plugin); ok {
 		m := p.Manifest()
+		manifest = m
 		for _, d := range m.Metrics {
 			cfg.Metrics = append(cfg.Metrics, d.Name)
 		}
@@ -275,6 +278,11 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, rp *runner.Result) (strin
 	if err != nil {
 		return "", err
 	}
+	if cfg.Whoopsy != nil {
+		if err := recordBand(ctx, tx, r, cfg, out.State.Whoopsy); err != nil {
+			return "", err
+		}
+	}
 	if objCfg != nil && r.Objects != nil {
 		var children map[string]uuid.UUID
 		if r.Inventory != nil {
@@ -289,7 +297,7 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, rp *runner.Result) (strin
 			}
 		}
 		rp.ObjectDevices = devices
-		if err := e.applyObjects(ctx, tx, r, deviceID, devices, *objCfg); err != nil {
+		if err := e.applyObjects(ctx, tx, r, deviceID, devices, *objCfg, manifest); err != nil {
 			return "", err
 		}
 	}
@@ -400,4 +408,32 @@ func nullTime(t time.Time) *time.Time {
 		return nil
 	}
 	return &t
+}
+
+// recordBand keeps the Whoopsy! band this result was judged against, for
+// graphs: the same numbers the engine used, under the settings in force.
+func recordBand(ctx context.Context, tx pgx.Tx, r runner.Result, cfg Config, ws *WhoopsyState) error {
+	v := metric(cfg.Metrics, r.Metrics, cfg.Whoopsy.Metric)
+	if ws == nil || math.IsNaN(v) || math.IsInf(v, 0) {
+		return nil
+	}
+	var mean, sd, lower, upper *float64
+	outside := false
+	if b := ws.Band; b != nil {
+		mean, sd = &b.Mean, &b.StdDev
+		switch cfg.Whoopsy.Direction {
+		case threshold.DirBelow:
+			lower = &b.Lower
+		case threshold.DirBoth:
+			lower, upper = &b.Lower, &b.Upper
+		default:
+			upper = &b.Upper
+		}
+		outside = cfg.Whoopsy.Outside(*b, v)
+	}
+	_, err := tx.Exec(ctx, `INSERT INTO whoopsy_band (tenant_id, check_id, ts, value, mean, stddev, lower_bound, upper_bound,
+		outside, hits, alerting) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT (check_id, ts) DO NOTHING`,
+		r.TenantID, r.CheckID, r.Time, v, mean, sd, lower, upper, outside, ws.Hits, ws.Level != "")
+	return err
 }

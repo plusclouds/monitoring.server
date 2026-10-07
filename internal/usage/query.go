@@ -188,5 +188,23 @@ func CurrentUsage(ctx context.Context, tx pgx.Tx, now time.Time) (Current, error
 		out.WeightedChecks += float64(n) * w
 		return nil
 	})
+	if err != nil {
+		return out, err
+	}
+	// Billable collector objects (pool hosts) count like checks.
+	rows, err = tx.Query(ctx, `SELECT billing_key, count(*) FROM object_periods WHERE ended_at IS NULL GROUP BY 1`)
+	if err != nil {
+		return out, err
+	}
+	_, err = pgx.ForEachRow(rows, []any{&p, &n}, func() error {
+		w, ok := weights[p]
+		if !ok {
+			w = def
+		}
+		out.ByPlugin[p] = PluginCount{Checks: n, Weight: w}
+		out.Checks += n
+		out.WeightedChecks += float64(n) * w
+		return nil
+	})
 	return out, err
 }

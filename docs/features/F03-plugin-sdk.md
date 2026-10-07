@@ -76,7 +76,7 @@ type Inventory struct {
 
 The `Check`, `Collector` and `Ingester` interfaces are as in the design document, with `Manifest() Manifest` replacing `Type()`. `Check` and `Collector` share `Plugin` (`Manifest` and `Validate`); the registry holds both.
 
-**Collectors as built (M4):** a collector is stored, scheduled, billed and configured like a check (`POST /devices/{id}/checks` with its plugin type), so CRUD, credentials, `run-now` and usage metering apply unchanged. It cannot be a device's host check. `plugin.SafeCollect` runs it like `SafeRun`, drops objects without a key or with a duplicate key, caps a run at 5,000 objects and aligns object metrics with the layout. `Inventory` is returned but not applied yet; collectors that create child devices (XCP-ng) complete it.
+**Collectors as built (M4):** a collector is stored, scheduled, billed and configured like a check (`POST /devices/{id}/checks` with its plugin type), so CRUD, credentials, `run-now` and usage metering apply unchanged. It cannot be a device's host check. `plugin.SafeCollect` runs it like `SafeRun`, drops objects without a key or with a duplicate key, caps a run at 5,000 objects and aligns object metrics with the layout. `Inventory` creates child devices (ADR-0014). `Manifest.BillableObjects` declares object kinds billed on their own (F13): `xapi.pool` bills its `host:` objects as `xapi.pool:host`.
 
 ## Behavior
 
