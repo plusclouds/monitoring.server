@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/mochi-mqtt/server/v2/packets"
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -91,9 +92,10 @@ func (c *mqttClient) publish(topic, payload string) bool {
 func TestMQTTBroker(t *testing.T) {
 	ctx := context.Background()
 	x := newNoise(t, 0)
+	legacyPass := "fl-" + uuid.NewString() // stands in for the firmware's existing shared password
 	shared := x.must(x.do("POST", "/v1/ingest/mqtt-credentials", x.key, map[string]any{"name": "fixlean", "kind": "shared",
-		"username": "fixlean-site1", "password": "legacy-password", "profile": "fixlean-esp", "allow_plain": true}), 201)
-	if shared.body["password"] != "legacy-password" {
+		"username": "fixlean-site1", "password": legacyPass, "profile": "fixlean-esp", "allow_plain": true}), 201)
+	if shared.body["password"] != legacyPass {
 		t.Fatalf("created: %s", shared.raw)
 	}
 	dev := x.must(x.do("POST", "/v1/ingest/mqtt-credentials", x.key, map[string]any{"name": "one", "kind": "device",
@@ -102,7 +104,7 @@ func TestMQTTBroker(t *testing.T) {
 	if dev.body["device_key"] != "AABBCCDDEE01" || devPass == "" {
 		t.Fatalf("device credential: %s", dev.raw)
 	}
-	if l := x.must(x.do("GET", "/v1/ingest/mqtt-credentials", x.key, nil), 200); strings.Contains(l.raw, "legacy-password") {
+	if l := x.must(x.do("GET", "/v1/ingest/mqtt-credentials", x.key, nil), 200); strings.Contains(l.raw, legacyPass) {
 		t.Error("password listed")
 	}
 
@@ -163,7 +165,7 @@ func TestMQTTBroker(t *testing.T) {
 	}
 
 	// A FixLean sensor on the plain listener with the shared password.
-	sensor, rc := mqttConnect(t, plainAddr, "fixlean-site1", "legacy-password", "246F28AABBCC-1a2b", 60)
+	sensor, rc := mqttConnect(t, plainAddr, "fixlean-site1", legacyPass, "246F28AABBCC-1a2b", 60)
 	if rc != 0 {
 		t.Fatalf("connect: %d", rc)
 	}
@@ -260,7 +262,7 @@ func TestMQTTBroker(t *testing.T) {
 		x.tenant); err != nil {
 		t.Fatal(err)
 	}
-	gw, _ := mqttConnect(t, tlsAddr, "fixlean-site1", "legacy-password", "gw", 30)
+	gw, _ := mqttConnect(t, tlsAddr, "fixlean-site1", legacyPass, "gw", 30)
 	if !gw.publish("fixlean/NEWSENSOR01/t", `{"temperature":20}`) {
 		t.Fatal("over-limit publish not acknowledged")
 	}
@@ -298,11 +300,11 @@ func TestMQTTBroker(t *testing.T) {
 	// Rotation: the old password stops, the new one works.
 	sharedID := x.id(shared)
 	rot := x.must(x.do("POST", "/v1/ingest/mqtt-credentials/"+sharedID+"/rotate", x.key, nil), 200).body
-	if p, _ := rot["password"].(string); p == "" || p == "legacy-password" {
+	if p, _ := rot["password"].(string); p == "" || p == legacyPass {
 		t.Fatalf("rotate: %v", rot)
 	}
 	time.Sleep(5 * time.Millisecond)
-	if _, rc := mqttConnect(t, tlsAddr, "fixlean-site1", "legacy-password", "z1", 30); rc == 0 {
+	if _, rc := mqttConnect(t, tlsAddr, "fixlean-site1", legacyPass, "z1", 30); rc == 0 {
 		t.Error("old password after rotation")
 	}
 	if _, rc := mqttConnect(t, tlsAddr, "fixlean-site1", rot["password"].(string), "z2", 30); rc != 0 {
