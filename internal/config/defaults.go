@@ -147,6 +147,7 @@ func Default() Config {
 			"snmp.pdu": 2, "snmp.interfaces": 3, "redfish.health": 2,
 			"xapi.pool": 0, "xapi.pool:host": 3, "camera.snapshot": 2, "rtsp.stream": 2, // each pool host bills, not the pool (2026-10-07)
 			"monitor.self":    0, // the engine's own health check, platform tenant
+			"vm.agent":        2, // each monitored PlusClouds VM (confirmed 2026-10-07)
 			"mqtt.connection": 0, // an MQTT sensor bills once, through its push.mqtt data check (confirmed 2026-10-07)
 		}, DefaultWeight: 1, WhoopsyMultiplier: 5},
 		SelfMonitoring: SelfMonitoring{
