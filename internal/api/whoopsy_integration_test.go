@@ -172,3 +172,60 @@ func TestWhoopsyCheck(t *testing.T) {
 		t.Errorf("billing back to http: %d %v", n, err)
 	}
 }
+
+// 2026-10-07: a device whose host check is in PROBLEM only through Whoopsy!
+// is "unusual", not "down"; a real failure or a fixed threshold makes it
+// down.
+func TestUnusualAvailability(t *testing.T) {
+	ctx := context.Background()
+	x := newNoise(t, 0)
+	dev := x.device("shop")
+	chk := x.id(x.must(x.do("POST", "/v1/devices/"+dev+"/checks", x.key, map[string]any{"name": "home", "plugin": "http",
+		"is_host_check": true, "failure_count": 1, "config": map[string]any{"url": "https://shop.example.com/"}}), 201))
+	x.must(x.do("PUT", "/v1/checks/"+chk+"/whoopsy", x.key, map[string]any{"window": 3, "consecutive": 1}), 200)
+	feed := func(st plugin.Status, ms float64) {
+		t.Helper()
+		m := plugin.NaNs(7)
+		m[4] = ms
+		if _, err := x.eng.Apply(ctx, runner.Result{TenantID: x.tenant, DeviceID: uuid.MustParse(dev), CheckID: uuid.MustParse(chk),
+			Plugin: "http", Interval: time.Minute, Result: plugin.Result{Status: st, Output: st.String(), Time: time.Now(), Metrics: m}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	availability := func() string {
+		t.Helper()
+		return x.must(x.do("GET", "/v1/devices/"+dev, x.key, nil), 200).body["status"].(map[string]any)["availability"].(string)
+	}
+	for _, v := range []float64{100, 110, 90} {
+		feed(plugin.OK, v)
+	}
+	if a := availability(); a != "up" {
+		t.Fatalf("learning: %s", a)
+	}
+	feed(plugin.OK, 900) // slow, but the site answers
+	if a := availability(); a != "unusual" {
+		t.Errorf("Whoopsy! only: %s", a)
+	}
+	if l := x.must(x.do("GET", "/v1/devices?availability=unusual", x.key, nil), 200).body["items"].([]any); len(l) != 1 {
+		t.Errorf("filter: %v", l)
+	}
+	var grafana string
+	if err := db.System.QueryRow(ctx, `SELECT CASE WHEN hs.phase = 'PROBLEM' AND hs.machine->'whoopsy'->>'level' IS NOT NULL
+		AND hs.last_status = 'OK' AND NOT jsonb_path_exists(hs.machine, '$.rules.*.level') THEN 'unusual' ELSE 'other' END
+		FROM check_state hs WHERE check_id = $1`, chk).Scan(&grafana); err != nil || grafana != "unusual" {
+		t.Errorf("state as the devices_v view reads it: %s %v", grafana, err)
+	}
+	feed(plugin.Critical, 950) // the site fails
+	if a := availability(); a != "down" {
+		t.Errorf("a real failure: %s", a)
+	}
+	feed(plugin.OK, 100)
+	feed(plugin.OK, 100)
+	// A fixed threshold breached together with Whoopsy!: down.
+	x.must(x.do("PATCH", "/v1/checks/"+chk, x.key, map[string]any{"thresholds": []any{map[string]any{"metric": "total_ms",
+		"critical": map[string]any{"op": ">", "value": 500}}}}), 200)
+	feed(plugin.OK, 900)
+	if a := availability(); a != "down" {
+		t.Errorf("threshold and Whoopsy!: %s", a)
+	}
+}

@@ -12,6 +12,7 @@ import (
 const (
 	AvailabilityUp          = "up"          // host check OK or PENDING
 	AvailabilityDown        = "down"        // host check in PROBLEM
+	AvailabilityUnusual     = "unusual"     // host check in PROBLEM only through Whoopsy!: it works, but not as usual
 	AvailabilityUnknown     = "unknown"     // host check UNKNOWN or without a result yet
 	AvailabilityUnmonitored = "unmonitored" // no host check
 	AvailabilityDisabled    = "disabled"    // host check disabled
@@ -40,8 +41,15 @@ const availabilitySQL = `CASE
 		WHEN hc.id IS NULL THEN 'unmonitored'
 		WHEN NOT hc.enabled THEN 'disabled'
 		WHEN hs.check_id IS NULL OR hs.status = 'UNKNOWN' THEN 'unknown'
+		WHEN hs.phase = 'PROBLEM' AND ` + whoopsyOnlySQL + ` THEN 'unusual'
 		WHEN hs.phase = 'PROBLEM' THEN 'down'
 		ELSE 'up' END`
+
+// whoopsyOnlySQL holds when the host check's problem comes only from its
+// Whoopsy! band: the plugin itself reports OK and no fixed threshold is
+// breached. The device works, just not as usual.
+const whoopsyOnlySQL = `(hs.machine->'whoopsy'->>'level' IS NOT NULL AND hs.last_status = 'OK'
+		AND NOT jsonb_path_exists(hs.machine, '$.rules.*.level'))`
 
 const statusCols = availabilitySQL + `,
 	CASE
