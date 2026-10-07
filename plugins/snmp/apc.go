@@ -117,7 +117,7 @@ func (*PDU) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCollector,
 		Description:     "SNMP: rack PDU load (APC rPDU2 and rPDU): power and energy of the PDU, current per phase and bank, state, current and power per outlet. Each is an object; the PDU's near-overload and overload states are WARNING and CRITICAL.",
 		ConfigSchema:    plugin.SchemaFor[PDUConfig](),
-		CredentialTypes: credentialTypes,
+		CredentialTypes: credentialTypes, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			g("current_amps", "A", "Current"),
 			g("voltage_volts", "V", "Voltage (phases)"),
@@ -482,7 +482,7 @@ func (*Sensor) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCollector,
 		Description:     "SNMP: environmental sensors (APC probes on rack PDUs and network management cards): temperature, humidity, door, leak, smoke and other contacts. Status follows the device's own alarm thresholds.",
 		ConfigSchema:    plugin.SchemaFor[SensorConfig](),
-		CredentialTypes: credentialTypes,
+		CredentialTypes: credentialTypes, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			g("temperature_celsius", "Cel", "Temperature"),
 			g("humidity_percent", "percent", "Relative humidity"),

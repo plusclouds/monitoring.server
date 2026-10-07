@@ -28,7 +28,8 @@ func init() { plugin.Register(&Stream{}) }
 
 // StreamConfig of an rtsp.stream check.
 type StreamConfig struct {
-	Vendor        string  `json:"vendor,omitempty" jsonschema:"enum=auto,enum=hikvision,enum=dahua,enum=axis,enum=path,default=auto,description=Where the stream is. auto tries the Hikvision, Dahua and Axis paths and remembers what worked; path uses path"`
+	Vendor        string  `json:"vendor,omitempty" jsonschema:"enum=auto,enum=hikvision,enum=dahua,enum=axis,enum=path,enum=url,default=auto,description=Where the stream is. auto tries the Hikvision, Dahua and Axis paths and remembers what worked; path uses path; url uses url"`
+	URL           string  `json:"url,omitempty" jsonschema:"maxLength=2000,description=The full stream URL (rtsp:// or rtsps://) with host, port, path and query, e.g. rtsp://host/live/1?token=... It takes precedence over the device address. No user:password in the URL; use the check's credential"`
 	Path          string  `json:"path,omitempty" jsonschema:"maxLength=1000,description=Stream path on the camera, e.g. /Streaming/Channels/101"`
 	Channel       int     `json:"channel,omitempty" jsonschema:"minimum=1,maximum=256,default=1"`
 	Substream     bool    `json:"substream,omitempty" jsonschema:"description=Read the camera's second (lower resolution) stream"`
@@ -70,7 +71,7 @@ func (*Stream) Manifest() plugin.Manifest {
 		Description: "Camera video stream (RTSP): frame rate, bitrate, resolution, packet loss and jitter over a few seconds, " +
 			"without decoding video. CRITICAL when no frames arrive.",
 		ConfigSchema:    plugin.SchemaFor[StreamConfig](),
-		CredentialTypes: []string{"rtsp"},
+		CredentialTypes: []string{"rtsp", "url_token"},
 		Metrics: []plugin.MetricDef{
 			g("fps", "1/s", "Frames per second"),
 			g("bitrate_kbps", "kbit/s", "Video bitrate"),
@@ -100,7 +101,41 @@ func (*Stream) Validate(raw json.RawMessage) error {
 	if cfg.Path != "" && !strings.HasPrefix(cfg.Path, "/") {
 		return errors.New("path must start with /")
 	}
+	if cfg.Vendor == "url" && cfg.URL == "" {
+		return errors.New("vendor url needs url")
+	}
+	if cfg.URL != "" {
+		if cfg.Path != "" {
+			return errors.New("set url or path, not both")
+		}
+		u, err := url.Parse(cfg.URL)
+		if err != nil || (u.Scheme != "rtsp" && u.Scheme != "rtsps") || u.Host == "" {
+			return errors.New("url must be an rtsp:// or rtsps:// URL with a host")
+		}
+		if u.User != nil {
+			return errors.New("url must not contain credentials; use the check's credential")
+		}
+	}
 	return nil
+}
+
+// streamURL splits a configured url into host:port, the path with its
+// query, and whether it is RTSPS. Validate has checked it.
+func streamURL(raw string, port int) (host, path string, tls bool, err error) {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", "", false, fmt.Errorf("invalid url: %w", err)
+	}
+	host, err = rtspHost(u.Host, port)
+	return host, u.RequestURI(), u.Scheme == "rtsps", err
+}
+
+// displayPath is a stream path without its query, which may hold a token.
+func displayPath(p string) string {
+	if i := strings.IndexByte(p, '?'); i >= 0 {
+		return p[:i] + "?…"
+	}
+	return p
 }
 
 // streamPath is a vendor's RTSP path.
@@ -128,7 +163,13 @@ func (*Stream) Run(ctx context.Context, t plugin.Target) (plugin.Result, error) 
 	if err != nil {
 		return plugin.Result{}, err
 	}
-	host, err := rtspHost(t.Address, cfg.Port)
+	useURL := cfg.URL != "" && (cfg.Vendor == "auto" || cfg.Vendor == "url")
+	var host, urlPath string
+	if useURL {
+		host, urlPath, cfg.TLS, err = streamURL(cfg.URL, cfg.Port)
+	} else {
+		host, err = rtspHost(t.Address, cfg.Port)
+	}
 	if err != nil {
 		return plugin.Result{Status: plugin.Unknown, Output: err.Error()}, nil
 	}
@@ -137,12 +178,16 @@ func (*Stream) Run(ctx context.Context, t plugin.Target) (plugin.Result, error) 
 		found = string(b)
 	}
 	var paths []string
+	fromConfig := true // a configured path is not remembered: its query may hold a token
 	switch {
+	case useURL:
+		paths = []string{urlPath}
 	case cfg.Path != "" && (cfg.Vendor == "auto" || cfg.Vendor == "path"):
 		paths = []string{cfg.Path}
 	case cfg.Vendor != "auto":
 		paths = []string{streamPath(cfg.Vendor, cfg.Channel, cfg.Substream)}
 	default:
+		fromConfig = false
 		for _, v := range []string{"hikvision", "dahua", "axis"} {
 			paths = append(paths, streamPath(v, cfg.Channel, cfg.Substream))
 		}
@@ -165,13 +210,27 @@ func (*Stream) Run(ctx context.Context, t plugin.Target) (plugin.Result, error) 
 			continue
 		}
 		if err != nil {
-			st, out := classifyStream(err)
-			return plugin.Result{Status: st, Output: out, Metrics: plugin.NaNs(streamMetrics)}, nil
+			st, out := classifyStream(err, len(t.Credentials) > 0)
+			return plugin.Result{Status: st, Output: redactToken(t, out), Metrics: plugin.NaNs(streamMetrics)}, nil
 		}
-		_ = t.State.Set("rtsp", []byte(p))
-		return judge(cfg, r), nil
+		if !fromConfig {
+			_ = t.State.Set("rtsp", []byte(p))
+		}
+		res := judge(cfg, r)
+		res.Output = redactToken(t, res.Output)
+		return res, nil
 	}
-	return plugin.Errorf(plugin.Unknown, "no stream found (tried the Hikvision, Dahua and Axis paths); set vendor or path: %v", firstErr), nil
+	return plugin.Errorf(plugin.Unknown, "no stream found (tried the Hikvision, Dahua and Axis paths); set vendor, path or url: %v", firstErr), nil
+}
+
+// redactToken hides a url_token credential's token in an output.
+func redactToken(t plugin.Target, out string) string {
+	if c, ok := t.Credentials["auth"]; ok && c.Type == "url_token" {
+		if tok := c.Secret["token"].Reveal(); tok != "" {
+			out = strings.ReplaceAll(out, tok, "[redacted]")
+		}
+	}
+	return out
 }
 
 // pathError is a DESCRIBE that found no stream at a path.
@@ -203,7 +262,20 @@ func read(ctx context.Context, t plugin.Target, cfg StreamConfig, host, path str
 		return r, fmt.Errorf("invalid stream URL: %w", err)
 	}
 	if cred, ok := t.Credentials["auth"]; ok {
-		u.User = url.UserPassword(cred.Fields["username"], cred.Secret["password"].Reveal())
+		switch cred.Type {
+		case "url_token":
+			// A token in the query (rtsp://host/live?token=...): set on
+			// the configured path, replacing any token already there.
+			param := cred.Fields["param"]
+			if param == "" {
+				param = "token"
+			}
+			q := (*url.URL)(u).Query()
+			q.Set(param, cred.Secret["token"].Reveal())
+			u.RawQuery = q.Encode()
+		default:
+			u.User = url.UserPassword(cred.Fields["username"], cred.Secret["password"].Reveal())
+		}
 	}
 	proto := gortsplib.ProtocolTCP
 	if cfg.Transport == "udp" {
@@ -228,7 +300,7 @@ func read(ctx context.Context, t plugin.Target, cfg StreamConfig, host, path str
 	desc, res, err := c.Describe(u)
 	if err != nil {
 		if res != nil && res.StatusCode == base.StatusNotFound {
-			return r, &pathError{fmt.Sprintf("%s: not found", path)}
+			return r, &pathError{fmt.Sprintf("%s: not found", displayPath(path))}
 		}
 		return r, err
 	}
@@ -389,7 +461,7 @@ func judge(cfg StreamConfig, r reading) plugin.Result {
 	secs := r.window.Seconds()
 	if r.frames == 0 {
 		res.Status = plugin.Critical
-		res.Output = fmt.Sprintf("%s stream at %s: no video frames in %.0f s", r.codec, r.path, secs)
+		res.Output = fmt.Sprintf("%s stream at %s: no video frames in %.0f s", r.codec, displayPath(r.path), secs)
 		res.Metrics[sFPS] = 0
 		return res
 	}
@@ -425,7 +497,7 @@ func judge(cfg StreamConfig, r reading) plugin.Result {
 		warn = append(warn, fmt.Sprintf("%.1f %% of RTP packets lost", loss))
 	}
 	summary := fmt.Sprintf("%s %dx%d at %.1f fps, %.0f kbit/s, %.1f %% loss (%s)", r.codec, r.width, r.height, fps,
-		res.Metrics[sBitrate], loss, r.path)
+		res.Metrics[sBitrate], loss, displayPath(r.path))
 	if len(warn) > 0 {
 		res.Status, res.Output = plugin.Warning, strings.Join(warn, "; ")+": "+summary
 	} else {
@@ -450,7 +522,7 @@ func rtspHost(address string, port int) (string, error) {
 
 // classifyStream: no answer is CRITICAL; a rejected login, a refused
 // address or a stream without video is UNKNOWN.
-func classifyStream(err error) (plugin.Status, string) {
+func classifyStream(err error, hasCredential bool) (plugin.Status, string) {
 	var pe *plugin.PolicyError
 	var ne net.Error
 	var op *net.OpError
@@ -458,6 +530,8 @@ func classifyStream(err error) (plugin.Status, string) {
 	switch {
 	case errors.As(err, &pe):
 		return plugin.Unknown, pe.Error()
+	case (strings.Contains(s, "401") || strings.Contains(s, "Unauthorized")) && !hasCredential:
+		return plugin.Unknown, "the stream requires authorization: assign a credential, or put the token in the url: " + s
 	case strings.Contains(s, "401") || strings.Contains(s, "Unauthorized"):
 		return plugin.Unknown, "the camera rejected the credential: " + s
 	case errors.As(err, &ne) && ne.Timeout(), errors.As(err, &op), errors.Is(err, context.DeadlineExceeded):

@@ -367,16 +367,24 @@ func TestAuditQuery(t *testing.T) {
 func TestPlugins(t *testing.T) {
 	e := setup(t, true)
 	list := e.must(e.do("GET", "/v1/plugins", e.adminKey, nil), 200)
-	var types []string
+	var types, required []string
 	for _, it := range list.body["items"].([]any) {
 		p := it.(map[string]any)
 		types = append(types, p["type"].(string))
+		if p["credentials_required"] == true {
+			required = append(required, p["type"].(string))
+		} else if p["credentials_required"] != false {
+			t.Errorf("%s: credentials_required missing", p["type"])
+		}
 		if p["config_schema"].(map[string]any)["type"] != "object" {
 			t.Errorf("%s: config_schema is not an object schema", p["type"])
 		}
 	}
 	if strings.Join(types, ",") != "camera.snapshot,http,icmp,redfish.health,rtsp.stream,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,xapi.pool" {
 		t.Errorf("plugins = %v, want the built-in plugins sorted by type", types)
+	}
+	if strings.Join(required, ",") != "redfish.health,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,xapi.pool" {
+		t.Errorf("credentials_required = %v; rtsp.stream, camera.snapshot, http and icmp run without one", required)
 	}
 	snmp := e.must(e.do("GET", "/v1/plugins/snmp.system", e.adminKey, nil), 200)
 	if ct, _ := snmp.body["credential_types"].([]any); len(ct) != 2 || ct[0] != "snmp_v3" {

@@ -48,7 +48,7 @@ func (*Get) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCheck,
 		Description:     "SNMP: read one OID as a gauge or a counter rate, optionally compared with an expected value.",
 		ConfigSchema:    plugin.SchemaFor[GetConfig](),
-		CredentialTypes: credentialTypes,
+		CredentialTypes: credentialTypes, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			{Name: "value", Unit: "1", Description: "Value of the OID times scale (kind gauge)", Kind: "gauge", RetentionClass: plugin.RetentionStandard},
 			{Name: "rate", Unit: "1/s", Description: "Per-second rate of the counter times scale (kind counter)", Kind: "rate", RetentionClass: plugin.RetentionStandard},

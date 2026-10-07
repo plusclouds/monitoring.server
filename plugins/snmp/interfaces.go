@@ -60,7 +60,7 @@ func (*Interfaces) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCollector,
 		Description:     "SNMP: traffic, errors, discards and status of every interface (IF-MIB, 64-bit counters). Each interface is an object with its own status, thresholds and incidents.",
 		ConfigSchema:    plugin.SchemaFor[InterfacesConfig](),
-		CredentialTypes: credentialTypes,
+		CredentialTypes: credentialTypes, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			rate("in_bps", "bit/s", "Inbound traffic"),
 			rate("out_bps", "bit/s", "Outbound traffic"),

@@ -2,6 +2,7 @@ package camera
 
 import (
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,8 +26,11 @@ var sps720p = []byte{0x67, 0x64, 0x00, 0x1f, 0xac, 0xd9, 0x40, 0x50, 0x05, 0xbb,
 	0x00, 0x80, 0x00, 0x00, 0x1e, 0x07, 0x8c, 0x18, 0xcb}
 
 // fakeRTSP is an RTSP server with one H.264 stream at path, sending fps
-// frames a second while live, behind credentials.
+// frames a second while live, behind credentials, a query token
+// (token set) or nothing (open set).
 type fakeRTSP struct {
+	token  string
+	open   bool
 	server *gortsplib.Server
 	stream *gortsplib.ServerStream
 	path   string
@@ -36,11 +40,27 @@ type fakeRTSP struct {
 	done   chan struct{}
 }
 
+// authorized checks a request's credentials or token.
+func (f *fakeRTSP) authorized(conn *gortsplib.ServerConn, req *base.Request, query string) bool {
+	switch {
+	case f.open:
+		return true
+	case f.token != "":
+		v, _ := url.ParseQuery(query)
+		return v.Get("token") == f.token
+	}
+	return conn.VerifyCredentials(req, "admin", "cam-secret")
+}
+
 func (f *fakeRTSP) OnDescribe(ctx *gortsplib.ServerHandlerOnDescribeCtx) (*base.Response, *gortsplib.ServerStream, error) {
-	if !ctx.Conn.VerifyCredentials(ctx.Request, "admin", "cam-secret") {
+	if !f.authorized(ctx.Conn, ctx.Request, ctx.Query) {
 		return &base.Response{StatusCode: base.StatusUnauthorized}, nil, liberrors.ErrServerAuth{}
 	}
-	if ctx.Path+queryOf(ctx.Query) != f.path {
+	if f.token != "" {
+		if ctx.Path != f.path {
+			return &base.Response{StatusCode: base.StatusNotFound}, nil, nil
+		}
+	} else if ctx.Path+queryOf(ctx.Query) != f.path {
 		return &base.Response{StatusCode: base.StatusNotFound}, nil, nil
 	}
 	return &base.Response{StatusCode: base.StatusOK}, f.stream, nil
@@ -54,7 +74,7 @@ func queryOf(q string) string {
 }
 
 func (f *fakeRTSP) OnSetup(ctx *gortsplib.ServerHandlerOnSetupCtx) (*base.Response, *gortsplib.ServerStream, error) {
-	if !ctx.Conn.VerifyCredentials(ctx.Request, "admin", "cam-secret") {
+	if !f.authorized(ctx.Conn, ctx.Request, ctx.Query) {
 		return &base.Response{StatusCode: base.StatusUnauthorized}, nil, liberrors.ErrServerAuth{}
 	}
 	return &base.Response{StatusCode: base.StatusOK}, f.stream, nil
@@ -193,4 +213,61 @@ func mustAtoi(s string) int {
 		panic(err)
 	}
 	return n
+}
+
+// TestStreamURL: a full url with a query token (rtsp://host/live?token=...),
+// a url_token credential, and an open stream without any credential.
+func TestStreamURL(t *testing.T) {
+	const tok = "e681d467aa0ea70df01eb72a6abf95af"
+	f := newRTSP(t, "/live/retail", 25)
+	f.token = tok
+	st := &plugin.MemState{}
+	run := func(cfg StreamConfig, cr map[string]plugin.Credential) plugin.Result {
+		return plugintest.Run(t, &Stream{}, plugintest.Options{Address: "ignored.invalid", Config: cfg, Credentials: cr,
+			State: st, Timeout: 10 * time.Second})
+	}
+	u := "rtsp://" + f.addr + "/live/retail"
+	r := run(StreamConfig{URL: u + "?token=" + tok, SampleSeconds: 2}, nil)
+	if r.Status != plugin.OK || r.Metrics[sWidth] != 1280 || strings.Contains(r.Output, tok) || !strings.Contains(r.Output, "/live/retail?…") {
+		t.Fatalf("token in url: %v %q", r.Status, r.Output)
+	}
+	if _, ok := st.Get("rtsp"); ok {
+		t.Error("a configured url was remembered in the check state")
+	}
+	tokenCred := map[string]plugin.Credential{"auth": {Type: "url_token", Secret: map[string]plugin.Secret{"token": plugin.Secret(tok)}}}
+	if r := run(StreamConfig{Vendor: "url", URL: u, SampleSeconds: 2}, tokenCred); r.Status != plugin.OK || strings.Contains(r.Output, tok) {
+		t.Errorf("url_token credential: %v %q", r.Status, r.Output)
+	}
+	// The credential replaces a stale token in the url.
+	if r := run(StreamConfig{URL: u + "?token=old", SampleSeconds: 2}, tokenCred); r.Status != plugin.OK {
+		t.Errorf("credential over url token: %v %q", r.Status, r.Output)
+	}
+	if r := run(StreamConfig{URL: u, SampleSeconds: 2}, nil); r.Status != plugin.Unknown || !strings.Contains(r.Output, "requires authorization") {
+		t.Errorf("no token: %v %q", r.Status, r.Output)
+	}
+	bad := map[string]plugin.Credential{"auth": {Type: "url_token", Secret: map[string]plugin.Secret{"token": "wrong-token"}}}
+	if r := run(StreamConfig{URL: u, SampleSeconds: 2}, bad); r.Status != plugin.Unknown ||
+		!strings.Contains(r.Output, "rejected the credential") || strings.Contains(r.Output, "wrong-token") {
+		t.Errorf("wrong token: %v %q", r.Status, r.Output)
+	}
+
+	open := newRTSP(t, "/open", 25)
+	open.open = true
+	if r := run(StreamConfig{URL: "rtsp://" + open.addr + "/open", SampleSeconds: 2}, nil); r.Status != plugin.OK {
+		t.Errorf("open stream by url: %v %q", r.Status, r.Output)
+	}
+	if r := plugintest.Run(t, &Stream{}, plugintest.Options{Address: open.addr, Config: StreamConfig{Vendor: "path", Path: "/open", SampleSeconds: 2},
+		Timeout: 10 * time.Second}); r.Status != plugin.OK {
+		t.Errorf("open stream without credential: %v %q", r.Status, r.Output)
+	}
+
+	for _, raw := range []string{`{"vendor":"url"}`, `{"url":"http://cam/live"}`, `{"url":"rtsp:///live"}`,
+		`{"url":"rtsp://u:p@cam/live"}`, `{"url":"rtsp://cam/live","path":"/live"}`} {
+		if err := (&Stream{}).Validate([]byte(raw)); err == nil {
+			t.Errorf("accepted %s", raw)
+		}
+	}
+	if err := (&Stream{}).Validate([]byte(`{"url":"rtsps://cam:8322/live/retail?token=x"}`)); err != nil {
+		t.Errorf("rejected a valid url: %v", err)
+	}
 }

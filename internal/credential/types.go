@@ -56,6 +56,10 @@ func init() {
 	define(Type{Name: "http_basic", Description: "HTTP basic authentication.", Fields: []Field{user, password}})
 	define(Type{Name: "http_bearer", Description: "HTTP bearer token.", Fields: []Field{{Name: "token", Secret: true, Required: true}}})
 	define(Type{Name: "rtsp", Description: "RTSP camera account.", Fields: []Field{user, password}})
+	define(Type{Name: "url_token", Description: "Access token sent as a URL query parameter (rtsp://host/live?token=...).", Fields: []Field{
+		{Name: "token", Secret: true, Required: true},
+		{Name: "param", Default: "token", Help: "the query parameter that carries the token"},
+	}})
 	define(Type{Name: "mqtt", Description: "MQTT client credentials for an external broker.", Fields: []Field{user, password}})
 }
 

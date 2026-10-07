@@ -48,7 +48,7 @@ func (*UPS) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCheck,
 		Description:     "SNMP: UPS battery, runtime, load and voltages from UPS-MIB (RFC 1628) or APC PowerNet.",
 		ConfigSchema:    plugin.SchemaFor[UPSConfig](),
-		CredentialTypes: credentialTypes,
+		CredentialTypes: credentialTypes, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			g("battery_charge_percent", "percent", "Remaining battery charge"),
 			g("runtime_minutes", "min", "Estimated runtime on battery"),

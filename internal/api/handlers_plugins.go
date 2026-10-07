@@ -47,7 +47,7 @@ func toAPIPlugin(m plugin.Manifest) (gen.Plugin, error) {
 	}
 	return gen.Plugin{
 		Type: m.Type, Kind: gen.PluginKind(m.Kind), Description: m.Description,
-		ConfigSchema: schema, CredentialTypes: nonNilSlice(m.CredentialTypes), Metrics: metrics,
+		ConfigSchema: schema, CredentialTypes: nonNilSlice(m.CredentialTypes), CredentialsRequired: m.CredentialsRequired, Metrics: metrics,
 		DefaultIntervalSeconds: int(m.DefaultInterval.Seconds()), MinIntervalSeconds: int(m.MinInterval.Seconds()),
 		NeedsRawSocket: m.NeedsRawSocket, BillingClass: gen.PluginBillingClass(m.BillingClass),
 		WhoopsyMetric: nilIfEmpty(m.WhoopsyMetric),

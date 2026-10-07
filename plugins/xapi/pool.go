@@ -58,7 +58,7 @@ func (*Pool) Manifest() plugin.Manifest {
 		Description: "XCP-ng / XenServer pool through its master's API: hosts and VMs become child devices (VMs follow migrations); " +
 			"hosts, VMs and storage repositories are objects with their state, CPU, memory, network, disk and snapshot metrics.",
 		ConfigSchema:    plugin.SchemaFor[Config](),
-		CredentialTypes: []string{"xapi"},
+		CredentialTypes: []string{"xapi"}, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			g("cpu_percent", "percent", "CPU use (hosts and VMs)"),
 			g("memory_used_percent", "percent", "Memory in use (hosts; VMs with guest tools)"),

@@ -78,14 +78,17 @@ type Manifest struct {
 	Description     string          `json:"description"`
 	ConfigSchema    json.RawMessage `json:"config_schema"` // from SchemaFor
 	CredentialTypes []string        `json:"credential_types"`
-	Metrics         []MetricDef     `json:"metrics"` // fixed layout; Result.Metrics aligns with it
-	DefaultInterval time.Duration   `json:"-"`
-	MinInterval     time.Duration   `json:"-"`
-	NeedsRawSocket  bool            `json:"needs_raw_socket"`
-	MaxConcurrency  int             `json:"-"` // per runner; 0 = runner default
-	PerTargetLimit  int             `json:"-"` // concurrent runs against one address; 0 = runner default
-	Slow            bool            `json:"-"` // runs in the slow pool (F04)
-	BillingClass    string          `json:"billing_class"`
+	// CredentialsRequired: the plugin cannot run without a credential in
+	// the "auth" role. False when the credential is optional or there is none.
+	CredentialsRequired bool          `json:"credentials_required"`
+	Metrics             []MetricDef   `json:"metrics"` // fixed layout; Result.Metrics aligns with it
+	DefaultInterval     time.Duration `json:"-"`
+	MinInterval         time.Duration `json:"-"`
+	NeedsRawSocket      bool          `json:"needs_raw_socket"`
+	MaxConcurrency      int           `json:"-"` // per runner; 0 = runner default
+	PerTargetLimit      int           `json:"-"` // concurrent runs against one address; 0 = runner default
+	Slow                bool          `json:"-"` // runs in the slow pool (F04)
+	BillingClass        string        `json:"billing_class"`
 	// WhoopsyMetric is the metric Whoopsy! (band alerting) watches unless
 	// the check names another: response time for http, round-trip time
 	// for icmp. Empty: the check must name one.

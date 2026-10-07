@@ -51,7 +51,7 @@ func (*Health) Manifest() plugin.Manifest {
 		Kind:            plugin.KindCollector,
 		Description:     "Redfish (Dell iDRAC, HPE iLO, AMI-based BMCs): health of processors, memory, storage, fans, temperatures and power supplies, and power use. Each component is an object.",
 		ConfigSchema:    plugin.SchemaFor[Config](),
-		CredentialTypes: []string{"redfish"},
+		CredentialTypes: []string{"redfish"}, CredentialsRequired: true,
 		Metrics: []plugin.MetricDef{
 			g("health", "1", "0 OK, 1 warning, 2 critical, as the BMC reports it"),
 			g("temperature_celsius", "Cel", "Temperature reading"),

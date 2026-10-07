@@ -30,7 +30,7 @@ Devices are the things being monitored, arranged in a tree. Credentials are stor
 
 ### Credentials
 
-- Types for the MVP: `snmp_v2c`, `snmp_v3`, `redfish`, `ipmi`, `xapi`, `http_basic`, `http_bearer`, `rtsp`, `mqtt`.
+- Types for the MVP: `snmp_v2c`, `snmp_v3`, `redfish`, `ipmi`, `xapi`, `http_basic`, `http_bearer`, `rtsp`, `mqtt`. Added in M4: `url_token` (a token sent as a URL query parameter, for `rtsp.stream`). Each plugin's manifest says whether a credential is required (`credentials_required` in `GET /v1/plugins`); the API does not enforce it, so a check can be created first and its credential assigned later.
 - Each type has a JSON Schema (like plugin configs) with secret fields marked `writeOnly`.
 - `GET` returns metadata and which fields are set, never values.
 - Credentials carry external IDs too, so PlusClouds can upsert the credential it manages for a device without keeping the engine's ID.
