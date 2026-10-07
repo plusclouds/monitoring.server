@@ -77,6 +77,9 @@ func (c *Config) Validate(roles []string) error {
 	v.statusServer("self_monitoring", sm.Listen, sm.TLS, sm.StatusToken, sm.StatusTokenFile, false)
 	v.cidrs("self_monitoring.allowed_networks", sm.AllowedNetworks)
 	for i, t := range sm.Heartbeat.Targets {
+		if t.URL == "" { // unset (e.g. an empty environment variable): no such target
+			continue
+		}
 		v.url(fmt.Sprintf("self_monitoring.heartbeat.targets[%d].url", i), t.URL)
 	}
 

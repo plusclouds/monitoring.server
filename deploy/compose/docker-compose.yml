@@ -165,6 +165,13 @@ configs:
         # with `monitor health`.
         listen: "127.0.0.1:9090"
         status_token_file: ""
+        # Dead man's switch (F11): a monitoring.heartbeat every minute while
+        # the engine is healthy. The URL is a secret: set it in .env
+        # (MONITOR_HEARTBEAT_URL); empty sends nothing.
+        heartbeat:
+          interval: 60s
+          targets:
+            - url: "${MONITOR_HEARTBEAT_URL:-}"
 
   # Idempotent: creates each role and the database only when missing, and
   # sets the role passwords from .env on every run, so a changed password in

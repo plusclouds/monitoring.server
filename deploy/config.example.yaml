@@ -387,7 +387,8 @@ usage:
     xapi.pool:host: 3       # ...each of its hypervisor hosts is
     camera.snapshot: 2
     rtsp.stream: 2
-    mqtt.connection: 0      # an MQTT sensor bills once, through its push.mqtt check (proposed)
+    mqtt.connection: 0      # an MQTT sensor bills once, through its push.mqtt check (confirmed 2026-10-07)
+    monitor.self: 0         # the engine's own health check (platform tenant)
   default_weight: 1   # plugins not listed (push.http, push.mqtt)
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
   # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry
@@ -416,11 +417,18 @@ self_monitoring:
   status_token_file: /run/secrets/monitor_status_token
   allowed_networks: []
   # Store self-metrics on the built-in "monitor" device in the platform
-  # tenant, so Grafana and the API show them without Prometheus.
+  # tenant, so Grafana and the API show them without Prometheus. Its
+  # monitor.self check carries the built-in alerts (check lag, stuck
+  # notifications, dropped rows, rollups, partitions, failing webhooks,
+  # clock offset, authentication failures); they go to the platform
+  # tenant's alert routes, so give that tenant a webhook and a route.
   store_as_metrics: true
   clock_offset_warning: 2s      # this node against the database clock
   # Dead man's switch. Sent by the node holding the maintenance lock, only
-  # while the core loop is healthy.
+  # while the core loop is healthy: the database answers, the notifier loop
+  # turns, and the engine applied its own monitor.self result within 3
+  # minutes. POST of a monitoring.heartbeat event (Standard Webhooks
+  # headers, signed when secret_file is set; Bearer token_file when set).
   heartbeat:
     interval: 60s
     targets: []

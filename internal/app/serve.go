@@ -28,6 +28,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/mqtt"
 	"github.com/plusclouds/monitoring.server/internal/runner"
+	"github.com/plusclouds/monitoring.server/internal/selfmon"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
 	"github.com/plusclouds/monitoring.server/internal/store"
 	"github.com/plusclouds/monitoring.server/internal/tenancy"
@@ -146,6 +147,10 @@ func Serve(ctx context.Context, o ServeOptions) error {
 			return err
 		}
 		g.Go(func() error { return eng.Run(gctx) })
+		if sm.StoreAsMetrics {
+			self := &selfmon.Collector{System: pools.system, Gatherer: reg, Results: results, Logger: log.Logger}
+			g.Go(func() error { return self.Run(gctx) })
+		}
 		if has(config.RoleRunner) {
 			listen, err := config.ReadSecret("database.listen_dsn", o.Config.Database.ListenDSN, o.Config.Database.ListenDSNFile)
 			if err == nil && listen == "" {
@@ -206,6 +211,13 @@ func Serve(ctx context.Context, o ServeOptions) error {
 			return err
 		}}
 		jobs := append([]metrics.Job{purge}, usageJobs(pools.system, o.Config, log)...)
+		hb, err := selfmon.NewHeartbeat(sm, o.Config.TLS, pools.system, o.Config.Node.ID, log.Logger, reg)
+		if err != nil {
+			return err
+		}
+		if len(hb.Targets) > 0 {
+			jobs = append(jobs, metrics.Job{Name: "heartbeat", Every: max(sm.Heartbeat.Interval.D(), 10*time.Second), Run: hb.Send})
+		}
 		m, err := metrics.NewMaintainer(metrics.MaintainerOptions{System: pools.system, Config: o.Config.Metrics,
 			Logger: log.Logger, Registry: reg, Jobs: jobs})
 		if err != nil {

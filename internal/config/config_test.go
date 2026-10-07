@@ -246,3 +246,17 @@ func writeFile(t *testing.T, content string) string {
 	}
 	return path
 }
+
+// An empty heartbeat URL (an unset environment variable in Compose) means
+// no target; a malformed one is an error.
+func TestHeartbeatTargets(t *testing.T) {
+	c := validBase()
+	c.SelfMonitoring.Heartbeat.Targets = []HeartbeatTarget{{URL: ""}}
+	if err := c.Validate(AllRoles); err != nil {
+		t.Errorf("empty URL rejected: %v", err)
+	}
+	c.SelfMonitoring.Heartbeat.Targets = []HeartbeatTarget{{URL: "not a url"}}
+	if err := c.Validate(AllRoles); err == nil {
+		t.Error("malformed URL accepted")
+	}
+}
