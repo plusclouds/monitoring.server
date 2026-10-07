@@ -27,6 +27,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/logging"
 	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/mqtt"
+	"github.com/plusclouds/monitoring.server/internal/natsingest"
 	"github.com/plusclouds/monitoring.server/internal/runner"
 	"github.com/plusclouds/monitoring.server/internal/selfmon"
 	"github.com/plusclouds/monitoring.server/internal/statusserver"
@@ -178,6 +179,14 @@ func Serve(ctx context.Context, o ServeOptions) error {
 					return err
 				}
 				g.Go(func() error { return br.Run(gctx) })
+			}
+			if o.Config.Ingest.NATS.Enabled {
+				nc, err := natsingest.New(natsingest.Options{Config: o.Config.Ingest.NATS, TLS: o.Config.TLS, System: pools.system,
+					Results: results, Logger: log.Logger, Registry: reg})
+				if err != nil {
+					return err
+				}
+				g.Go(func() error { return nc.Run(gctx) })
 			}
 			if o.Config.Ingest.HTTP.Enabled {
 				in, err := ingest.New(ingest.Options{Config: o.Config.Ingest.HTTP, TLS: o.Config.TLS, System: pools.system,

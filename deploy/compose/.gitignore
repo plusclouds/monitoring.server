@@ -1,2 +1,3 @@
 # MQTT certificate and key (mqtt-cert-hook.sh); never committed.
 tls/
+nats/

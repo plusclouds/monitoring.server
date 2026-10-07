@@ -68,6 +68,13 @@ func (c *Config) Validate(roles []string) error {
 		if c.Ingest.HTTP.Enabled {
 			v.listener("ingest.http", c.Ingest.HTTP.Listen, c.Ingest.HTTP.TLS, c.Ingest.HTTP.TrustedProxies)
 		}
+		if n := c.Ingest.NATS; n.Enabled {
+			v.required("ingest.nats.url", n.URL)
+			v.required("ingest.nats.subject", n.Subject)
+			if (n.CertFile == "") != (n.KeyFile == "") {
+				v.add("ingest.nats: set both cert_file and key_file for a client certificate")
+			}
+		}
 		if c.Ingest.MQTT.Enabled && (c.Ingest.MQTT.TLS.CertFile == "" || c.Ingest.MQTT.TLS.KeyFile == "") {
 			v.add("ingest.mqtt.tls: cert_file and key_file are required; plain MQTT is only the legacy listener")
 		}

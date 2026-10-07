@@ -232,7 +232,7 @@ func toAPICheckRun(c inventory.Check, r plugin.Result) gen.CheckRun {
 		Output: r.Output, DurationMs: float64(r.Duration.Microseconds()) / 1000, Metrics: metrics,
 		Time: r.Time.UTC(),
 	}
-	if p, ok := plugin.Lookup(c.Plugin); ok && p.Manifest().Kind == plugin.KindCollector {
+	if p, ok := plugin.Lookup(c.Plugin); ok && p.Manifest().HasObjects() {
 		run.Metrics = map[string]*float64{}
 		if r.Objects != nil {
 			objs := make([]map[string]any, len(r.Objects))

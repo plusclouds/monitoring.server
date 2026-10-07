@@ -83,6 +83,10 @@ services:
       MONITOR_INGEST__HTTP__TRUSTED_PROXIES: ${MONITOR_TRUSTED_PROXIES:-172.16.0.0/12,192.168.0.0/16,10.0.0.0/8}
       MONITOR_INGEST__MQTT__ENABLED: ${MONITOR_MQTT_ENABLED:-false}
       MONITOR_INGEST__MQTT__LEGACY__ENABLED: ${MONITOR_MQTT_PLAIN_ENABLED:-false}
+      MONITOR_INGEST__NATS__ENABLED: ${MONITOR_NATS_ENABLED:-false}
+      MONITOR_INGEST__NATS__URL: ${MONITOR_NATS_URL:-}
+      MONITOR_INGEST__NATS__USER: ${MONITOR_NATS_USER:-}
+      MONITOR_INGEST__NATS__PASSWORD: ${MONITOR_NATS_PASSWORD:-}
       MONITOR_PLATFORM__IDENTITY_SOURCE: ${MONITOR_IDENTITY_SOURCE:-plusclouds}
     configs:
       - source: monitor-config
@@ -98,6 +102,7 @@ services:
       - "${MONITOR_MQTT_BIND:-0.0.0.0}:${MONITOR_MQTT_PLAIN_PORT:-1883}:1883"
     volumes:
       - ./tls:/etc/monitor/tls:ro   # mqtt.crt and mqtt.key, readable by uid 65532
+      - ./nats:/etc/monitor/nats:ro # NATS CA and client certificate (vm.agent)
     stop_grace_period: 40s   # node.shutdown_grace is 30s
 
   # Runs once per `up`: creates the installation ID, the platform tenant and
@@ -160,6 +165,18 @@ configs:
           legacy:
             enabled: false   # plain 1883 for FixLean firmware: MONITOR_MQTT_PLAIN_ENABLED=true
             listen: ":1883"
+        # PlusClouds VM agent telemetry from the platform's NATS (vm.agent
+        # checks), off until MONITOR_NATS_ENABLED=true with the URL and the
+        # monitoring user's credentials in .env.
+        nats:
+          enabled: false
+          subject: vm.*.telemetry
+          queue: monitor-ingest
+          # The platform's NATS verifies clients (mTLS): its CA and this
+          # server's client certificate, in ./nats (readable by uid 65532).
+          ca_file: /etc/monitor/nats/ca.crt
+          cert_file: /etc/monitor/nats/monitoring.crt
+          key_file: /etc/monitor/nats/monitoring.key
       self_monitoring:
         # Loopback inside the container; Docker's health check probes it
         # with `monitor health`.

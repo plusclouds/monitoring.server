@@ -241,6 +241,24 @@ type Notifier struct {
 type Ingest struct {
 	HTTP IngestHTTP `yaml:"http"`
 	MQTT IngestMQTT `yaml:"mqtt"`
+	NATS IngestNATS `yaml:"nats"`
+}
+
+// IngestNATS subscribes to the PlusClouds platform's NATS for VM agent
+// telemetry (vm.agent checks).
+type IngestNATS struct {
+	Enabled      bool   `yaml:"enabled"`
+	URL          string `yaml:"url"`     // nats://host:4222, tls://host:4222 or wss://host:443
+	Subject      string `yaml:"subject"` // vm.*.telemetry
+	Queue        string `yaml:"queue"`   // queue group: several ingest nodes share the stream
+	User         string `yaml:"user"`
+	PasswordFile string `yaml:"password_file"`
+	Password     string `yaml:"password" secret:"true"`
+	TokenFile    string `yaml:"token_file"`
+	CredsFile    string `yaml:"creds_file"` // NATS .creds (JWT and seed)
+	CAFile       string `yaml:"ca_file"`    // extra CA for the server's certificate
+	CertFile     string `yaml:"cert_file"`  // client certificate, when the server verifies clients (mTLS)
+	KeyFile      string `yaml:"key_file"`
 }
 
 type Rate struct {

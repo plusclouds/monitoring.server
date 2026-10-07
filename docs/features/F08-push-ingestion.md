@@ -81,6 +81,15 @@ Pushed timestamps are accepted from up to 24 h in the past (devices that buffer 
 - **Tests.** `TestMQTTBroker` (credentials, listeners, registration, discovery, inventory, thresholds, disconnect, ACL, limits, pre-registration, rotation), `FuzzDecode` in CI.
 - **Not yet:** external-broker mode (shadow migration, F12 step 1), PROXY protocol, the metric metadata API (`PATCH /v1/checks/{id}/metrics/{key}`), SSE telemetry ticks, client certificates.
 
+## As built: PlusClouds VM agent (`v0.12.0`)
+
+- **Source.** The PlusClouds VM agent (`github.com/plusclouds/ubuntu-agent`, Linux and Windows) publishes `system.SystemMetrics` every 30 s on the platform's NATS, subject `vm.<uuid>.telemetry` (also kept 15 minutes in the `VM_TELEMETRY` stream). The ingest role subscribes to `ingest.nats.subject` (`vm.*.telemetry`) in the queue group `ingest.nats.queue`, so ingest nodes share the messages. No agent change is needed.
+- **Check.** `vm.agent` (ingester with objects), config `{"vm_uuid": "<uuid>"}`, unique on the server (409 otherwise). Monitoring is **opt-in per VM** (decided 2026-10-07): when a customer enables monitoring for a VM, the panel creates the device (external ID = the VM UUID) and its `vm.agent` check in the customer's tenant; disabling deletes them. The panel must check that the VM belongs to that customer before creating the check: the engine cannot, and the first tenant to claim a VM UUID receives its telemetry. A message is routed by the UUID in its subject; one whose payload names another VM is dropped, as are messages for VMs without a check (counted in `nats_ingest_messages_total`, outcome `no-check`).
+- **Objects.** `host` (CPU usage, cores, load averages, memory), `disk:<mountpoint>` (usage, size, read/write rates, IOPS, busy %) and `net:<interface>` (up, receive/send bit/s from the counters' difference; a counter that went back, after a reboot, gives no rate). A down interface is a WARNING object. Thresholds with `object` (`*` or a key) apply as for collectors; `Manifest.Objects` lets an ingester carry objects.
+- **Silence.** The push checks' last-seen rule: no telemetry for `interval × missed_count` (60 s × 3 by default) is CRITICAL, so a VM that is off or whose agent stopped shows as down when the check is its host check.
+- **Connection.** `ingest.nats.url` (`nats://`, `tls://` or `wss://`), authenticated with `user` and `password_file`/`password`, `token_file` or a `.creds` file; reconnects for ever. The platform has to provide a user allowed to subscribe to `vm.*.telemetry`.
+- **Not yet:** service states (the agent sends none in telemetry; a watch list in the agent is planned), heartbeats on `agent.vm.<uuid>.evt`.
+
 ## Open questions
 
 - The MQTT broker, topic structure and payload format are now taken from `fixleanplus.metric.collector` ([F12](F12-fixlean-collector-replacement.md)). Open questions specific to that migration are listed there.

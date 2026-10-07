@@ -313,6 +313,24 @@ ingest:
     # Default cap on telemetry fields discovered per device (F12).
     max_discovered_fields: 200
 
+  # PlusClouds VM agent telemetry from the platform's NATS (vm.agent checks).
+  # The engine subscribes to `subject` in a queue group, so several ingest
+  # nodes share the messages. Each message goes to the vm.agent check whose
+  # config names the VM's UUID; others are counted and dropped.
+  nats:
+    enabled: false
+    url: ""                    # nats://nats.example.com:4222, tls://...:4222 or wss://...:443
+    subject: vm.*.telemetry
+    queue: monitor-ingest
+    # One of: user and password_file, token_file, or creds_file (JWT + seed).
+    user: ""
+    password_file: ""
+    token_file: ""
+    creds_file: ""
+    ca_file: ""                # CA of the server's certificate (e.g. a private NATS CA); empty = system roots
+    cert_file: ""              # client certificate and key, when NATS verifies clients (mTLS)
+    key_file: ""
+
   # Phase 2
   # snmp_traps:
   #   enabled: false
