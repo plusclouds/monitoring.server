@@ -42,6 +42,8 @@ type Check struct {
 	RunbookURL        *string
 	Credentials       map[string]uuid.UUID // role -> credential
 	Whoopsy           *threshold.Whoopsy   // premium band alerting; nil when off
+	Push              *PushSource          // push checks (F08) only
+	PushToken         string               // the new ingest token, only right after create or rotate
 	ManagedBy         string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -105,6 +107,9 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 	}
 	if in.FailureCount == 0 {
 		in.FailureCount = 3
+		if m.Kind == plugin.KindIngester {
+			in.FailureCount = 1 // missed_count already waits for the silence to last
+		}
 	}
 	if in.RecoveryCount == 0 {
 		in.RecoveryCount = 1
@@ -121,8 +126,9 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 	if m.Kind == plugin.KindCollector && in.IsHostCheck {
 		return in, errs.Invalidf("is_host_check", "a collector (%s) cannot be the host check; use a ping or TCP check", m.Type)
 	}
-	names := make([]string, len(m.Metrics))
-	for i, d := range m.Metrics {
+	defs := plugin.MetricsOf(p, in.Config)
+	names := make([]string, len(defs))
+	for i, d := range defs {
 		names[i] = d.Name
 	}
 	for i, r := range in.Thresholds {
@@ -156,7 +162,9 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 const checkCols = `c.id, c.tenant_id, c.device_id, c.name, c.plugin, c.config, c.interval_seconds, c.timeout_seconds,
 	c.enabled, c.thresholds, c.failure_count, c.recovery_count, c.is_host_check, c.unknown_is_critical,
 	c.runbook_url, c.managed_by, c.created_at, c.updated_at, c.whoopsy,
-	coalesce((SELECT jsonb_object_agg(cc.role, cc.credential_id) FROM check_credentials cc WHERE cc.check_id = c.id), '{}')`
+	coalesce((SELECT jsonb_object_agg(cc.role, cc.credential_id) FROM check_credentials cc WHERE cc.check_id = c.id), '{}'),
+	(SELECT jsonb_build_object('token_prefix', ps.token_prefix, 'token_created_at', ps.token_created_at,
+	        'last_push_at', ps.last_push_at) FROM push_sources ps WHERE ps.check_id = c.id)`
 
 var checkConstraints = map[string]string{
 	"checks_device_id_name_key": "the device already has a check with this name",
@@ -168,7 +176,7 @@ func scanCheck(row pgx.Row) (Check, error) {
 	var creds map[string]uuid.UUID
 	err := row.Scan(&c.ID, &c.TenantID, &c.DeviceID, &c.Name, &c.Plugin, &c.Config, &c.IntervalSeconds,
 		&c.TimeoutSeconds, &c.Enabled, &c.Thresholds, &c.FailureCount, &c.RecoveryCount, &c.IsHostCheck,
-		&c.UnknownIsCritical, &c.RunbookURL, &c.ManagedBy, &c.CreatedAt, &c.UpdatedAt, &c.Whoopsy, &creds)
+		&c.UnknownIsCritical, &c.RunbookURL, &c.ManagedBy, &c.CreatedAt, &c.UpdatedAt, &c.Whoopsy, &creds, &c.Push)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return c, errs.ErrNotFound
 	}
@@ -201,7 +209,7 @@ func SetWhoopsy(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.UUID,
 		}
 		m := p.Manifest()
 		if m.Kind != plugin.KindCheck {
-			return Check{}, errs.Invalidf("whoopsy", "Whoopsy! watches a check's metric; %s is a collector", m.Type)
+			return Check{}, errs.Invalidf("whoopsy", "Whoopsy! watches a polled check's metric; %s is a %s", m.Type, m.Kind)
 		}
 		names := make([]string, len(m.Metrics))
 		for i, d := range m.Metrics {
@@ -302,10 +310,17 @@ func CreateCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 	if err := setCredentials(ctx, tx, d.TenantID, id, in.Credentials); err != nil {
 		return Check{}, err
 	}
+	var token string
+	if p, _ := plugin.Lookup(in.Plugin); p != nil && p.Manifest().Kind == plugin.KindIngester {
+		if token, err = setPushToken(ctx, tx, d.TenantID, id); err != nil {
+			return Check{}, err
+		}
+	}
 	c, err := GetCheck(ctx, tx, id)
 	if err != nil {
 		return Check{}, err
 	}
+	c.PushToken = token
 	if n+1 == lim.MaxChecks {
 		if err := incident.LimitReached(ctx, tx, d.TenantID, "checks", lim.MaxChecks, n+1); err != nil {
 			return Check{}, err

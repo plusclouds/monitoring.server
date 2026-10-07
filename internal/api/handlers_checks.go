@@ -44,7 +44,7 @@ func (s *Server) listChecks(ctx context.Context, f inventory.CheckFilter, cursor
 	items, next := trim(items, n, func(x inventory.Check) uuid.UUID { return x.ID })
 	out := gen.CheckPage{Items: make([]gen.Check, len(items)), NextCursor: next}
 	for i, x := range items {
-		out.Items[i] = toAPICheck(x)
+		out.Items[i] = toAPICheck(x, s.ingestURL)
 	}
 	return out, nil
 }
@@ -83,7 +83,7 @@ func (s *Server) CreateCheck(ctx context.Context, req gen.CreateCheckRequestObje
 	if err != nil {
 		return nil, err
 	}
-	return gen.CreateCheck201JSONResponse(toAPICheck(c)), nil
+	return gen.CreateCheck201JSONResponse(toAPICheck(c, s.ingestURL)), nil
 }
 
 func (s *Server) GetCheck(ctx context.Context, req gen.GetCheckRequestObject) (gen.GetCheckResponseObject, error) {
@@ -99,7 +99,7 @@ func (s *Server) GetCheck(ctx context.Context, req gen.GetCheckRequestObject) (g
 	if err != nil {
 		return nil, err
 	}
-	return gen.GetCheck200JSONResponse(toAPICheck(c)), nil
+	return gen.GetCheck200JSONResponse(toAPICheck(c, s.ingestURL)), nil
 }
 
 func (s *Server) UpdateCheck(ctx context.Context, req gen.UpdateCheckRequestObject) (gen.UpdateCheckResponseObject, error) {
@@ -119,7 +119,7 @@ func (s *Server) UpdateCheck(ctx context.Context, req gen.UpdateCheckRequestObje
 	if err != nil {
 		return nil, err
 	}
-	return gen.UpdateCheck200JSONResponse(toAPICheck(c)), nil
+	return gen.UpdateCheck200JSONResponse(toAPICheck(c, s.ingestURL)), nil
 }
 
 func (s *Server) DeleteCheck(ctx context.Context, req gen.DeleteCheckRequestObject) (gen.DeleteCheckResponseObject, error) {
@@ -270,4 +270,20 @@ func (s *Server) DeleteCredential(ctx context.Context, req gen.DeleteCredentialR
 		return nil, err
 	}
 	return gen.DeleteCredential204Response{}, nil
+}
+
+func (s *Server) RotatePushToken(ctx context.Context, req gen.RotatePushTokenRequestObject) (gen.RotatePushTokenResponseObject, error) {
+	p, t, err := tenantScope(ctx, roleConfig, true)
+	if err != nil {
+		return nil, err
+	}
+	var c inventory.Check
+	err = s.tx(ctx, t, func(tx pgx.Tx) error {
+		c, err = inventory.RotatePushToken(ctx, tx, p.Actor, req.CheckId)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return gen.RotatePushToken200JSONResponse(toAPICheck(c, s.ingestURL)), nil
 }

@@ -143,6 +143,9 @@ func (e *Executor) Run(ctx context.Context, q Querier, j Job) plugin.Result {
 	case plugin.Collector:
 		return plugin.SafeCollect(runCtx, p, target)
 	}
+	if p.Manifest().Kind == plugin.KindIngester {
+		return unknown(start, "%s receives pushed data and cannot be run; push a message to its ingest URL", j.Plugin)
+	}
 	return unknown(start, "plugin %q cannot be run as a check or collector", j.Plugin)
 }
 

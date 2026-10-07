@@ -276,6 +276,9 @@ func (w *Writer) samples(ctx context.Context, r runner.Result) ([]sample, error)
 		return nil, nil
 	}
 	defs := p.Manifest().Metrics
+	if r.Layout != nil {
+		defs = r.Layout
+	}
 	allowed, err := w.tenantClasses(ctx, r.TenantID)
 	if err != nil {
 		return nil, err

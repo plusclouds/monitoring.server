@@ -23,6 +23,7 @@ import (
 	"github.com/plusclouds/monitoring.server/internal/crypto"
 	"github.com/plusclouds/monitoring.server/internal/engine"
 	"github.com/plusclouds/monitoring.server/internal/execute"
+	"github.com/plusclouds/monitoring.server/internal/ingest"
 	"github.com/plusclouds/monitoring.server/internal/logging"
 	"github.com/plusclouds/monitoring.server/internal/metrics"
 	"github.com/plusclouds/monitoring.server/internal/runner"
@@ -45,7 +46,8 @@ type ServeOptions struct {
 
 // implementedRoles grows as milestones land; the others are accepted in the
 // config but not started yet.
-var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine, config.RoleNotifier, config.RoleMaintenance}
+var implementedRoles = []string{config.RoleAPI, config.RoleRunner, config.RoleEngine, config.RoleNotifier, config.RoleIngest,
+	config.RoleMaintenance}
 
 // Serve runs until ctx is cancelled.
 func Serve(ctx context.Context, o ServeOptions) error {
@@ -124,8 +126,11 @@ func Serve(ctx context.Context, o ServeOptions) error {
 			return err
 		}
 	}
-	// The runner and the engine share a process in the MVP: results pass
-	// through a channel (ADR-0001).
+	// The runner, the ingest listener and the engine share a process in the
+	// MVP: results pass through a channel (ADR-0001).
+	if has(config.RoleIngest) && !has(config.RoleEngine) {
+		return fmt.Errorf("the ingest role needs the engine role in the same process")
+	}
 	if has(config.RoleRunner) || has(config.RoleEngine) {
 		results := make(chan runner.Result, max(o.Config.Runner.ResultBuffer, 1))
 		mw, err := metrics.NewWriter(metrics.WriterOptions{System: pools.system, Config: o.Config.Metrics.Write,
@@ -158,6 +163,19 @@ func Serve(ctx context.Context, o ServeOptions) error {
 				return err
 			}
 			g.Go(func() error { return run.Run(gctx) })
+		}
+		if has(config.RoleIngest) {
+			if o.Config.Ingest.MQTT.Enabled {
+				log.Warn("ingest.mqtt is not implemented yet and will not start")
+			}
+			if o.Config.Ingest.HTTP.Enabled {
+				in, err := ingest.New(ingest.Options{Config: o.Config.Ingest.HTTP, TLS: o.Config.TLS, System: pools.system,
+					Results: results, Logger: log.Logger, Registry: reg})
+				if err != nil {
+					return err
+				}
+				g.Go(func() error { return in.Run(gctx) })
+			}
 		}
 	}
 	if has(config.RoleNotifier) {

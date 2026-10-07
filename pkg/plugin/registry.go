@@ -23,7 +23,8 @@ func Register(c Plugin) {
 	}
 	_, isCheck := c.(Check)
 	_, isCollector := c.(Collector)
-	if (m.Kind == KindCheck && !isCheck) || (m.Kind == KindCollector && !isCollector) || m.Kind == KindIngester {
+	_, isIngester := c.(Ingester)
+	if (m.Kind == KindCheck && !isCheck) || (m.Kind == KindCollector && !isCollector) || (m.Kind == KindIngester && !isIngester) {
 		panic(fmt.Sprintf("plugin %q: kind %s does not match its interface", m.Type, m.Kind))
 	}
 	mu.Lock()
@@ -66,6 +67,8 @@ func validManifest(m Manifest) error {
 		return fmt.Errorf("default interval must be at least the minimum interval")
 	case !slices.Contains([]string{BillingBasic, BillingStandard, BillingPush, BillingAdvanced, BillingFree}, m.BillingClass):
 		return fmt.Errorf("unknown billing class %q", m.BillingClass)
+	case m.Kind == KindIngester && (len(m.Metrics) > 0 || m.WhoopsyMetric != ""):
+		return fmt.Errorf("an ingester's metrics come from each check's config; leave Metrics and WhoopsyMetric empty")
 	}
 	if m.WhoopsyMetric != "" && !slices.ContainsFunc(m.Metrics, func(d MetricDef) bool { return d.Name == m.WhoopsyMetric }) {
 		return fmt.Errorf("whoopsy metric %q is not in the layout", m.WhoopsyMetric)

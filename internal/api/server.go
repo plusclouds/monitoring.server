@@ -56,7 +56,8 @@ type Server struct {
 	rotationOverlap time.Duration
 	identitySource  string
 	platformRate    int
-	maxPoints       int // per metric series in a query (F07)
+	maxPoints       int    // per metric series in a query (F07)
+	ingestURL       string // public URL of the ingest listener, for push checks (F08)
 
 	authFailures *prometheus.CounterVec
 	rateLimited  prometheus.Counter
@@ -92,6 +93,7 @@ func New(o Options) (*Server, error) {
 		identitySource:  o.Config.Platform.IdentitySource,
 		platformRate:    o.Config.API.PlatformRatePerMinute,
 		maxPoints:       o.Config.Metrics.Query.MaxPointsPerSeries,
+		ingestURL:       o.Config.Ingest.HTTP.PublicURL,
 		tenants: &tenancy.Service{
 			DB: o.DB, IdentitySource: o.Config.Platform.IdentitySource,
 			Defaults: o.Config.Platform.TenantDefaults, JIT: o.Config.Platform.JIT,
