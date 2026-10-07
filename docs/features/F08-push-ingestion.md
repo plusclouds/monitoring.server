@@ -88,6 +88,7 @@ Pushed timestamps are accepted from up to 24 h in the past (devices that buffer 
 - **Objects.** `host` (CPU usage, cores, load averages, memory), `disk:<mountpoint>` (usage, size, read/write rates, IOPS, busy %) and `net:<interface>` (up, receive/send bit/s from the counters' difference; a counter that went back, after a reboot, gives no rate). A down interface is a WARNING object. Thresholds with `object` (`*` or a key) apply as for collectors; `Manifest.Objects` lets an ingester carry objects.
 - **Silence.** The push checks' last-seen rule: no telemetry for `interval × missed_count` (60 s × 3 by default) is CRITICAL, so a VM that is off or whose agent stopped shows as down when the check is its host check.
 - **Connection.** `ingest.nats.url` (`nats://`, `tls://` or `wss://`), authenticated with `user` and `password_file`/`password`, `token_file` or a `.creds` file; reconnects for ever. The platform has to provide a user allowed to subscribe to `vm.*.telemetry`.
+- **Billing.** Weight 2 per monitored VM (`vm.agent`, confirmed by PlusClouds on 2026-10-07, from `v0.12.1`); objects (disks, interfaces) are not billed.
 - **Not yet:** service states (the agent sends none in telemetry; a watch list in the agent is planned), heartbeats on `agent.vm.<uuid>.evt`.
 
 ## Open questions
