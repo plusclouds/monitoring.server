@@ -132,8 +132,8 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 		names[i] = d.Name
 	}
 	for i, r := range in.Thresholds {
-		if r.Object != "" && m.Kind != plugin.KindCollector {
-			return in, errs.Invalidf(fmt.Sprintf("thresholds[%d].object", i), "only collectors report objects; %s is a check", m.Type)
+		if r.Object != "" && !m.HasObjects() {
+			return in, errs.Invalidf(fmt.Sprintf("thresholds[%d].object", i), "only collectors and vm.agent report objects; %s does not", m.Type)
 		}
 	}
 	rules, err := threshold.Validate(in.Thresholds, names)
@@ -169,6 +169,7 @@ const checkCols = `c.id, c.tenant_id, c.device_id, c.name, c.plugin, c.config, c
 var checkConstraints = map[string]string{
 	"checks_device_id_name_key": "the device already has a check with this name",
 	"checks_one_host_check":     "the device already has a host check",
+	"checks_vm_agent_uuid":      "another check already receives this VM's telemetry (vm_uuid)",
 }
 
 func scanCheck(row pgx.Row) (Check, error) {
@@ -329,7 +330,7 @@ func createCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 		if token, err = setPushToken(ctx, tx, d.TenantID, id); err != nil {
 			return Check{}, err
 		}
-	case "push.mqtt": // last-seen rule, no HTTP token
+	case "push.mqtt", "vm.agent": // last-seen rule, no HTTP token
 		if _, err := tx.Exec(ctx, `INSERT INTO push_sources (check_id, tenant_id, token_created_at) VALUES ($1, $2, NULL)`, id, d.TenantID); err != nil {
 			return Check{}, err
 		}

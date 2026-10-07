@@ -380,7 +380,7 @@ func TestPlugins(t *testing.T) {
 			t.Errorf("%s: config_schema is not an object schema", p["type"])
 		}
 	}
-	if strings.Join(types, ",") != "camera.snapshot,http,icmp,monitor.self,mqtt.connection,push.http,push.mqtt,redfish.health,rtsp.stream,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,xapi.pool" {
+	if strings.Join(types, ",") != "camera.snapshot,http,icmp,monitor.self,mqtt.connection,push.http,push.mqtt,redfish.health,rtsp.stream,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,vm.agent,xapi.pool" {
 		t.Errorf("plugins = %v, want the built-in plugins sorted by type", types)
 	}
 	if strings.Join(required, ",") != "redfish.health,snmp.get,snmp.interfaces,snmp.pdu,snmp.sensor,snmp.system,snmp.ups,xapi.pool" {

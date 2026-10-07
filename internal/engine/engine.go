@@ -227,7 +227,7 @@ func (e *Engine) apply(ctx context.Context, tx pgx.Tx, rp *runner.Result) (strin
 		for _, d := range defs {
 			cfg.Metrics = append(cfg.Metrics, d.Name)
 		}
-		if m.Kind == plugin.KindCollector {
+		if m.HasObjects() {
 			oc := cfg
 			oc.Whoopsy = nil // checks only
 			objCfg = &oc

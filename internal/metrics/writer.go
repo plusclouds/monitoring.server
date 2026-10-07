@@ -284,7 +284,7 @@ func (w *Writer) samples(ctx context.Context, r runner.Result) ([]sample, error)
 		return nil, err
 	}
 	// A check's metrics are one set; a collector's are one set per object.
-	if p.Manifest().Kind != plugin.KindCollector {
+	if !p.Manifest().HasObjects() {
 		return w.split(ctx, r, "", r.Metrics, defs, allowed)
 	}
 	var out []sample

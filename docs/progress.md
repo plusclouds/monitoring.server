@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-07 · **Latest release tag:** `v0.11.0`
+**Last updated:** 2026-10-07 · **Latest release tag:** `v0.12.0`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
@@ -166,6 +166,10 @@ Vendors in our datacenter (2026-10-07): Dell, HPE and ASUS servers; APC for PDUs
 Suppression: a pool host that goes down suppresses its VMs' incidents and the checks on those VMs (availability incidents, migration `00017`); maintenance mode does not.
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
+
+### v0.12.0 — PlusClouds VM agent telemetry
+
+`vm.agent` checks receive each PlusClouds VM's agent telemetry from the platform's NATS (`vm.*.telemetry`): host, disk and interface objects with thresholds, silence as CRITICAL. Opt-in per VM: the panel creates the device and check when a customer enables monitoring. Verified by `TestVMAgent`, `FuzzDecode` and a live read of the platform's NATS (14 VMs, every message parsed). Off until `MONITOR_NATS_ENABLED=true` with the NATS client certificate and the `monitoring` user (in the auth callout's `auth_users`).
 
 ### v0.11.0 — M5 part 3: monitoring the monitor
 

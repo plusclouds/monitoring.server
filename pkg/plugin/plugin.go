@@ -80,15 +80,18 @@ type Manifest struct {
 	CredentialTypes []string        `json:"credential_types"`
 	// CredentialsRequired: the plugin cannot run without a credential in
 	// the "auth" role. False when the credential is optional or there is none.
-	CredentialsRequired bool          `json:"credentials_required"`
-	Metrics             []MetricDef   `json:"metrics"` // fixed layout; Result.Metrics aligns with it
-	DefaultInterval     time.Duration `json:"-"`
-	MinInterval         time.Duration `json:"-"`
-	NeedsRawSocket      bool          `json:"needs_raw_socket"`
-	MaxConcurrency      int           `json:"-"` // per runner; 0 = runner default
-	PerTargetLimit      int           `json:"-"` // concurrent runs against one address; 0 = runner default
-	Slow                bool          `json:"-"` // runs in the slow pool (F04)
-	BillingClass        string        `json:"billing_class"`
+	CredentialsRequired bool `json:"credentials_required"`
+	// Objects: an ingester whose results carry objects (a VM's disks and
+	// interfaces), kept like a collector's. Collectors always do.
+	Objects         bool          `json:"-"`
+	Metrics         []MetricDef   `json:"metrics"` // fixed layout; Result.Metrics aligns with it
+	DefaultInterval time.Duration `json:"-"`
+	MinInterval     time.Duration `json:"-"`
+	NeedsRawSocket  bool          `json:"needs_raw_socket"`
+	MaxConcurrency  int           `json:"-"` // per runner; 0 = runner default
+	PerTargetLimit  int           `json:"-"` // concurrent runs against one address; 0 = runner default
+	Slow            bool          `json:"-"` // runs in the slow pool (F04)
+	BillingClass    string        `json:"billing_class"`
 	// WhoopsyMetric is the metric Whoopsy! (band alerting) watches unless
 	// the check names another: response time for http, round-trip time
 	// for icmp. Empty: the check must name one.
@@ -233,6 +236,10 @@ type Ingester interface {
 	// message arrived. An error means the message is malformed.
 	Parse(cfg json.RawMessage, body []byte) ([]Result, error)
 }
+
+// HasObjects reports whether a plugin's results carry objects with their
+// own metrics, state and thresholds.
+func (m Manifest) HasObjects() bool { return m.Kind == KindCollector || m.Objects }
 
 // MetricsOf is the metric layout of a check: the manifest's, or for an
 // ingester the one its config names (nil when the config is invalid).

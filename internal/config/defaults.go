@@ -96,6 +96,7 @@ func Default() Config {
 			ResponseCapture:       1 << 10,
 		},
 		Ingest: Ingest{
+			NATS: IngestNATS{Subject: "vm.*.telemetry", Queue: "monitor-ingest"},
 			HTTP: IngestHTTP{
 				Enabled:   true,
 				Listen:    ":9443",
