@@ -18,6 +18,7 @@ import (
 
 	"github.com/plusclouds/monitoring.server/internal/config"
 	"github.com/plusclouds/monitoring.server/internal/incident"
+	"github.com/plusclouds/monitoring.server/internal/liveness"
 	"github.com/plusclouds/monitoring.server/pkg/plugin"
 )
 
@@ -73,6 +74,7 @@ func (n *Notifier) Run(ctx context.Context) error {
 	defer t.Stop()
 	for {
 		n.Tick(ctx)
+		liveness.Beat("notifier") // a hung delivery stops the heartbeat (F11)
 		select {
 		case <-ctx.Done():
 			return nil
