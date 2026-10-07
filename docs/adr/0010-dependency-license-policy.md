@@ -22,7 +22,7 @@ The engine is MIT-licensed and will be embedded in the PlusClouds panel and run 
 | Redfish | `stmcginnis/gofish` | BSD-3-Clause. Not adopted: `redfish.health` uses its own small read-only client (M4) |
 | ICMP | `prometheus-community/pro-bing` | MIT |
 | DNS | `miekg/dns` | BSD-3-Clause |
-| RTSP | `bluenviron/gortsplib` | MIT |
+| RTSP | `bluenviron/gortsplib` | MIT. Adopted as v5 (v4 is deprecated), with `bluenviron/mediacommon` (MIT) and `pion` RTP/RTCP/SDP (MIT) |
 | VMware | `vmware/govmomi` | Apache-2.0 |
 | MQTT client (external-broker mode) | `eclipse/paho.golang` | EPL-2.0 / EDL-1.0 |
 | MQTT broker (embedded) | `mochi-mqtt/server` | MIT |

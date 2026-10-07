@@ -71,6 +71,13 @@ As built (M4), `redfish.health`:
 
 ONVIF device info and snapshots are phase 2 (with discovery).
 
+As built (M4): `rtsp.stream` with `gortsplib` v5 (MIT; the v4 line is deprecated) and `mediacommon` for parameter sets.
+
+- **Stream.** `vendor: auto` (default) tries the Hikvision (`/Streaming/Channels/<channel>01`), Dahua (`/cam/realmonitor?channel=<n>&subtype=0`) and Axis (`/axis-media/media.amp`) paths and remembers the one that answered; or a fixed `vendor`, or `path`. `substream` reads the second stream. Port 554, `tls` for RTSPS (certificate not verified), `transport` tcp (default, passes NAT) or udp (shows network loss). The camera account (`rtsp` credential) goes into the URL; the library answers basic and digest challenges.
+- **Measures** over `sample_seconds` (default 5) without decoding video: frames (H.264/H.265 access units, or marked packets for other codecs), bitrate, resolution from the SDP's or the stream's SPS, RTP loss and jitter from the session statistics, time to the first frame. Metrics `fps`, `bitrate_kbps`, `width`, `height`, `rtp_loss_percent`, `jitter_ms`, `first_frame_ms` (`fps` is the Whoopsy! default).
+- **Status.** No frames in the window is CRITICAL (fps 0). WARNING below `min_fps`, on a resolution other than `width`×`height`, or above `max_loss_percent` (5). A camera whose RTSP service does not answer is CRITICAL; a rejected credential, no stream at the paths or a refused address is UNKNOWN. Slow pool, one run per camera at a time, minimum interval 60 s.
+- **Tests** run against an in-process `gortsplib` server streaming H.264 with a real 1280×720 SPS behind credentials.
+
 As built (M4, requested 2026-10-07): `camera.snapshot`, picture checks from a JPEG snapshot, analysed in pure Go (no video decoder, no new dependency). The brands we run: Hikvision, Dahua, Axis, and ONVIF for the rest.
 
 - **Source.** `vendor: auto` (default) tries Hikvision (`/ISAPI/Streaming/channels/<channel>01/picture`), Dahua (`/cgi-bin/snapshot.cgi?channel=<n>`), Axis (`/axis-cgi/jpg/image.cgi`) and ONVIF (GetCapabilities, GetProfiles, GetSnapshotUri with a WS-Security password digest), and remembers what answered; or a fixed `vendor`, or `snapshot_url` (a path or an http(s) URL without credentials). HTTP by default (`https`, `port`, `verify_certificate`); basic and digest authentication (MD5 or SHA-256) with the `rtsp` (camera account) or `http_basic` credential.
