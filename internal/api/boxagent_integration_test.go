@@ -49,7 +49,7 @@ func TestBoxAgent(t *testing.T) {
 	dev := x.id(x.must(x.do("POST", "/v1/devices", x.key, map[string]any{"name": box, "type": "server",
 		"external": map[string]any{"source": "greenference", "type": "llmbox", "id": box}}), 201))
 	body := map[string]any{"name": "box", "plugin": "box.agent", "is_host_check": true, "interval_seconds": 1,
-		"config": map[string]any{"box_id": box},
+		"config":     map[string]any{"box_id": box},
 		"thresholds": []any{map[string]any{"metric": "gpu_temp_c", "object": "*", "warning": map[string]any{"op": ">", "value": 85}}}}
 
 	// The tenant's minimum interval applies: a 1 s check needs it lowered.
