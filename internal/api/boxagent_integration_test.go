@@ -47,7 +47,7 @@ func TestBoxAgent(t *testing.T) {
 	x := newNoise(t, 0)
 	const box = "box-7f3a"
 	dev := x.id(x.must(x.do("POST", "/v1/devices", x.key, map[string]any{"name": box, "type": "server",
-		"external": map[string]any{"source": "llmocean", "type": "box", "id": box}}), 201))
+		"external": map[string]any{"source": "greenference", "type": "llmbox", "id": box}}), 201))
 	body := map[string]any{"name": "box", "plugin": "box.agent", "is_host_check": true, "interval_seconds": 1,
 		"config": map[string]any{"box_id": box},
 		"thresholds": []any{map[string]any{"metric": "gpu_temp_c", "object": "*", "warning": map[string]any{"op": ">", "value": 85}}}}
