@@ -39,7 +39,7 @@ func boxBeat(box, state, severity string, xid float64, extra map[string]any) str
 
 // box.agent (LLM box heartbeats over HTTPS with their own push token): the
 // provisioner creates a device and a check per box and gets the token once;
-// heartbeats become host, vllm and GPU objects; boot states are not
+// heartbeats (every 5 s) become host, vllm and GPU objects; boot states are not
 // incidents, a hard GPU fault and silence are; a rotated token stops the
 // old one; every answer is counted by status code.
 func TestBoxAgent(t *testing.T) {
@@ -48,15 +48,17 @@ func TestBoxAgent(t *testing.T) {
 	const box = "box-7f3a"
 	dev := x.id(x.must(x.do("POST", "/v1/devices", x.key, map[string]any{"name": box, "type": "server",
 		"external": map[string]any{"source": "greenference", "type": "llmbox", "id": box}}), 201))
-	body := map[string]any{"name": "box", "plugin": "box.agent", "is_host_check": true, "interval_seconds": 1,
+	body := map[string]any{"name": "box", "plugin": "box.agent", "is_host_check": true, "interval_seconds": 5,
 		"config":     map[string]any{"box_id": box},
 		"thresholds": []any{map[string]any{"metric": "gpu_temp_c", "object": "*", "warning": map[string]any{"op": ">", "value": 85}}}}
 
-	// The tenant's minimum interval applies: a 1 s check needs it lowered.
-	x.must(x.do("POST", "/v1/devices/"+dev+"/checks", x.key, body), 422)
-	if _, err := db.System.Exec(ctx, `UPDATE tenants SET min_check_interval_seconds = 1 WHERE id = $1`, x.tenant); err != nil {
+	// The plugin's own 5 s floor holds in every tenant; the tenant's minimum
+	// (30 s here) does not apply to box.agent.
+	if _, err := db.System.Exec(ctx, `UPDATE tenants SET min_check_interval_seconds = 30 WHERE id = $1`, x.tenant); err != nil {
 		t.Fatal(err)
 	}
+	faster := map[string]any{"name": "box", "plugin": "box.agent", "interval_seconds": 1, "config": map[string]any{"box_id": box}}
+	x.must(x.do("POST", "/v1/devices/"+dev+"/checks", x.key, faster), 422)
 	created := x.must(x.do("POST", "/v1/devices/"+dev+"/checks", x.key, body), 201)
 	chk := x.id(created)
 	token, _ := created.body["push_token"].(string)
@@ -69,9 +71,9 @@ func TestBoxAgent(t *testing.T) {
 	// One check per box on the whole server; a bad box_id is refused.
 	other := x.device("box-copy")
 	x.must(x.do("POST", "/v1/devices/"+other+"/checks", x.key, map[string]any{"name": "box", "plugin": "box.agent",
-		"interval_seconds": 1, "config": map[string]any{"box_id": strings.ToUpper(box)}}), 409)
+		"interval_seconds": 5, "config": map[string]any{"box_id": strings.ToUpper(box)}}), 409)
 	x.must(x.do("POST", "/v1/devices/"+other+"/checks", x.key, map[string]any{"name": "box", "plugin": "box.agent",
-		"interval_seconds": 1, "config": map[string]any{"box_id": "bad id"}}), 422)
+		"interval_seconds": 5, "config": map[string]any{"box_id": "bad id"}}), 422)
 
 	results := make(chan runner.Result, 100)
 	reg := prometheus.NewRegistry()
@@ -196,7 +198,7 @@ func TestBoxAgent(t *testing.T) {
 		t.Errorf("after recovery: %v", st)
 	}
 
-	// Silence: 5 intervals without a beat is CRITICAL, once per interval.
+	// Silence: 3 intervals without a beat is CRITICAL, once per interval.
 	if _, err := db.System.Exec(ctx, `UPDATE push_sources SET last_push_at = now() - interval '1 minute',
 		created_at = now() - interval '1 hour' WHERE check_id = $1`, chk); err != nil {
 		t.Fatal(err)
@@ -205,7 +207,7 @@ func TestBoxAgent(t *testing.T) {
 		t.Fatalf("sweep: %d %v", n, err)
 	}
 	apply()
-	if st := state(); st["phase"] != "PROBLEM" || !strings.Contains(st["last_output"].(string), "5 intervals") {
+	if st := state(); st["phase"] != "PROBLEM" || !strings.Contains(st["last_output"].(string), "3 intervals") {
 		t.Errorf("silent: %v", st)
 	}
 	if code := post(chk, token, boxBeat(box, "ready", "ok", 0, nil)); code != 202 {

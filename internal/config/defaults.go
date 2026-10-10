@@ -101,7 +101,7 @@ func Default() Config {
 				Enabled:   true,
 				Listen:    ":9443",
 				MaxBody:   64 << 10,
-				RateLimit: Rate{PerSecond: 2, Burst: 20}, // box.agent beats once a second
+				RateLimit: Rate{PerSecond: 1, Burst: 10},
 			},
 			MQTT: IngestMQTT{
 				Enabled:             true,

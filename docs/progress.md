@@ -167,9 +167,13 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### v0.13.1 — box.agent every 5 s in every tenant
+
+`box.agent` beats every 5 s (was planned at 1 s): `DefaultInterval` and `MinInterval` are 5 s, `missed_count` defaults to 3 (silence after 15 s), and `Manifest.TenantFloorExempt` makes the 5 s floor hold in every tenant, so the tenant's 30 s or 60 s `min_check_interval_seconds` no longer blocks box provisioning. The ingest rate limit stays at 1/s. Verified by `TestBoxAgent`.
+
 ### v0.13.0 — box.agent heartbeats
 
-`box.agent` checks receive an LLM box's 1 s heartbeat over HTTPS with their own push token (separate from the token box.agent uses with llmocean.api): host, vllm and GPU objects, hard GPU faults as immediate CRITICAL, boot states exempt, silence as CRITICAL after 5 beats. Push answers are counted by status code (`ingest_http_responses_total`). Verified by `TestBoxAgent` (not yet run in CI at the time of writing) and `FuzzDecode`.
+`box.agent` checks receive an LLM box's heartbeat (1 s planned, 5 s from v0.13.1) over HTTPS with their own push token (separate from the token box.agent uses with llmocean.api): host, vllm and GPU objects, hard GPU faults as immediate CRITICAL, boot states exempt, silence as CRITICAL after missed beats. Push answers are counted by status code (`ingest_http_responses_total`). Verified by `TestBoxAgent` (not yet run in CI at the time of writing) and `FuzzDecode`.
 
 ### v0.12.0 — PlusClouds VM agent telemetry
 
