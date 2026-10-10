@@ -1,6 +1,6 @@
 // Package boxagent implements box.agent: the heartbeat the box.agent service
 // (a WebSocket proxy in front of vLLM on an LLM host) POSTs to the ingest
-// listener about once a second, with a token minted for monitoring alone
+// listener every 5 seconds, with a token minted for monitoring alone
 // (push token, F08). A box is one check whose objects are the host, the
 // vLLM backend and each GPU, so each has its own thresholds, state and graphs.
 //
@@ -80,18 +80,18 @@ var defs = []plugin.MetricDef{
 }
 
 func g(name, unit, desc string) plugin.MetricDef {
-	// The 1 s stream is for liveness and fast thresholds; the standard
-	// class keeps its storage and downsampling in line with other plugins.
+	// A 5 s stream for liveness and thresholds; the standard class keeps its
+	// storage and downsampling in line with other plugins.
 	return plugin.MetricDef{Name: name, Unit: unit, Description: desc, Kind: "gauge", RetentionClass: plugin.RetentionStandard}
 }
 
 // Config of a box.agent check: which box's heartbeats it receives.
 type Config struct {
 	BoxID       string `json:"box_id" jsonschema:"required,maxLength=128,description=The box's ID (the agent instance ID llmocean.api uses). Unique on the server; every heartbeat must carry it"`
-	MissedCount int    `json:"missed_count,omitempty" jsonschema:"minimum=1,maximum=100,default=5,description=CRITICAL after this many intervals without a heartbeat"`
+	MissedCount int    `json:"missed_count,omitempty" jsonschema:"minimum=1,maximum=100,default=3,description=CRITICAL after this many intervals without a heartbeat"`
 }
 
-var defaults = Config{MissedCount: 5}
+var defaults = Config{MissedCount: 3}
 
 var boxID = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$`)
 
@@ -102,14 +102,15 @@ func (*Agent) Manifest() plugin.Manifest {
 	return plugin.Manifest{
 		Type: "box.agent",
 		Kind: plugin.KindIngester,
-		Description: "An LLM box's own heartbeat from box.agent (POST to the ingest URL with the check's token, about every second): " +
+		Description: "An LLM box's own heartbeat from box.agent (POST to the ingest URL with the check's token, every 5 seconds): " +
 			"host, vLLM backend and each GPU as their own objects. CRITICAL when no heartbeat arrives for missed_count intervals, " +
 			"or on a hard GPU fault (XID 79, uncorrectable ECC). Boot, model download and vLLM restarts are not incidents.",
-		ConfigSchema:    plugin.SchemaFor[Config](),
-		DefaultInterval: time.Second,
-		MinInterval:     time.Second,
-		BillingClass:    plugin.BillingStandard,
-		Objects:         true,
+		ConfigSchema:      plugin.SchemaFor[Config](),
+		DefaultInterval:   5 * time.Second,
+		MinInterval:       5 * time.Second,
+		TenantFloorExempt: true, // 5 s in every tenant: the agent beats at this rate
+		BillingClass:      plugin.BillingStandard,
+		Objects:           true,
 	}
 }
 

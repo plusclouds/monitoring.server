@@ -87,11 +87,16 @@ type Manifest struct {
 	Metrics         []MetricDef   `json:"metrics"` // fixed layout; Result.Metrics aligns with it
 	DefaultInterval time.Duration `json:"-"`
 	MinInterval     time.Duration `json:"-"`
-	NeedsRawSocket  bool          `json:"needs_raw_socket"`
-	MaxConcurrency  int           `json:"-"` // per runner; 0 = runner default
-	PerTargetLimit  int           `json:"-"` // concurrent runs against one address; 0 = runner default
-	Slow            bool          `json:"-"` // runs in the slow pool (F04)
-	BillingClass    string        `json:"billing_class"`
+	// TenantFloorExempt: the plugin's own MinInterval is the floor in every
+	// tenant, not the tenant's min_check_interval_seconds. For ingesters whose
+	// agents beat at a fixed short rate (box.agent) and whose interval only
+	// sets the silence window.
+	TenantFloorExempt bool   `json:"-"`
+	NeedsRawSocket    bool   `json:"needs_raw_socket"`
+	MaxConcurrency    int    `json:"-"` // per runner; 0 = runner default
+	PerTargetLimit    int    `json:"-"` // concurrent runs against one address; 0 = runner default
+	Slow              bool   `json:"-"` // runs in the slow pool (F04)
+	BillingClass      string `json:"billing_class"`
 	// WhoopsyMetric is the metric Whoopsy! (band alerting) watches unless
 	// the check names another: response time for http, round-trip time
 	// for icmp. Empty: the check must name one.
