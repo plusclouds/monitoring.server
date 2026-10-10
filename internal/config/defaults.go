@@ -101,7 +101,7 @@ func Default() Config {
 				Enabled:   true,
 				Listen:    ":9443",
 				MaxBody:   64 << 10,
-				RateLimit: Rate{PerSecond: 1, Burst: 10},
+				RateLimit: Rate{PerSecond: 2, Burst: 20}, // box.agent beats once a second
 			},
 			MQTT: IngestMQTT{
 				Enabled:             true,
@@ -147,6 +147,7 @@ func Default() Config {
 			"snmp.pdu": 2, "snmp.interfaces": 3, "redfish.health": 2,
 			"xapi.pool": 0, "xapi.pool:host": 3, "camera.snapshot": 2, "rtsp.stream": 2, // each pool host bills, not the pool (2026-10-07)
 			"monitor.self":    0, // the engine's own health check, platform tenant
+			"box.agent":       2, // each monitored LLM box (TBD with billing)
 			"vm.agent":        2, // each monitored PlusClouds VM (confirmed 2026-10-07)
 			"mqtt.connection": 0, // an MQTT sensor bills once, through its push.mqtt data check (confirmed 2026-10-07)
 		}, DefaultWeight: 1, WhoopsyMultiplier: 5},

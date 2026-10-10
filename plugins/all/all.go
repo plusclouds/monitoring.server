@@ -3,6 +3,7 @@
 package all
 
 import (
+	_ "github.com/plusclouds/monitoring.server/plugins/boxagent"
 	_ "github.com/plusclouds/monitoring.server/plugins/camera"
 	_ "github.com/plusclouds/monitoring.server/plugins/http"
 	_ "github.com/plusclouds/monitoring.server/plugins/icmp"

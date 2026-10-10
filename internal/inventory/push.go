@@ -60,8 +60,8 @@ func RotatePushToken(ctx context.Context, tx pgx.Tx, actor audit.Actor, id uuid.
 	if err != nil {
 		return Check{}, err
 	}
-	if c.Plugin != "push.http" {
-		return Check{}, errs.Conflictf("not-push", "%s has no ingest token; only push.http checks do", c.Plugin)
+	if c.Plugin != "push.http" && c.Plugin != "box.agent" {
+		return Check{}, errs.Conflictf("not-push", "%s has no ingest token; only push.http and box.agent checks do", c.Plugin)
 	}
 	token, err := setPushToken(ctx, tx, c.TenantID, id)
 	if err != nil {

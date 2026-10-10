@@ -91,6 +91,16 @@ Pushed timestamps are accepted from up to 24 h in the past (devices that buffer 
 - **Billing.** Weight 2 per monitored VM (`vm.agent`, confirmed by PlusClouds on 2026-10-07, from `v0.12.1`); objects (disks, interfaces) are not billed.
 - **Not yet:** service states (the agent sends none in telemetry; a watch list in the agent is planned), heartbeats on `agent.vm.<uuid>.evt`.
 
+## As built: box.agent (`v0.13.0`)
+
+- **Source.** `box.agent` (Go, on servers that run vLLM) POSTs a JSON heartbeat about once a second to `POST /ingest/v1/{check_id}` with `Authorization: Bearer mpush_…`. No NATS: it is an independent service. The token is minted for monitoring alone (not the token box.agent uses with llmocean.api).
+- **Check.** `box.agent`, config `{"box_id": "<id>", "missed_count": 5}`, unique on the server (409). The provisioner (llmocean.api) creates the device (external ID = box ID) and the check with `interval_seconds: 1`, receives `push_token` once, and gives the box `-monitor-url`/`-monitor-token`. `POST /v1/checks/{id}/rotate-token` rotates it; disabling or deleting the check on deprovision stops the silence alert. The tenant's `min_check_interval_seconds` must be 1 or less.
+- **Objects.** `host` (load, memory, disk, OOM kills, router connection, the box's own count of this server's answers by class), `vllm` (up, health, restarts, queue) and `gpu:<idx>` (temperature, utilisation, memory, ECC, last XID, throttle). A missing GPU array is unknown, not failed.
+- **State.** XID 79, 48 or 64, or uncorrectable ECC, is CRITICAL at once. `booting`, `downloading`, `restarting` and `stopped` are never incidents. Otherwise the agent's `severity` (ok, degraded, failed) maps to OK, WARNING, CRITICAL; the server decides what happens next. Silence for `missed_count` intervals (5) is CRITICAL through the last-seen rule (swept every 5 s).
+- **Counters.** `ingest_http_responses_total{code}` counts every answer of the push endpoint by status code.
+- **Billing.** Weight 2 per box is a placeholder until PlusClouds confirms it.
+- **Not yet:** the alert route to the llmocean.api webhook and the provisioning calls are llmocean.api's side.
+
 ## Open questions
 
 - The MQTT broker, topic structure and payload format are now taken from `fixleanplus.metric.collector` ([F12](F12-fixlean-collector-replacement.md)). Open questions specific to that migration are listed there.

@@ -167,6 +167,10 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### v0.13.0 — box.agent heartbeats
+
+`box.agent` checks receive an LLM box's 1 s heartbeat over HTTPS with their own push token (separate from the token box.agent uses with llmocean.api): host, vllm and GPU objects, hard GPU faults as immediate CRITICAL, boot states exempt, silence as CRITICAL after 5 beats. Push answers are counted by status code (`ingest_http_responses_total`). Verified by `TestBoxAgent` (not yet run in CI at the time of writing) and `FuzzDecode`.
+
 ### v0.12.0 — PlusClouds VM agent telemetry
 
 `vm.agent` checks receive each PlusClouds VM's agent telemetry from the platform's NATS (`vm.*.telemetry`): host, disk and interface objects with thresholds, silence as CRITICAL. Opt-in per VM: the panel creates the device and check when a customer enables monitoring. Verified by `TestVMAgent`, `FuzzDecode` and a live read of the platform's NATS (14 VMs, every message parsed). Off until `MONITOR_NATS_ENABLED=true` with the NATS client certificate and the `monitoring` user (in the auth callout's `auth_users`).
