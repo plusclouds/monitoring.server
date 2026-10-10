@@ -23,6 +23,7 @@ fuzz:
 	$(GO) test ./plugins/push -run '^$$' -fuzz '^FuzzParse$$' -fuzztime $(FUZZTIME)
 	$(GO) test ./plugins/push -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME)
 	$(GO) test ./plugins/vmagent -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME)
+	$(GO) test ./plugins/boxagent -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME)
 
 lint:
 	golangci-lint run ./...

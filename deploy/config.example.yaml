@@ -271,9 +271,9 @@ ingest:
       key_file: /etc/monitor/tls/ingest.key
     trusted_proxies: []
     max_body: 64KiB
-    rate_limit:                # per ingest token
-      per_second: 1
-      burst: 10
+    rate_limit:                # per ingest token (box.agent beats once a second)
+      per_second: 2
+      burst: 20
 
   mqtt:
     # Embedded broker. External-broker mode is configured per tenant through
@@ -407,6 +407,7 @@ usage:
     rtsp.stream: 2
     mqtt.connection: 0      # an MQTT sensor bills once, through its push.mqtt check (confirmed 2026-10-07)
     monitor.self: 0         # the engine's own health check (platform tenant)
+    box.agent: 2            # each monitored LLM box (TBD with billing)
     vm.agent: 2             # each monitored PlusClouds VM (confirmed 2026-10-07)
   default_weight: 1   # plugins not listed (push.http, push.mqtt)
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
