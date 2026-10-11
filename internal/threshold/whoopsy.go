@@ -27,6 +27,7 @@ const (
 	WhoopsyWindow      = 7
 	WhoopsyDeviations  = 1
 	WhoopsyConsecutive = 3
+	WhoopsyRelearn     = 5 // a shift lasting this many windows becomes the new normal
 	WhoopsyRuleID      = "whoopsy"
 	WhoopsyName        = "Whoopsy!"
 )
