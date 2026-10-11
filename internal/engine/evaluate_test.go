@@ -254,6 +254,31 @@ func TestWhoopsy(t *testing.T) {
 	}
 }
 
+// A shift that lasts is learned as the new normal instead of freezing the
+// band for good: the incident resolves and the band follows the new level.
+func TestWhoopsyRelearn(t *testing.T) {
+	w := &threshold.Whoopsy{Metric: "total_ms", Window: 7, Deviations: 1, Consecutive: 3, Direction: "above", Severity: "critical"}
+	s := newSim(t, Config{FailureCount: 3, RecoveryCount: 1, Metrics: []string{"total_ms"}, Whoopsy: w})
+	for _, v := range []float64{400, 500, 600, 400, 500, 600, 500} {
+		s.step(plugin.OK, v)
+	}
+	limit := threshold.WhoopsyRelearn * 7
+	for range limit - 1 {
+		s.step(plugin.OK, 1000)
+	}
+	if s.count(ActionOpen) != 1 || s.count(ActionResolve) != 0 || s.state.Whoopsy.Band.Upper > 600 {
+		t.Fatalf("band frozen before the limit: %+v %v", s.state.Whoopsy, s.acts)
+	}
+	s.step(plugin.OK, 1000)
+	if s.count(ActionResolve) != 1 || s.state.Whoopsy.Hits != 0 || len(s.state.Whoopsy.Values) != 7 {
+		t.Fatalf("the shift was not accepted: %+v %v", s.state.Whoopsy, s.acts)
+	}
+	s.step(plugin.OK, 1000)
+	if b := s.state.Whoopsy.Band; b == nil || b.Mean != 1000 || s.state.Whoopsy.Hits != 0 {
+		t.Errorf("band did not follow 1000: %+v", s.state.Whoopsy)
+	}
+}
+
 func TestWhoopsyBand(t *testing.T) {
 	w := threshold.Whoopsy{Deviations: 2, MinDelta: 50, Direction: "both"}
 	b := w.BandOf([]float64{100, 100, 100})

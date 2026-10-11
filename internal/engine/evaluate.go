@@ -47,12 +47,15 @@ type RuleState struct {
 // metric, how many results in a row left the band, and the band the last
 // result was judged against.
 type WhoopsyState struct {
-	Metric string          `json:"metric"`
-	Values []float64       `json:"values"`
-	Hits   int             `json:"hits"`
-	Last   float64         `json:"last"` // the last value judged, inside the band or not
-	Level  string          `json:"level,omitempty"`
-	Band   *threshold.Band `json:"band,omitempty"`
+	Metric string    `json:"metric"`
+	Values []float64 `json:"values"`
+	Hits   int       `json:"hits"`
+	// Outliers are the latest values that broke the band, kept while the
+	// band is frozen so a lasting shift can become the new normal.
+	Outliers []float64       `json:"outliers,omitempty"`
+	Last     float64         `json:"last"` // the last value judged, inside the band or not
+	Level    string          `json:"level,omitempty"`
+	Band     *threshold.Band `json:"band,omitempty"`
 }
 
 // State is a check's state machine, stored in check_state.
@@ -179,6 +182,7 @@ func Evaluate(cfg Config, prev State, in Input) Outcome {
 		} else {
 			c := *ws
 			c.Values = slices.Clone(ws.Values)
+			c.Outliers = slices.Clone(ws.Outliers)
 			ws = &c
 		}
 		v := metric(cfg.Metrics, in.Metrics, w.Metric)
@@ -197,8 +201,22 @@ func Evaluate(cfg Config, prev State, in Input) Outcome {
 			ws.Last = v
 			// The band is frozen while values break it: an outlier never
 			// enters the window, so a slowdown cannot widen the band and
-			// resolve itself. Resetting Whoopsy! accepts a new normal.
-			if !outside {
+			// resolve itself. Resetting Whoopsy! accepts a new normal, and so
+			// does a shift that lasts WhoopsyRelearn times the longer of the
+			// window and the consecutive count: the band is learned again
+			// from the latest values.
+			if outside {
+				ws.Outliers = append(ws.Outliers, v)
+				if extra := len(ws.Outliers) - w.Window; extra > 0 {
+					ws.Outliers = ws.Outliers[extra:]
+				}
+				if ws.Hits >= threshold.WhoopsyRelearn*max(w.Window, w.Consecutive) && len(ws.Outliers) >= w.Window {
+					ws.Values, ws.Outliers = ws.Outliers, nil
+					ws.Hits, ws.Band = 0, nil
+					outside = false
+				}
+			} else {
+				ws.Outliers = nil
 				ws.Values = append(ws.Values, v)
 			}
 			if extra := len(ws.Values) - w.Window; extra > 0 {
