@@ -213,7 +213,6 @@ func Evaluate(cfg Config, prev State, in Input) Outcome {
 				if ws.Hits >= threshold.WhoopsyRelearn*max(w.Window, w.Consecutive) && len(ws.Outliers) >= w.Window {
 					ws.Values, ws.Outliers = ws.Outliers, nil
 					ws.Hits, ws.Band = 0, nil
-					outside = false
 				}
 			} else {
 				ws.Outliers = nil
