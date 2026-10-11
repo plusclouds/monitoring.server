@@ -53,6 +53,9 @@ flowchart LR
 
 | Document | What it covers |
 | --- | --- |
+| [Deploy on a new VM (standalone)](docs/deployment/standalone-vm.md) | Step-by-step install on a fresh Linux VM without any PlusClouds service: build, configure, bootstrap, TLS, backups, upgrades |
+| [Usage guide](docs/usage-guide.md) | Monitor websites, servers, network gear and sensors; alerts, webhooks, incidents, metrics |
+| [API guide](docs/api/README.md) | Authentication, errors, pagination, every endpoint, push ingest and webhook event formats |
 | [Design document](docs/monitoring%20server%20design.md) | The full system design: targets, architecture, data model, alerting, API, security, roadmap |
 | [Feature specs](docs/features/README.md) | One spec per sub-feature, with MVP scope, behavior and acceptance criteria |
 | [Architecture decision records](docs/adr/README.md) | Infrastructure and technology decisions, each with options considered and consequences |
