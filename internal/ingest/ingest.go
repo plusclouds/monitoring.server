@@ -353,14 +353,11 @@ func (s *Server) counted(h http.HandlerFunc) http.HandlerFunc {
 
 // missedCount is a push check's missed_count (push.http and push.mqtt
 // share the field), as the sweep query reads it.
-func missedCount(kind string, cfg json.RawMessage) int {
+func missedCount(cfg json.RawMessage) int {
 	var c struct {
 		MissedCount int `json:"missed_count"`
 	}
 	if json.Unmarshal(cfg, &c) != nil || c.MissedCount < 1 {
-		if kind == "box.agent" {
-			return 5
-		}
 		return 3
 	}
 	return c.MissedCount
@@ -376,7 +373,7 @@ func (s *Server) Sweep(ctx context.Context) (int, error) {
 		  FROM checks c, tenants t
 		 WHERE c.id = ps.check_id AND t.id = c.tenant_id AND c.enabled AND t.status = 'active'
 		   AND greatest(ps.last_push_at, ps.created_at) <
-		       now() - make_interval(secs => c.interval_seconds * coalesce((c.config->>'missed_count')::int, CASE c.plugin WHEN 'box.agent' THEN 5 ELSE 3 END))
+		       now() - make_interval(secs => c.interval_seconds * coalesce((c.config->>'missed_count')::int, 3))
 		   AND (ps.stale_reported_at IS NULL OR ps.stale_reported_at < now() - make_interval(secs => c.interval_seconds))
 		RETURNING ps.check_id, c.tenant_id, c.device_id, c.plugin, c.config, c.interval_seconds, ps.last_push_at`)
 	if err != nil {
@@ -403,7 +400,7 @@ func (s *Server) Sweep(ctx context.Context) (int, error) {
 		if p, ok := plugin.Lookup(x.plugin); ok {
 			layout = plugin.MetricsOf(p, x.config)
 		}
-		missed := missedCount(x.plugin, x.config)
+		missed := missedCount(x.config)
 		out := "no data received yet"
 		if x.last != nil {
 			out = "no data since " + x.last.UTC().Format(time.RFC3339) + " (" + strconv.Itoa(missed) + " intervals of " +

@@ -140,7 +140,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestMissedCount(t *testing.T) {
-	if MissedCount(cfg()) != 5 || MissedCount(json.RawMessage(`{"box_id":"x","missed_count":8}`)) != 8 {
+	if MissedCount(cfg()) != 3 || MissedCount(json.RawMessage(`{"box_id":"x","missed_count":8}`)) != 8 {
 		t.Error("missed_count")
 	}
 }

@@ -93,9 +93,9 @@ func prepare(ctx context.Context, tx pgx.Tx, in CheckInput, lim Limits) (CheckIn
 		return in, errs.Invalidf("config", "%s", err.Error())
 	}
 	if in.IntervalSeconds == 0 {
-		in.IntervalSeconds = max(int(m.DefaultInterval/time.Second), lim.MinCheckIntervalSeconds)
+		in.IntervalSeconds = max(int(m.DefaultInterval/time.Second), tenantFloor(m, lim))
 	}
-	minInterval := max(int(m.MinInterval/time.Second), lim.MinCheckIntervalSeconds)
+	minInterval := max(int(m.MinInterval/time.Second), tenantFloor(m, lim))
 	if in.IntervalSeconds < minInterval {
 		return in, errs.Invalidf("interval_seconds", "must be at least %d for %s in this tenant", minInterval, m.Type)
 	}
@@ -165,6 +165,15 @@ const checkCols = `c.id, c.tenant_id, c.device_id, c.name, c.plugin, c.config, c
 	coalesce((SELECT jsonb_object_agg(cc.role, cc.credential_id) FROM check_credentials cc WHERE cc.check_id = c.id), '{}'),
 	(SELECT jsonb_build_object('token_prefix', ps.token_prefix, 'token_created_at', ps.token_created_at,
 	        'last_push_at', ps.last_push_at) FROM push_sources ps WHERE ps.check_id = c.id)`
+
+// tenantFloor is the tenant's minimum check interval that applies to a plugin:
+// none for a plugin that is exempt (its own MinInterval is the floor).
+func tenantFloor(m plugin.Manifest, lim Limits) int {
+	if m.TenantFloorExempt {
+		return 0
+	}
+	return lim.MinCheckIntervalSeconds
+}
 
 var checkConstraints = map[string]string{
 	"checks_device_id_name_key": "the device already has a check with this name",
