@@ -167,6 +167,10 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### v0.14.0 — notification catalog and device notifications
+
+`GET /v1/notification-catalog` and `GET /v1/devices/{device_id}/notifications` ([F06](features/F06-notifications.md#notification-catalog-and-device-view)): a customer sees which routes take a device's incidents, whether their webhooks work, whether the next incident would fire (`would_fire` with a `reason`), and the deliveries about the device with their payloads. Migration `00025` links deliveries to devices. Verified by `TestDeviceNotifications`.
+
 ### v0.13.1 — box.agent every 5 s in every tenant
 
 `box.agent` beats every 5 s (was planned at 1 s): `DefaultInterval` and `MinInterval` are 5 s, `missed_count` defaults to 3 (silence after 15 s), and `Manifest.TenantFloorExempt` makes the 5 s floor hold in every tenant, so the tenant's 30 s or 60 s `min_check_interval_seconds` no longer blocks box provisioning. The ingest rate limit stays at 1/s. Verified by `TestBoxAgent`.

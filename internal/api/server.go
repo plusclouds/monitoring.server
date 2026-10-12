@@ -54,6 +54,7 @@ type Server struct {
 	hooks           *webhook.Store
 	sender          *webhook.Sender
 	rotationOverlap time.Duration
+	incidentURL     string // notifier.incident_url_template, for data.links in delivery payloads
 	identitySource  string
 	platformRate    int
 	maxPoints       int    // per metric series in a query (F07)
@@ -86,6 +87,7 @@ func New(o Options) (*Server, error) {
 		hooks:           &webhook.Store{Keys: o.Keys},
 		sender:          webhook.NewSender(o.Config),
 		rotationOverlap: o.Config.Notifier.SecretRotationOverlap.D(),
+		incidentURL:     o.Config.Notifier.IncidentURLTemplate,
 		cfg:             o.Config.API,
 		tls:             o.Config.TLS,
 		db:              o.DB,

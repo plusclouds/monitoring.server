@@ -987,6 +987,49 @@ paths:
                     items: { $ref: "#/components/schemas/CheckRun" }
         default: { $ref: "#/components/responses/Problem" }
 
+  /devices/{device_id}/notifications:
+    get:
+      operationId: listDeviceNotifications
+      tags: [notifications]
+      summary: The notifications set up for a device, whether they work, and what was sent
+      description: |
+        Shows a customer their notification setup for one device.
+
+        - `routes`: every alert route, with the filters the device satisfies
+          (`matches_because`), the checks and severities it takes, the delivery
+          health of its webhook, and `would_fire`. `would_fire` predicts whether
+          the next incident of this device would be delivered: it is false, with
+          a `reason`, when the route is disabled, matches nothing of the device,
+          is shadowed by an earlier route without `continue`, sends to a disabled
+          webhook, or sends to a webhook whose latest delivery failed. Routes are
+          returned on the first page only.
+        - `items`: the deliveries about this device, newest first, with the body
+          that was sent. Bodies hold no secret: signatures travel in headers,
+          which are not stored. A grouped event is listed for every device in
+          the group and its body lists all of them.
+
+        The prediction does not know about maintenance windows or about
+        suppression by an upstream failure at the moment of the incident.
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, delivered, failed, cancelled] }
+        - name: event_type
+          in: query
+          schema: { type: string }
+        - $ref: "#/components/parameters/Cursor"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+      responses:
+        "200":
+          description: Routes (first page) and a page of deliveries
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/DeviceNotifications" }
+        default: { $ref: "#/components/responses/Problem" }
+
   /devices/{device_id}/checks:
     parameters:
       - $ref: "#/components/parameters/DeviceID"
@@ -1638,6 +1681,23 @@ paths:
                 required: [replayed]
                 properties:
                   replayed: { type: integer }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /notification-catalog:
+    get:
+      operationId: getNotificationCatalog
+      tags: [notifications]
+      summary: Every notification a webhook can receive, with example payloads
+      description: |
+        Static reference for building routes and receivers. `default` events are
+        delivered by routes that do not list `match.event_types`. `trigger` says
+        what has to be set up for the other events.
+      responses:
+        "200":
+          description: The catalog
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationCatalog" }
         default: { $ref: "#/components/responses/Problem" }
 
   /alert-routes/test:
@@ -3369,6 +3429,132 @@ components:
             Re-send open, unacknowledged, unsuppressed incidents this often as
             `monitoring.incident.renotify`, to this route only. Null: never.
         external: { $ref: "#/components/schemas/ExternalRefWrite" }
+
+    NotificationCatalog:
+      type: object
+      required: [events, match_fields, group_by_fields]
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            required: [type, description, scope, default, trigger, example]
+            properties:
+              type: { type: string }
+              description: { type: string }
+              scope: { type: string, enum: [incident, tenant, test] }
+              default: { type: boolean, description: "Delivered by routes that do not name event types" }
+              trigger: { type: [string, "null"], description: "What has to be set up for the event to be sent; null when nothing" }
+              example:
+                type: object
+                additionalProperties: true
+                description: The CloudEvents body as the receiver gets it, with made-up values
+        match_fields:
+          type: object
+          description: The filters of an alert route's `match`, with what each tests
+          additionalProperties: { type: string }
+        group_by_fields:
+          type: array
+          items: { type: string }
+
+    DeviceNotifications:
+      type: object
+      required: [routes, items, next_cursor]
+      properties:
+        routes:
+          type: array
+          items: { $ref: "#/components/schemas/DeviceNotificationRoute" }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/DeviceDelivery" }
+        next_cursor: { type: [string, "null"] }
+
+    DeviceNotificationRoute:
+      type: object
+      required: [route_id, route_external, name, position, enabled, match, endpoint, matches_because, matched_checks,
+                 health, would_fire, reason]
+      properties:
+        route_id: { type: string, format: uuid }
+        route_external: { oneOf: [ { $ref: "#/components/schemas/ExternalRef" }, { type: "null" } ] }
+        name: { type: string }
+        position: { type: integer }
+        enabled: { type: boolean }
+        match: { $ref: "#/components/schemas/AlertRouteMatch" }
+        endpoint:
+          type: object
+          required: [id, name, enabled, disabled_reason, external]
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            enabled: { type: boolean }
+            disabled_reason: { type: [string, "null"] }
+            external: { oneOf: [ { $ref: "#/components/schemas/ExternalRef" }, { type: "null" } ] }
+        matches_because:
+          type: array
+          description: |
+            The route's filters that this device satisfies, as codes:
+            `all_incidents`, `event_type:<type>`, `severity:<s>`, `device_type:<t>`, `site:<id>`, `device_id:<id>`,
+            `check_id:<id>`, `tag:<key>=<value>`.
+          items: { type: string }
+        matched_checks:
+          type: array
+          description: The device's enabled checks whose incidents the route takes
+          items:
+            type: object
+            required: [check_id, name, plugin, severities]
+            properties:
+              check_id: { type: string, format: uuid }
+              name: { type: string }
+              plugin: { type: string }
+              severities:
+                type: array
+                items: { type: string, enum: [warning, critical] }
+        health: { $ref: "#/components/schemas/EndpointHealth" }
+        would_fire: { type: boolean, description: "The next incident of this device would be delivered through this route" }
+        reason:
+          type: [string, "null"]
+          enum: [route_disabled, no_match, endpoint_disabled, shadowed, endpoint_failing, null]
+          description: Why `would_fire` is false; null when true
+
+    EndpointHealth:
+      type: object
+      description: Delivery health of the route's webhook, over all devices
+      required: [last_attempt_at, last_status, last_status_code, last_error, failed_24h, failing]
+      properties:
+        last_attempt_at: { type: [string, "null"], format: date-time }
+        last_status: { type: [string, "null"], enum: [pending, delivered, failed, null] }
+        last_status_code: { type: [integer, "null"] }
+        last_error: { type: [string, "null"] }
+        failed_24h: { type: integer, description: Deliveries that failed for good in the last 24 hours }
+        failing: { type: boolean, description: The latest delivery failed or is being retried }
+
+    DeviceDelivery:
+      type: object
+      required: [id, event_type, incident_id, check_id, route_id, route_name, route_external, endpoint_id,
+                 endpoint_name, endpoint_external, status, attempts, last_status_code, last_error, last_attempt_at,
+                 delivered_at, created_at, payload]
+      properties:
+        route_external: { oneOf: [ { $ref: "#/components/schemas/ExternalRef" }, { type: "null" } ] }
+        endpoint_external: { oneOf: [ { $ref: "#/components/schemas/ExternalRef" }, { type: "null" } ] }
+        id: { type: string, format: uuid }
+        event_type: { type: string }
+        incident_id: { type: [string, "null"], format: uuid }
+        check_id: { type: [string, "null"], format: uuid }
+        route_id: { type: [string, "null"], format: uuid }
+        route_name: { type: [string, "null"] }
+        endpoint_id: { type: string, format: uuid }
+        endpoint_name: { type: string }
+        status: { type: string, enum: [pending, delivered, failed, cancelled] }
+        attempts: { type: integer }
+        last_status_code: { type: [integer, "null"] }
+        last_error: { type: [string, "null"] }
+        last_attempt_at: { type: [string, "null"], format: date-time }
+        delivered_at: { type: [string, "null"], format: date-time }
+        created_at: { type: string, format: date-time }
+        payload:
+          type: object
+          additionalProperties: true
+          description: The body that was sent
 
     RouteTestResult:
       type: object
