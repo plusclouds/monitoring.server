@@ -90,6 +90,18 @@ Completed after M4 part 1:
 
 Still not built: `monitoring.heartbeat` (planned with F11 in M5).
 
+### Notification catalog and device view
+
+Two read endpoints make the setup visible to a customer.
+
+- `GET /v1/notification-catalog` lists every notification (type, description, scope, whether routes deliver it by default, what must be set up for it, an example payload) and the filters of a route's `match`. It is static reference data; the same content is in [docs/api/notification-catalog.md](../api/notification-catalog.md).
+- `GET /v1/devices/{device_id}/notifications` answers "what will notify me about this device, and does it work?".
+  - **Routes.** Every route of the tenant, with the filters the device satisfies (`matches_because`), the device's checks and severities it takes (`matched_checks`), and the delivery health of its webhook (`last_status`, `last_status_code`, `last_error`, `failed_24h`, `failing`). Health covers the whole webhook, not one device. Routes are returned on the first page only. Each route carries `route_external` and `endpoint.external` (`{source, type, id}` or null), and each delivery `route_external` and `endpoint_external`, so a client can tell which routes it created.
+  - **`would_fire`.** For each enabled check of the device and each severity, the routes are walked as the router walks them. A route would fire when it takes an incident and its webhook is enabled and not failing. Otherwise `reason` is one of `route_disabled`, `no_match`, `endpoint_disabled`, `shadowed` (an earlier route without `continue` takes the incident first) and `endpoint_failing` (the webhook's latest delivery failed for good or is being retried). A device without checks is evaluated once, without a check.
+  - **Deliveries.** The deliveries about the device, newest first, filtered by `status` and `event_type`, with cursor paging, the incident and check IDs, and the body that was sent. A grouped event is listed for every device in the group. Bodies hold no secret: signatures travel in headers, which are not stored.
+  - **Not covered.** The prediction does not know about maintenance windows or about suppression by an upstream failure at the time of the incident.
+- **Device link.** Migration `00025` adds `webhook_delivery_devices (delivery_id, tenant_id, device_id)`, filled by a trigger on `webhook_deliveries` from the event envelope (`data.device.id` and `data.objects[].device.id`), and backfilled for the deliveries that exist. It is removed with the delivery by `delivery_retention`. Tenant events have no device and no rows.
+
 ## Acceptance criteria
 
 - An n8n flow using a Standard Webhooks verification step accepts every event.
