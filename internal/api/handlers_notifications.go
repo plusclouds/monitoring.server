@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
 
@@ -88,7 +87,7 @@ func (s *Server) ListDeviceNotifications(ctx context.Context, req gen.ListDevice
 			"route_id": d.RouteID, "route_name": d.RouteName, "route_external": d.RouteExternal,
 			"endpoint_id": d.EndpointID, "endpoint_name": d.EndpointName, "endpoint_external": d.EndpointExt, "status": d.Status, "attempts": d.Attempts,
 			"last_status_code": d.LastStatusCode, "last_error": d.LastError, "last_attempt_at": d.LastAttemptAt,
-			"delivered_at": d.DeliveredAt, "created_at": d.CreatedAt, "payload": json.RawMessage(d.Payload),
+			"delivered_at": d.DeliveredAt, "created_at": d.CreatedAt, "payload": d.Payload,
 		}
 	}
 	res, err := via[gen.DeviceNotifications](out)

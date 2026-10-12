@@ -167,7 +167,7 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
-### v0.14.0 — notification catalog and device notifications
+### v0.14.1 — notification catalog and device notifications (v0.14.0 failed lint)
 
 `GET /v1/notification-catalog` and `GET /v1/devices/{device_id}/notifications` ([F06](features/F06-notifications.md#notification-catalog-and-device-view)): a customer sees which routes take a device's incidents, whether their webhooks work, whether the next incident would fire (`would_fire` with a `reason`), and the deliveries about the device with their payloads. Migration `00025` links deliveries to devices. Verified by `TestDeviceNotifications`.
 
