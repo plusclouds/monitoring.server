@@ -1,6 +1,6 @@
 # Implementation progress
 
-**Last updated:** 2026-10-07 · **Latest release tag:** `v0.12.0`
+**Last updated:** 2026-10-15 · **Latest release tag:** `v0.14.1`
 
 This page records which milestones are done and what comes next. The milestone definitions (contents and demo) live in the [feature specs index](features/README.md#suggested-milestones); update this page when a milestone's status changes.
 
