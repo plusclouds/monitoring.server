@@ -4,6 +4,10 @@ An API-first, extensible monitoring engine written in Go. One engine watches net
 
 > **Status: v0.14, pre-1.0.** Scheduling, state, incidents, signed webhooks, metrics, Grafana dashboards and plugins for HTTP, ICMP, SNMP, Redfish, XCP-ng, cameras, HTTP/MQTT push and UPS/PDU all run today. Remote probes, VMware/Proxmox and the Phase 2 and 3 items in the [roadmap](#roadmap) do not exist yet. The API can still change before 1.0; see the [changelog](CHANGELOG.md) and [implementation progress](docs/progress.md).
 
+**No built-in UI, by design.** The engine is an API; dashboards are [Grafana](deploy/grafana/README.md), reading PostgreSQL directly, with seven ready-made dashboards (devices and incidents, websites, network interfaces, server hardware, power, cameras, XCP-ng) provisioned for you. If you want a point-and-click admin UI instead, this is not that tool yet.
+
+<!-- TODO: add Grafana screenshots here (docs/images/) -->
+
 Developed by [PlusClouds](https://plusclouds.com) under the MIT license. It runs standalone or embedded in the PlusClouds panel, and it is multi-tenant from day one because customers run it too.
 
 ## Quickstart (5 minutes)
@@ -11,9 +15,9 @@ Developed by [PlusClouds](https://plusclouds.com) under the MIT license. It runs
 Needs Docker with Compose, `curl` and `jq`. This builds from source and uses plain HTTP: for trying it out, not for production (see [Deploy on a new VM](docs/deployment/standalone-vm.md)).
 
 ```sh
-# 1. Start PostgreSQL and the engine
+# 1. Start PostgreSQL, the engine and Grafana with the dashboards
 git clone https://github.com/plusclouds/monitoring.server && cd monitoring.server
-docker compose -f deploy/docker-compose.yml up -d --build --wait
+docker compose -f deploy/docker-compose.yml --profile grafana up -d --build --wait
 
 # 2. Create your tenant and admin key (shown once)
 docker compose -f deploy/docker-compose.yml run --rm monitor admin bootstrap --standalone --tenant "Demo"
@@ -29,7 +33,7 @@ WH=$(mon -X POST $MON_URL/v1/webhooks -d '{"name":"demo","url":"https://webhook.
 mon -X POST $MON_URL/v1/alert-routes -d "{\"name\":\"all\",\"endpoint_id\":\"$WH\"}"
 ```
 
-After a few failed runs a signed `monitoring.incident.opened` event arrives at your receiver. Next: the [usage guide](docs/usage-guide.md), and [Grafana dashboards](deploy/grafana/README.md) that read PostgreSQL directly.
+After a few failed runs a signed `monitoring.incident.opened` event arrives at your receiver. Open http://127.0.0.1:3000 (login `admin` / `admin`) to see the device, its check and the incident in the **Device overview** dashboard. Next: the [usage guide](docs/usage-guide.md) and the [Grafana notes](deploy/grafana/README.md).
 
 ---
 
