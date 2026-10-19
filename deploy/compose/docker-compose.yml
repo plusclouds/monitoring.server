@@ -65,7 +65,7 @@ services:
     networks: [backend]
 
   monitor:
-    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
+    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.15.0}
     restart: unless-stopped
     depends_on:
       db-init:
@@ -108,7 +108,7 @@ services:
   # Runs once per `up`: creates the installation ID, the platform tenant and
   # the platform key on the first start, and does nothing afterwards.
   bootstrap:
-    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.1.2-m1}
+    image: ${MONITOR_IMAGE:-registry.plusclouds.com/monitoring}:${MONITOR_VERSION:-0.15.0}
     command: ["admin", "bootstrap", "--if-needed"]
     restart: "no"
     depends_on:
@@ -124,7 +124,7 @@ services:
   # Needs MONITOR_GRAFANA_PASSWORD in .env (db-init then lets monitor_grafana
   # log in). Published on 127.0.0.1 only: put a TLS proxy in front.
   grafana:
-    image: ${GRAFANA_IMAGE:-registry.plusclouds.com/monitoring-grafana}:${MONITOR_VERSION:-0.1.2-m1}
+    image: ${GRAFANA_IMAGE:-registry.plusclouds.com/monitoring-grafana}:${MONITOR_VERSION:-0.15.0}
     profiles: [grafana]
     restart: unless-stopped
     depends_on:
