@@ -53,6 +53,22 @@ docker compose -f deploy/docker-compose.yml --profile grafana up -d --wait
 open http://127.0.0.1:3000    # admin / admin
 ```
 
+## Grafana image
+
+`Dockerfile` builds Grafana with the provisioning and dashboards baked in, so nothing needs mounting. CI publishes it with every version tag as `registry.plusclouds.com/monitoring-grafana`, next to the engine image, with the same version.
+
+```sh
+docker build -t monitoring-grafana deploy/grafana
+```
+
+In `deploy/compose`, set `MONITOR_GRAFANA_PASSWORD` and `GRAFANA_ADMIN_PASSWORD` in `.env`, then:
+
+```sh
+docker compose --profile grafana up -d
+```
+
+Grafana listens on `127.0.0.1:3000`; put a TLS proxy in front before exposing it. The image reads the same three variables as below. Dashboards are read-only (`allowUiUpdates: false`); change them in `dashboards/` and rebuild.
+
 ## Production
 
 1. Set `MONITOR_GRAFANA_PASSWORD` in `deploy/compose/.env`. On the next `docker compose up`, the `db-init` service lets `monitor_grafana` log in with that password and grants it the views.
