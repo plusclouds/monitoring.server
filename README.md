@@ -2,9 +2,9 @@
 
 An API-first, extensible monitoring engine written in Go. One engine watches network devices, server hardware (BMCs), IP cameras, web endpoints and ports, hypervisors and their VMs, and IoT/facility devices, and turns what it sees into incidents and signed webhook events.
 
-> **Status: v0.14, pre-1.0.** Scheduling, state, incidents, signed webhooks, metrics, Grafana dashboards and plugins for HTTP, ICMP, SNMP, Redfish, XCP-ng, cameras, HTTP/MQTT push and UPS/PDU all run today. Remote probes, VMware/Proxmox and the Phase 2 and 3 items in the [roadmap](#roadmap) do not exist yet. The API can still change before 1.0; see the [changelog](CHANGELOG.md) and [implementation progress](docs/progress.md).
+> **Status: v0.14, pre-1.0.** Scheduling, state, incidents, signed webhooks, metrics, Grafana dashboards and plugins for HTTP, ICMP, SNMP, Redfish, XCP-ng, cameras, HTTP/MQTT push, UPS/PDU, Elasticsearch and a monitoring agent for Docker images all run today. Remote probes, VMware/Proxmox and the Phase 2 and 3 items in the [roadmap](#roadmap) do not exist yet. The API can still change before 1.0; see the [changelog](CHANGELOG.md) and [implementation progress](docs/progress.md).
 
-**No built-in UI, by design.** The engine is an API; dashboards are [Grafana](deploy/grafana/README.md), reading PostgreSQL directly, with seven ready-made dashboards (devices and incidents, websites, network interfaces, server hardware, power, cameras, XCP-ng) provisioned for you. If you want a point-and-click admin UI instead, this is not that tool yet.
+**No built-in UI, by design.** The engine is an API; dashboards are [Grafana](deploy/grafana/README.md), reading PostgreSQL directly, with nine ready-made dashboards (devices and incidents, websites, network interfaces, server hardware, power, cameras, XCP-ng, Elasticsearch, agents) provisioned for you. If you want a point-and-click admin UI instead, this is not that tool yet.
 
 <!-- TODO: add Grafana screenshots here (docs/images/) -->
 
@@ -46,6 +46,8 @@ After a few failed runs a signed `monitoring.incident.opened` event arrives at y
 | IP cameras | ICMP, RTSP, ONVIF, HTTP snapshot | Reachability, codec, resolution, FPS, bitrate, RTP loss/jitter |
 | Web and services | HTTP(S), TCP, UDP, DNS, TLS, WHOIS | Status code, keyword match, timing breakdown, certificate and domain expiry |
 | Hypervisors and VMs | XenServer/XCP-ng first, then VMware, then Proxmox | Host CPU/memory/NIC/storage, per-VM CPU ready/steal, memory, disk latency, snapshots |
+| Search clusters | Elasticsearch REST API | Cluster health, shards, per-node heap/CPU/disk/GC/rejections, per-index documents, size and health |
+| Docker images and containers | Monitoring agent (`COPY --from` into your image, or a sidecar), HTTP push | Container CPU/memory/disk/network, the wrapped process and its exit code, Docker engine state, health and restarts, PostgreSQL, Redis, nginx, php-fpm, Elasticsearch, Node.js; see [the agent guide](docs/agent.md) |
 | IoT and facility | MQTT, SNMP (UPS/PDU), HTTP push | UPS battery/runtime, PDU current, temperature/humidity/leak/door sensors, last-seen |
 | LLMs | Synthetic inference requests, Prometheus scraping, OpenTelemetry GenAI traces | Availability, time to first token, tokens/s, GPU health; per application errors, tokens, cost and quality scores |
 

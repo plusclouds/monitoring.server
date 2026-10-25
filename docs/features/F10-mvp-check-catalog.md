@@ -111,6 +111,8 @@ As built (M4): one collector, `xapi.pool`, does both jobs (inventory and perform
 - **Suppression.** Host and VM objects are availability objects: a host that is not live (CRITICAL) suppresses its VMs' incidents and the incidents of checks on those VMs; a VM that is down suppresses the checks on it. Maintenance mode (WARNING) suppresses nothing.
 - **Not built:** SR multipathing, HA details beyond on/off.
 
+`elasticsearch.cluster` (collector): `GET /_cluster/health`, `/_nodes/stats` and `/_cat/indices` on any node. The address is a host, `host:port` or http(s) URL (config `scheme` and `port` fill what it lacks, default `https` and 9200). Objects `cluster`, `node:<id>` and `index:<name>`; metrics `health_code`, `nodes`, `data_nodes`, `active_shards`, `unassigned_shards`, `relocating_shards`, `initializing_shards`, `pending_tasks`, `heap_used_percent`, `cpu_percent`, `disk_used_percent`, `gc_old_ms_per_s`, `rejected_per_s`, `docs`, `store_bytes`. Credential (optional): `http_basic` or `http_bearer`, with the `monitor` cluster privilege. Config: `verify_certificate` (default true), `index_pattern`, `include_system_indices`, `max_indices` (default 100, the largest first).
+
 ## Facility (SNMP-based)
 
 | Type | Metrics |

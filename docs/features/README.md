@@ -23,6 +23,7 @@ The order follows dependencies: nothing produces results until the plugin SDK an
 | [F11](F11-self-monitoring.md) | Monitoring the monitor | F04, F06 | Draft |
 | [F12](F12-fixlean-collector-replacement.md) | Replacing the FixLean sensor collector: embedded MQTT broker, sensor model, migration | F05, F07, F08 | Draft |
 | [F13](F13-usage-metering.md) | Usage metering: check-hours per device and check, for billing | F01, F03, F04 | Draft |
+| [F15](F15-agent.md) | Monitoring agent for Docker images: host, containers, probes and services over HTTP push | F03, F05, F07, F08 | Draft, phase 1 built |
 
 ## Specs written ahead of their phase
 

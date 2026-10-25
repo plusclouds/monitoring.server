@@ -146,9 +146,11 @@ func Default() Config {
 			"icmp": 1, "http": 2, "snmp.get": 1, "snmp.system": 1, "snmp.ups": 1, "snmp.sensor": 1,
 			"snmp.pdu": 2, "snmp.interfaces": 3, "redfish.health": 2,
 			"xapi.pool": 0, "xapi.pool:host": 3, "camera.snapshot": 2, "rtsp.stream": 2, // each pool host bills, not the pool (2026-10-07)
+			"elasticsearch.cluster": 0, "elasticsearch.cluster:node": 3, // each node bills, not the cluster (TBD with billing)
 			"monitor.self":    0, // the engine's own health check, platform tenant
 			"box.agent":       2, // each monitored LLM box (TBD with billing)
 			"vm.agent":        2, // each monitored PlusClouds VM (confirmed 2026-10-07)
+			"host.agent":      2, // each monitoring agent: a container or host with its services (TBD with billing)
 			"mqtt.connection": 0, // an MQTT sensor bills once, through its push.mqtt data check (confirmed 2026-10-07)
 		}, DefaultWeight: 1, WhoopsyMultiplier: 5},
 		SelfMonitoring: SelfMonitoring{

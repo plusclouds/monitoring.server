@@ -403,12 +403,15 @@ usage:
     redfish.health: 2
     xapi.pool: 0            # the pool itself is not billed...
     xapi.pool:host: 3       # ...each of its hypervisor hosts is
+    elasticsearch.cluster: 0       # the cluster itself is not billed...
+    elasticsearch.cluster:node: 3  # ...each of its nodes is (TBD with billing)
     camera.snapshot: 2
     rtsp.stream: 2
     mqtt.connection: 0      # an MQTT sensor bills once, through its push.mqtt check (confirmed 2026-10-07)
     monitor.self: 0         # the engine's own health check (platform tenant)
     box.agent: 2            # each monitored LLM box (TBD with billing)
     vm.agent: 2             # each monitored PlusClouds VM (confirmed 2026-10-07)
+    host.agent: 2           # each monitoring agent: a container or host with its services (TBD with billing)
   default_weight: 1   # plugins not listed (push.http, push.mqtt)
   # A check with Whoopsy! (band alerting) on is billed as "<plugin>+whoopsy"
   # at its plugin's weight times this (http: 2 x 5 = 10). A weights entry

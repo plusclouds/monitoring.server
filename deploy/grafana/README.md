@@ -35,6 +35,8 @@ Do not give customers access to it. Tenant-facing graphs go through the API
 - **Server hardware** (`redfish.health`): components not OK, temperatures, fans, power use and power supply output, and each system's vendor, model, serial, BIOS and BMC firmware.
 - **Power and environment** (`snmp.pdu`, `snmp.ups`, `snmp.sensor`): devices not OK, PDU power, phase current, temperature, humidity, UPS charge and runtime, and door, leak and smoke contacts.
 - **XCP-ng pools** (`xapi.pool`): hosts, host CPU and memory, VM CPU and disk IOPS, storage repository use, and VMs that are not running or not OK.
+- **Elasticsearch clusters** (`elasticsearch.cluster`): cluster health, unassigned shards and pending tasks, node heap, CPU, disk, GC and rejected requests, index size, and indices that are not green.
+- **Agents** (`host.agent`): objects that are not OK, host and container CPU, memory, disk, network and restarts, and services (up, response time, connections, operations, cache hits, replication lag).
 - **Cameras** (`camera.snapshot`, `rtsp.stream`): check status, frames per second, bitrate, brightness, sharpness against the reference picture, scene change and RTP loss.
 
 The collector dashboards read `check_objects_v` (each object of a collector check with its state and labels) and name series by object through `metric_series_v.object_name`. Every dashboard query is run against the database by `TestGrafanaDashboards`.

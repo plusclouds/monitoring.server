@@ -1,0 +1,783 @@
+{
+  "uid": "monitor-elasticsearch",
+  "title": "Elasticsearch clusters",
+  "description": "elasticsearch.cluster: cluster health and shards, nodes (heap, CPU, disk, GC, rejections) and indices.",
+  "tags": [
+    "monitor",
+    "elasticsearch",
+    "search"
+  ],
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "utc",
+  "graphTooltip": 1,
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "label": "Tenant",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "definition": "SELECT tenant_name AS __text, tenant_id::text AS __value FROM devices_v GROUP BY 1, 2 ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": false,
+        "includeAll": false,
+        "current": {},
+        "options": [],
+        "hide": 0
+      },
+      {
+        "name": "check",
+        "label": "Cluster",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "monitor-pg"
+        },
+        "query": "SELECT device_name || ' / ' || name AS __text, check_id::text AS __value\n  FROM check_states_v WHERE tenant_id = '$tenant' AND plugin IN ('elasticsearch.cluster') ORDER BY 1",
+        "definition": "SELECT device_name || ' / ' || name AS __text, check_id::text AS __value\n  FROM check_states_v WHERE tenant_id = '$tenant' AND plugin IN ('elasticsearch.cluster') ORDER BY 1",
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "current": {},
+        "options": [],
+        "hide": 0
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
+  "panels": [
+    {
+      "title": "Clusters",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device_name AS device, name AS cluster, labels->>'status' AS health, status, last_output\n  FROM check_objects_v\n WHERE tenant_id = '$tenant' AND check_id IN ($check) AND gone_at IS NULL AND object_key = 'cluster'\n ORDER BY device_name, name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green"
+                      },
+                      "WARNING": {
+                        "color": "orange"
+                      },
+                      "CRITICAL": {
+                        "color": "red"
+                      },
+                      "UNKNOWN": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "id": 1,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 5
+      }
+    },
+    {
+      "title": "Nodes",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device_name AS device, name AS node, labels->>'host' AS host, labels->>'roles' AS roles, status, last_output\n  FROM check_objects_v\n WHERE tenant_id = '$tenant' AND check_id IN ($check) AND gone_at IS NULL AND object_key LIKE 'node:%'\n ORDER BY device_name, name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green"
+                      },
+                      "WARNING": {
+                        "color": "orange"
+                      },
+                      "CRITICAL": {
+                        "color": "red"
+                      },
+                      "UNKNOWN": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "id": 2,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 6
+      }
+    },
+    {
+      "title": "Cluster health (0 green, 1 yellow, 2 red)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'health_code' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'health_code' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'health_code' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 3,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Unassigned shards",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'unassigned_shards' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'unassigned_shards' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'unassigned_shards' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 4,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 11,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Pending tasks",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'pending_tasks' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'pending_tasks' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'pending_tasks' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 5,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Nodes in the cluster",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'nodes' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'nodes' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'nodes' AND m.object = 'cluster' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 6,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 19,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Node heap used",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'heap_used_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'heap_used_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'heap_used_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 7,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Node CPU",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'cpu_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'cpu_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'cpu_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 8,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 27,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Node disk used",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'disk_used_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'disk_used_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'disk_used_percent' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 9,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Old-generation GC time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'gc_old_ms_per_s' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'gc_old_ms_per_s' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'gc_old_ms_per_s' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 10,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 35,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Rejected search and write requests",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'rejected_per_s' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'rejected_per_s' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'rejected_per_s' AND m.object LIKE 'node:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 11,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Index size",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (avg(value)) * 1 AS value\n  FROM metrics_raw m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'store_bytes' AND m.object LIKE 'index:%' AND $__timeFilter(m.time) AND $__interval_ms < 300000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_5m m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'store_bytes' AND m.object LIKE 'index:%' AND $__timeFilter(m.time) AND $__interval_ms >= 300000 AND $__interval_ms < 3600000\n GROUP BY 1, 2\nUNION ALL\nSELECT $__timeGroupAlias(m.time, $__interval), (SELECT coalesce(s.object_name, nullif(s.object, ''), s.check_name) FROM metric_series_v s WHERE s.series_id = m.series_id) AS metric, (sum(sum) / sum(count)) * 1 AS value\n  FROM metrics_1h m\n WHERE m.tenant_id = '$tenant' AND m.check_id IN ($check) AND m.name = 'store_bytes' AND m.object LIKE 'index:%' AND $__timeFilter(m.time) AND $__interval_ms >= 3600000\n GROUP BY 1, 2\nORDER BY 1"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 5
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "id": 12,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 43,
+        "w": 12,
+        "h": 8
+      }
+    },
+    {
+      "title": "Indices not green",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "monitor-pg"
+          },
+          "refId": "A",
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT device_name AS device, name AS index, labels->>'health' AS health, status, last_output\n  FROM check_objects_v\n WHERE tenant_id = '$tenant' AND check_id IN ($check) AND gone_at IS NULL AND object_key LIKE 'index:%' AND status <> 'OK'\n ORDER BY device_name, name"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green"
+                      },
+                      "WARNING": {
+                        "color": "orange"
+                      },
+                      "CRITICAL": {
+                        "color": "red"
+                      },
+                      "UNKNOWN": {
+                        "color": "purple"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "id": 13,
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "monitor-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 51,
+        "w": 24,
+        "h": 8
+      }
+    }
+  ]
+}

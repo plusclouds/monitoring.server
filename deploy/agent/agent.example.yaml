@@ -1,0 +1,77 @@
+# Monitoring agent configuration (F15). Every top-level key has an AGENT_*
+# environment variable that wins over the file; with no file at all, the
+# environment alone is a complete configuration:
+#
+#   AGENT_URL=https://monitor.example.com/ingest/v1/<check_id>
+#   AGENT_TOKEN_FILE=/run/secrets/agent_token
+#   AGENT_COLLECTORS=host,redis        # settings: AGENT_REDIS_ADDR=127.0.0.1:6379
+#
+# Default path: /etc/monitor-agent/agent.yaml (override with AGENT_CONFIG or
+# --config). Unknown keys are an error.
+
+# The check's ingest_url, from the API response that created the host.agent
+# check (field push.ingest_url).
+url: https://monitor.example.com/ingest/v1/00000000-0000-0000-0000-000000000000
+
+# The check's push token (mpush_...), shown once when the check is created.
+# Prefer token_file: a Docker or Kubernetes secret.
+token_file: /run/secrets/agent_token
+
+# Must equal the check's config.agent_id. Default: the hostname.
+agent_id: web-1
+
+# Report interval, at least 5s. Keep it at or below the check's
+# interval_seconds: the check goes CRITICAL after missed_count (default 3)
+# intervals without a report.
+interval: 30s
+
+# Extra CA certificate for the server's HTTPS certificate (private CA).
+# ca_file: /etc/monitor-agent/ca.pem
+
+# What to collect. Each entry has a type, an optional name (default: the
+# type; two entries of one type need distinct names) and the collector's own
+# options. Any option can also come from AGENT_<TYPE>_<OPTION> (and
+# AGENT_<TYPE>_<OPTION>_FILE for secrets) when the type appears once.
+collectors:
+  # Machine or container the agent runs in. In a container with cgroup
+  # limits, CPU and memory are the container's, measured against its limits.
+  - type: host
+    # disks: ["/", "/var/lib/postgresql"]   # filesystems to watch; the fullest is reported
+    # proc: /proc                           # a sidecar reads the host's with -v /proc:/host/proc:ro
+    # cgroup: /sys/fs/cgroup
+
+  # Containers of a Docker engine (sidecar mode; mount the socket read-only).
+  # - type: docker
+  #   socket: /var/run/docker.sock
+  #   label: monitor.enable=true            # only containers with this label; also reports them when stopped
+
+  # Local probes.
+  # - type: tcp
+  #   name: db-port
+  #   addr: 127.0.0.1:5432
+  # - type: http
+  #   name: app-health
+  #   url: http://127.0.0.1:8080/healthz
+  #   status: [200]                         # default: any 2xx or 3xx
+  #   contains: '"ok"'                      # optional body check
+  # - type: process
+  #   name: worker
+  #   match: queue:work                     # part of the process name or command line
+
+  # Services.
+  # - type: redis
+  #   addr: 127.0.0.1:6379
+  #   password_file: /run/secrets/redis     # use AGENT_REDIS_PASSWORD_FILE, or password: for dev
+  # - type: postgres
+  #   dsn: postgres://monitor@127.0.0.1:5432/postgres?sslmode=disable   # role needs pg_monitor only
+  # - type: nginx
+  #   url: http://127.0.0.1/nginx_status    # location { stub_status; }
+  # - type: phpfpm
+  #   addr: 127.0.0.1:9000                  # or unix:/run/php/php-fpm.sock; pool needs pm.status_path = /status
+  # - type: elasticsearch
+  #   url: http://127.0.0.1:9200
+  #   username: monitor
+  #   password_file: /run/secrets/es
+  # - type: nodejs
+  #   url: http://127.0.0.1:3000/healthz
+  #   metrics_url: http://127.0.0.1:3000/metrics   # prom-client default metrics

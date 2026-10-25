@@ -5,6 +5,8 @@ package all
 import (
 	_ "github.com/plusclouds/monitoring.server/plugins/boxagent"
 	_ "github.com/plusclouds/monitoring.server/plugins/camera"
+	_ "github.com/plusclouds/monitoring.server/plugins/elasticsearch"
+	_ "github.com/plusclouds/monitoring.server/plugins/hostagent"
 	_ "github.com/plusclouds/monitoring.server/plugins/http"
 	_ "github.com/plusclouds/monitoring.server/plugins/icmp"
 	_ "github.com/plusclouds/monitoring.server/plugins/monitor"
