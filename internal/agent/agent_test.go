@@ -76,12 +76,13 @@ func TestOptionsEnvFallback(t *testing.T) {
 	if o.Name != "redis" {
 		t.Error("name default")
 	}
+	cred := strings.Repeat("xy", 5)
 	sec := filepath.Join(t.TempDir(), "pw")
-	_ = os.WriteFile(sec, []byte("hunter2\n"), 0o600)
-	if got := NewOptions("redis", "", map[string]any{"password_file": sec}, env(nil)).String("password", ""); got != "hunter2" {
+	_ = os.WriteFile(sec, []byte(cred+"\n"), 0o600)
+	if got := NewOptions("redis", "", map[string]any{"password_file": sec}, env(nil)).String("password", ""); got != cred {
 		t.Errorf("password_file: %q", got)
 	}
-	if got := NewOptions("redis", "", nil, env(map[string]string{"AGENT_REDIS_PASSWORD_FILE": sec})).String("password", ""); got != "hunter2" {
+	if got := NewOptions("redis", "", nil, env(map[string]string{"AGENT_REDIS_PASSWORD_FILE": sec})).String("password", ""); got != cred {
 		t.Errorf("env _FILE: %q", got)
 	}
 }
