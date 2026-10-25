@@ -125,7 +125,7 @@ func Metrics() []plugin.MetricDef { return defs }
 
 // Config of a host.agent check: which agent's reports it receives.
 type Config struct {
-	AgentID     string `json:"agent_id" jsonschema:"required,maxLength=128,description=The agent's ID (AGENT_ID of the agent; a container or host name works). Unique on the server; every report must carry it"`
+	AgentID     string `json:"agent_id" jsonschema:"required,maxLength=128,description=The agent's ID (AGENT_ID of the agent; a container or host name works). Unique in the tenant; every report must carry it"`
 	MissedCount int    `json:"missed_count,omitempty" jsonschema:"minimum=1,maximum=100,default=3,description=CRITICAL after this many intervals without a report"`
 }
 

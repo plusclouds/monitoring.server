@@ -5,7 +5,7 @@ Notable changes per release. Format follows [Keep a Changelog](https://keepachan
 ## [Unreleased]
 ### Added
 - Monitoring agent (`cmd/agent`, F15): one static binary to copy into any Docker image (`COPY --from=registry.plusclouds.com/monitoring-agent /agent ...`, `ENTRYPOINT ["agent","run","--", ...]`) or run as a sidecar. Collectors: host/container (cgroup-aware), Docker engine, tcp/http/process probes, redis, postgres, nginx, php-fpm, elasticsearch, node.js. See `docs/agent.md` and ADR-0016.
-- `host.agent` ingester plugin and push token for it (weight 2 in usage metering, to be confirmed); unique `agent_id` per server (migration 00026).
+- `host.agent` ingester plugin and push token for it (weight 2 in usage metering, to be confirmed); unique `agent_id` per tenant (migration 00026).
 - `Dockerfile.agent`, `make build-agent`, CI builds and pushes `monitoring-agent` with every version tag.
 - Grafana dashboard "Agents: hosts, containers and services".
 - `elasticsearch.cluster` collector: cluster health and shards, per-node heap, CPU, disk, old-generation GC and rejected requests, and the largest indices (documents, size, health) as objects. Optional `http_basic` or `http_bearer` credential. Each node bills as `elasticsearch.cluster:node` (weight 3, TBD with billing).

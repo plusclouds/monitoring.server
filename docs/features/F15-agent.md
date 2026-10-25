@@ -32,7 +32,7 @@ A small static binary, added to a Docker image while it is built (or run as a si
 
 ## Data
 
-`host.agent` check config: `agent_id` (required, unique on the server, case-insensitive), `missed_count` (1 to 100, default 3). Objects: `host`, `container:<name>`, `docker:engine`, `process:main`, `process:<name>`, `tcp:<name>`, `http:<name>`, `service:<name>`, `collector:<name>` (agent-side problem). Migration `00026_host_agent.sql` adds the unique index.
+`host.agent` check config: `agent_id` (required, unique per tenant, case-insensitive), `missed_count` (1 to 100, default 3). Objects: `host`, `container:<name>`, `docker:engine`, `process:main`, `process:<name>`, `tcp:<name>`, `http:<name>`, `service:<name>`, `collector:<name>` (agent-side problem). Migration `00026_host_agent.sql` adds the unique index.
 
 ## API
 

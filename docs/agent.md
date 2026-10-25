@@ -29,7 +29,7 @@ mon -X POST $MON_URL/v1/devices/$DEVICE/checks -d '{
 The response carries `push_token` (`mpush_...`) **once** and `push.ingest_url`. Keep both.
 
 - An agent that stays silent for `missed_count` (default 3) intervals makes the check CRITICAL.
-- `agent_id` is unique on the server. A second check with the same ID is refused (409).
+- `agent_id` is unique within the tenant. A second check with the same ID is refused (409).
 - Rotate a token with `POST /v1/checks/{id}/rotate-token`; the old token stops at once.
 - `host.agent` is billed with weight 2 ([F13](features/F13-usage-metering.md)).
 
