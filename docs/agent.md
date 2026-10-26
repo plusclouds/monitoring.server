@@ -6,6 +6,8 @@ It is one agent with many collectors, not one agent per service. A collector is 
 
 The server side is the `host.agent` check. The agent pushes over HTTP to the ingest listener with the check's own token ([F08](features/F08-push-ingestion.md)). Nothing in the container listens for connections.
 
+> New to this? Start with the [Docker integration guide](agent-docker-integration.md).
+
 ## 1. Create the check
 
 One check per agent. The `agent_id` is a name you choose; the same name goes to the agent.
