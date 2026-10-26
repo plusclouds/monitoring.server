@@ -42,8 +42,10 @@ Built-in plugins include:
 | `snmp.get`, `snmp.system`, `snmp.interfaces`, `snmp.ups`, `snmp.pdu`, `snmp.sensor` | Network gear, UPS, PDUs, environment sensors |
 | `redfish.health` | Server hardware through the BMC: temperatures, fans, PSUs, disks |
 | `xapi.pool` | XenServer/XCP-ng pools, their hosts and VMs |
+| `elasticsearch.cluster` | Elasticsearch clusters, their nodes and indices |
 | `camera.snapshot`, `rtsp.stream` | IP cameras |
 | `push.http`, `push.mqtt` | Devices that send data to the server |
+| `host.agent` | The [monitoring agent](agent.md) in a Docker image or beside it: container or host, Docker containers, probes and services (PostgreSQL, Redis, nginx, php-fpm, Elasticsearch, Node.js) |
 
 `vm.agent` and `box.agent` are PlusClouds-specific ingesters and are of no use outside PlusClouds. `monitor.self` is the server's own health check.
 
@@ -129,7 +131,7 @@ mon -X POST $MON_URL/v1/devices/$DEVICE/checks -d '{
 
 Each type lists its fields in `fields_schema` (secret fields are `writeOnly`), and each plugin lists the `credential_types` it accepts in `GET /v1/plugins/{type}`. A check created without a required credential reports UNKNOWN until one is assigned. One credential can serve many checks; it cannot be deleted while a check uses it.
 
-Collector plugins (`snmp.interfaces`, `redfish.health`, `xapi.pool`, cameras) create **objects**: one per interface, fan, VM and so on. Incidents and thresholds work per object, and you can list them:
+Collector plugins (`snmp.interfaces`, `redfish.health`, `xapi.pool`, `elasticsearch.cluster`, cameras) create **objects**: one per interface, fan, VM and so on. Incidents and thresholds work per object, and you can list them:
 
 ```sh
 mon $MON_URL/v1/checks/$CHECK/objects

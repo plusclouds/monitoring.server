@@ -167,6 +167,18 @@ Suppression: a pool host that goes down suppresses its VMs' incidents and the ch
 
 Verified by `TestPool`, `TestPoolFollowsMaster`, `TestPoolFailures` (fake pool), `TestDiscoveredDevices` (engine, devices, incidents, metrics, limits, retention) and `TestDiscoveredHostSuppression`.
 
+### Unreleased — Monitoring agent for Docker images (F15, phase 1)
+
+`cmd/agent`: one static binary (about 10 MB image) added to a Docker image with `COPY --from=registry.plusclouds.com/monitoring-agent /agent ...` and `ENTRYPOINT ["agent","run","--", ...]`, or run as a sidecar with the Docker socket ([guide](agent.md), [F15](features/F15-agent.md), [ADR-0016](adr/0016-single-agent-binary.md)). Decision: one agent with collectors, not one agent per service. `run` starts the image's process first (the service starts even when the agent is misconfigured), forwards signals, reaps orphans as PID 1, reports the process and its exit code, and exits with the same code. Collectors: `host` (cgroup v1/v2 aware), `docker` (Docker API over the unix socket, no SDK), `tcp`, `http`, `process`, `redis` (RESP `INFO`), `postgres` (`pgx`, `pg_monitor`), `nginx` (`stub_status`), `phpfpm` (FastCGI status), `elasticsearch` (`_cluster/health`), `nodejs` (health URL plus `prom-client` metrics). Server side: `host.agent` ingester (`plugins/hostagent`), a metric catalog shared by all object kinds, one push token and one `agent_id` per agent, unique per tenant (migration `00026`), usage weight 2 (TBD with billing), Grafana dashboard "Agents". CI builds and pushes `monitoring-agent` with every version tag.
+
+Deferred: tenant batch endpoint and agent self-enrollment (F08/F09), more collectors (MySQL, MongoDB, RabbitMQ, memcached, Kafka, HAProxy, exec), Redis TLS, Kubernetes DaemonSet.
+
+Verified by `TestHostAgent`, `plugins/hostagent` tests with `FuzzParse`, the unit tests of `internal/agent/...` (fake `/proc` and cgroup trees, fake Docker socket, fake Redis, FastCGI, nginx, Elasticsearch and Node.js servers), the dashboards test, and a run of `agent check` and `agent run` (nginx as the wrapped process) against real Redis, PostgreSQL, nginx and Docker containers.
+
+### Unreleased — Elasticsearch monitoring
+
+`elasticsearch.cluster` (collector, `plugins/elasticsearch`): reads `_cluster/health`, `_nodes/stats` and `_cat/indices` over HTTP(S) with `net/http` (no client library), optional `http_basic` or `http_bearer` credential in the `auth` role, certificates verified unless `verify_certificate` is false. Objects: `cluster` (health green/yellow/red as OK/WARNING/CRITICAL, shards, pending tasks), `node:<id>` (heap, CPU, disk, old-GC and rejection rates from counters kept in check state) and `index:<name>` (documents, size, health; the `max_indices` largest, default 100, system indices off by default). No master (HTTP 503) or no answer is CRITICAL; a rejected login or certificate is UNKNOWN. Nodes bill as `elasticsearch.cluster:node`. Dashboard `elasticsearch.json`. Verified by `plugins/elasticsearch` tests against a fake cluster; not yet run against a real one. Elasticsearch API keys (`Authorization: ApiKey`) are not supported yet.
+
 ### v0.14.1 — notification catalog and device notifications (v0.14.0 failed lint)
 
 `GET /v1/notification-catalog` and `GET /v1/devices/{device_id}/notifications` ([F06](features/F06-notifications.md#notification-catalog-and-device-view)): a customer sees which routes take a device's incidents, whether their webhooks work, whether the next incident would fire (`would_fire` with a `reason`), and the deliveries about the device with their payloads. Migration `00025` links deliveries to devices. Verified by `TestDeviceNotifications`.

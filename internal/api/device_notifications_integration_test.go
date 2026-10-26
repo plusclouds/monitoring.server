@@ -180,3 +180,78 @@ func TestDeviceNotifications(t *testing.T) {
 		t.Errorf("route with a failing webhook: %v", r)
 	}
 }
+
+// A route limited to devices (match.device_ids) takes only their incidents,
+// in the device view and at delivery, and updating the list takes effect.
+func TestRouteDeviceIDs(t *testing.T) {
+	e := setup(t, true)
+	allowLoopback(t)
+	k := e.adminKey
+	rcv := newReceiver(t)
+	dev := e.id(e.must(e.do("POST", "/v1/devices", k, map[string]any{"name": "web-1", "type": "server"}), 201))
+	chk := e.id(e.must(e.do("POST", "/v1/devices/"+dev+"/checks", k,
+		map[string]any{"name": "c", "plugin": "http", "failure_count": 1}), 201))
+	tenant := e.must(e.do("GET", "/v1/tenant", k, nil), 200).body["id"].(string)
+	eng, err := engine.New(engine.Options{System: db.System, Logger: slog.New(slog.DiscardHandler)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	hook := e.must(e.do("POST", "/v1/webhooks", k, map[string]any{"name": "h", "url": rcv.URL}), 201).body["id"]
+	other := uuid.NewString()
+	ext := map[string]any{"source": "plusclouds", "type": "t", "id": "r1"}
+	view := func() map[string]any {
+		t.Helper()
+		for _, r := range e.must(e.do("GET", "/v1/devices/"+dev+"/notifications", k, nil), 200).body["routes"].([]any) {
+			return r.(map[string]any)
+		}
+		t.Fatal("no routes")
+		return nil
+	}
+	fire := func(st plugin.Status) {
+		t.Helper()
+		if _, err := eng.Apply(context.Background(), runner.Result{
+			TenantID: uuid.MustParse(tenant), DeviceID: uuid.MustParse(dev), CheckID: uuid.MustParse(chk), Plugin: "http",
+			Interval: time.Minute, Result: plugin.Result{Status: st, Output: "x", Time: time.Now()},
+		}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	save := func(ids []string) {
+		t.Helper()
+		body := map[string]any{"name": "only", "endpoint_id": hook, "external": ext,
+			"match": map[string]any{"severity": []string{"critical"}, "device_ids": ids}}
+		r := e.do("PUT", "/v1/alert-routes/by-external-id/r1?source=plusclouds&type=t", k, body)
+		if r.status != 200 && r.status != 201 {
+			t.Fatalf("save: %d %s", r.status, r.raw)
+		}
+	}
+
+	save([]string{other})
+	if r := view(); r["would_fire"] != false || r["reason"] != "no_match" {
+		t.Errorf("route for another device: %v", r)
+	}
+	fire(plugin.Critical)
+	n := newNotifier(t)
+	n.Tick(context.Background())
+	if got := rcv.types(); len(got) != 0 {
+		t.Errorf("delivered for a device outside device_ids: %v", got)
+	}
+	fire(plugin.OK)
+	n.Tick(context.Background()) // events are routed when the notifier ticks, with the routes of that moment
+
+	save([]string{dev})
+	r := view()
+	if r["would_fire"] != true || !slices.Contains(r["matches_because"].([]any), any("device_id:"+dev)) {
+		t.Errorf("route for this device: %v", r)
+	}
+	fire(plugin.Critical)
+	n.Tick(context.Background())
+	if got := rcv.types(); len(got) != 1 {
+		t.Errorf("deliveries for a device in device_ids: %v", got)
+	}
+
+	save([]string{other})
+	if r := view(); r["would_fire"] != false || r["reason"] != "no_match" {
+		t.Errorf("route moved to another device: %v", r)
+	}
+}

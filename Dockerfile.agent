@@ -1,0 +1,36 @@
+# The monitoring agent (F15): one static binary, built to be copied into any
+# Docker image at build time, or run as a sidecar.
+#
+# In your own Dockerfile (any base image, with or without a shell):
+#
+#   COPY --from=registry.plusclouds.com/monitoring-agent:latest /agent /usr/local/bin/agent
+#   ENTRYPOINT ["/usr/local/bin/agent", "run", "--", "nginx", "-g", "daemon off;"]
+#
+# As a sidecar (watches the Docker engine through the mounted socket):
+#
+#   docker run -e AGENT_URL=... -e AGENT_TOKEN=... registry.plusclouds.com/monitoring-agent
+#
+# Build with:
+#   docker build -f Dockerfile.agent --build-arg VERSION=$(git describe --tags --always) -t monitoring-agent .
+FROM golang:1.27 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+ARG VERSION=dev
+ARG COMMIT=
+RUN CGO_ENABLED=0 go build -trimpath \
+      -ldflags "-s -w -X github.com/plusclouds/monitoring.server/internal/buildinfo.Version=${VERSION} -X github.com/plusclouds/monitoring.server/internal/buildinfo.Commit=${COMMIT}" \
+      -o /out/agent ./cmd/agent
+
+# distroless/static carries the CA certificates the agent needs for HTTPS.
+FROM gcr.io/distroless/static-debian12:nonroot
+ARG VERSION=dev
+LABEL org.opencontainers.image.title="monitoring-agent" \
+      org.opencontainers.image.description="Monitoring agent for Docker images and hosts" \
+      org.opencontainers.image.source="https://github.com/plusclouds/monitoring.server" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${VERSION}"
+COPY --from=build /out/agent /agent
+ENTRYPOINT ["/agent"]
+CMD ["daemon"]

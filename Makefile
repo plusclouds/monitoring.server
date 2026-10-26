@@ -2,16 +2,20 @@
 
 GO       ?= go
 BIN      ?= bin/monitor
+AGENT_BIN ?= bin/agent
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS  := -s -w -X github.com/plusclouds/monitoring.server/internal/buildinfo.Version=$(VERSION)
 
 # Licenses allowed for linked dependencies (ADR-0010).
 ALLOWED_LICENSES := MIT,BSD-2-Clause,BSD-3-Clause,Apache-2.0,ISC,MPL-2.0
 
-.PHONY: build test lint vuln licenses tidy-check generate generate-check check fuzz
+.PHONY: build build-agent test lint vuln licenses tidy-check generate generate-check check fuzz
 
 build:
 	CGO_ENABLED=0 $(GO) build -trimpath -ldflags '$(LDFLAGS)' -o $(BIN) ./cmd/monitor
+
+build-agent:
+	CGO_ENABLED=0 $(GO) build -trimpath -ldflags '$(LDFLAGS)' -o $(AGENT_BIN) ./cmd/agent
 
 test:
 	$(GO) test -race ./...
@@ -24,6 +28,7 @@ fuzz:
 	$(GO) test ./plugins/push -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME)
 	$(GO) test ./plugins/vmagent -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME)
 	$(GO) test ./plugins/boxagent -run '^$$' -fuzz '^FuzzDecode$$' -fuzztime $(FUZZTIME)
+	$(GO) test ./plugins/hostagent -run '^$$' -fuzz '^FuzzParse$$' -fuzztime $(FUZZTIME)
 
 lint:
 	golangci-lint run ./...

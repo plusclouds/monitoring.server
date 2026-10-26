@@ -180,6 +180,7 @@ var checkConstraints = map[string]string{
 	"checks_one_host_check":     "the device already has a host check",
 	"checks_vm_agent_uuid":      "another check already receives this VM's telemetry (vm_uuid)",
 	"checks_box_agent_id":       "another check already receives this box's heartbeats (box_id)",
+	"checks_host_agent_id":      "another check in this tenant already receives this agent's reports (agent_id)",
 }
 
 func scanCheck(row pgx.Row) (Check, error) {
@@ -336,7 +337,7 @@ func createCheck(ctx context.Context, tx pgx.Tx, actor audit.Actor, device uuid.
 	}
 	var token string
 	switch in.Plugin {
-	case "push.http", "box.agent": // own token, minted for monitoring alone
+	case "push.http", "box.agent", "host.agent": // own token, minted for monitoring alone
 		if token, err = setPushToken(ctx, tx, d.TenantID, id); err != nil {
 			return Check{}, err
 		}

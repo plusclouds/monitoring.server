@@ -25,6 +25,7 @@ env:
   REGISTRY: registry.plusclouds.com
   IMAGE: monitoring
   IMAGE_GRAFANA: monitoring-grafana
+  IMAGE_AGENT: monitoring-agent
 
 jobs:
   lint:
@@ -99,6 +100,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tags=-t $REGISTRY/$IMAGE:$version -t $REGISTRY/$IMAGE:latest" >> "$GITHUB_OUTPUT"
           echo "grafana_tags=-t $REGISTRY/$IMAGE_GRAFANA:$version -t $REGISTRY/$IMAGE_GRAFANA:latest" >> "$GITHUB_OUTPUT"
+          echo "agent_tags=-t $REGISTRY/$IMAGE_AGENT:$version -t $REGISTRY/$IMAGE_AGENT:latest" >> "$GITHUB_OUTPUT"
 
       # Building needs no credentials (public base images), so it uses its own
       # Docker config: ~/.docker/buildx on the shared runner is root-owned
@@ -117,6 +119,21 @@ jobs:
       - name: Check the image runs
         run: docker run --rm "$REGISTRY/$IMAGE:${{ steps.tags.outputs.version }}" version
 
+      # The monitoring agent (F15), to COPY --from into other images
+      # (Dockerfile.agent).
+      - name: Build agent image
+        env:
+          DOCKER_CONFIG: ${{ runner.temp }}/docker-build
+        run: |
+          docker build --pull -f Dockerfile.agent \
+            --build-arg VERSION=${{ github.ref_name }} \
+            --build-arg COMMIT=${{ github.sha }} \
+            --label org.opencontainers.image.revision=${{ github.sha }} \
+            ${{ steps.tags.outputs.agent_tags }} .
+
+      - name: Check the agent image runs
+        run: docker run --rm "$REGISTRY/$IMAGE_AGENT:${{ steps.tags.outputs.version }}" version
+
       # Grafana with the dashboards baked in (deploy/grafana/Dockerfile).
       - name: Build Grafana image
         env:
@@ -134,6 +151,7 @@ jobs:
         run: |
           docker image push --all-tags "$REGISTRY/$IMAGE"
           docker image push --all-tags "$REGISTRY/$IMAGE_GRAFANA"
+          docker image push --all-tags "$REGISTRY/$IMAGE_AGENT"
 
       # Remove only this build's images: a full prune would also delete
       # other repositories' images and build cache on the shared runner.
@@ -142,4 +160,5 @@ jobs:
         run: |
           docker image ls --format '{{.Repository}}:{{.Tag}}' "$REGISTRY/$IMAGE" | xargs -r docker image rm -f
           docker image ls --format '{{.Repository}}:{{.Tag}}' "$REGISTRY/$IMAGE_GRAFANA" | xargs -r docker image rm -f
+          docker image ls --format '{{.Repository}}:{{.Tag}}' "$REGISTRY/$IMAGE_AGENT" | xargs -r docker image rm -f
           docker image prune -f

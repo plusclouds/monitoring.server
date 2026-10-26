@@ -1,0 +1,37 @@
+# The monitoring agent as a sidecar: it watches the host's Docker engine and
+# the services you point it at. One agent per Docker host.
+#
+#   export AGENT_URL=https://monitor.example.com/ingest/v1/<check_id>
+#   echo -n mpush_... > agent_token
+#   docker compose -f deploy/agent/docker-compose.sidecar.yml up -d
+services:
+  monitoring-agent:
+    image: registry.plusclouds.com/monitoring-agent:latest
+    restart: unless-stopped
+    command: ["daemon"]
+    # The Docker socket gives read access to every container's environment:
+    # keep this image to the agent only. It reads the socket as root.
+    user: root
+    environment:
+      AGENT_URL: ${AGENT_URL:?set AGENT_URL to the check's ingest_url}
+      AGENT_TOKEN_FILE: /run/secrets/agent_token
+      AGENT_ID: ${AGENT_ID:-docker-host}
+      AGENT_COLLECTORS: host,docker
+      # Read the host's /proc and cgroups, and watch the host's root filesystem.
+      AGENT_HOST_PROC: /host/proc
+      AGENT_HOST_CGROUP: /host/cgroup
+      AGENT_HOST_DISKS: /host/rootfs
+      # Containers with the label monitor.enable=true are also reported when
+      # stopped; without AGENT_DOCKER_LABEL, running containers are reported
+      # and any that stop afterwards.
+      # AGENT_DOCKER_LABEL: monitor.enable=true
+    secrets: [agent_token]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # The host's own CPU, memory and network, not the sidecar's:
+      - /proc:/host/proc:ro
+      - /sys/fs/cgroup:/host/cgroup:ro
+      - /:/host/rootfs:ro
+secrets:
+  agent_token:
+    file: ./agent_token
