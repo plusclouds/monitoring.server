@@ -212,7 +212,7 @@ Update thresholds with `PATCH /v1/checks/{id}`. An agent that goes silent for `m
 | `server refused the report: 401` | Wrong or rotated token. Rotate with `POST /v1/checks/{id}/rotate-token` and update the secret |
 | `400` | `AGENT_ID` does not match the check's `config.agent_id` |
 | `409` | The check is disabled |
-| `429` | Interval below the server's per-check limit. Use 30 s |
+| `429` | Reports arrive faster than the ingest rate limit (2 per second per check). Two containers sharing one token and check cause this; give each its own check |
 | Service object critical, `connection refused` | The collector's address is wrong from inside the container, or the service is not up yet |
 | nginx: `enable it with stub_status` | Add the `stub_status` location and make it reachable on the URL the agent uses |
 | php-fpm: `not a php-fpm status page` | `pm.status_path` is not set in the pool |
